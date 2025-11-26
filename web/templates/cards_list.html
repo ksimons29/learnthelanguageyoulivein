@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Your cards</h2>
+  <a class="btn btn-primary" href="{{ url_for('card_new') }}">+ Add phrase</a>
+</div>
+{% if cards %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Phrase</th>
+      <th>Meaning</th>
+      <th>Context</th>
+      <th>Next review</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for card in cards %}
+    <tr>
+      <td>{{ card.phrase }}</td>
+      <td>{{ card.meaning or '-' }}</td>
+      <td>{{ card.context_tag or 'other' }}</td>
+      <td>{{ card.next_review_at or 'now' }}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('card_edit', card_id=card.id) }}">Edit</a>
+        <form method="post" action="{{ url_for('card_delete', card_id=card.id) }}" class="d-inline">
+          <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('Delete this card?')">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No cards yet. <a href="{{ url_for('card_new') }}">Add one.</a></p>
+{% endif %}
+{% endblock %}

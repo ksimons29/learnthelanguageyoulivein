@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Python / Flask
+__pycache__/
+*.py[cod]
+*.so
+*.log
+.venv/
+env/
+venv/
+.env
+.env.*
+instance/
+*.db
+*.sqlite3
+llyli.db
+
+# iOS / Xcode
+DerivedData/
+build/
+Pods/
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata
+.xcodeproj/project.xcworkspace/xcuserdata
+.swiftpm/
+Package.resolved
+
+# Node / tooling
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml

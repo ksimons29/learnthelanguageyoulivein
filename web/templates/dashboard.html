@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Dashboard</h2>
+  <a class="btn btn-outline-primary" href="{{ url_for('card_new') }}">+ Add phrase</a>
+</div>
+{% if due_banner %}
+<div class="alert alert-info">You have {{ stats.due_today }} phrases waiting. Do a quick review?</div>
+{% endif %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted">Due today</p>
+        <h3>{{ stats.due_today }}</h3>
+        <a class="btn btn-primary" href="{{ url_for('review') }}">Start review</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted">Total phrases</p>
+        <h3>{{ stats.total_cards }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <p class="text-muted">Added last 7 days</p>
+        <h3>{{ stats.cards_added_last_7_days }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Recent phrases</h5>
+      <a href="{{ url_for('cards_list') }}" class="btn btn-sm btn-outline-secondary">View all</a>
+    </div>
+    {% if recent_cards %}
+      <ul class="list-group list-group-flush">
+        {% for card in recent_cards %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ card.phrase }}</div>
+            <small class="text-muted">{{ card.meaning or 'No meaning yet' }} · {{ card.context_tag or 'other' }}</small>
+          </div>
+          <a href="{{ url_for('card_edit', card_id=card.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mb-0">No phrases yet. <a href="{{ url_for('card_new') }}">Add your first phrase.</a></p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

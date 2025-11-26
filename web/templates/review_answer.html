@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <p class="text-muted">Card {{ progress.current }} of {{ progress.total }}</p>
+    <div class="card mb-3">
+      <div class="card-body">
+        <span class="badge text-bg-secondary text-uppercase">{{ card.context_tag or 'other' }}</span>
+        <h3 class="mt-2">{{ card.phrase }}</h3>
+        <p class="lead">{{ card.meaning or 'No meaning yet' }}</p>
+      </div>
+    </div>
+    <form method="post" action="{{ url_for('review_grade') }}" class="d-grid gap-2">
+      <input type="hidden" name="card_id" value="{{ card.id }}">
+      <div class="btn-group w-100" role="group">
+        <button class="btn btn-outline-danger" name="grade" value="again" type="submit">Again</button>
+        <button class="btn btn-outline-warning" name="grade" value="hard" type="submit">Hard</button>
+        <button class="btn btn-outline-primary" name="grade" value="good" type="submit">Good</button>
+        <button class="btn btn-success" name="grade" value="easy" type="submit">Easy</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
