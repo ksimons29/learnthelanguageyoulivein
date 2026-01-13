@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLYI - Language Learning Your Way</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .mobile-frame {
+            width: 100%;
+            max-width: 414px;
+            height: 896px;
+            background: #ffffff;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .tab-navigation {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .capture-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .capture-section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .card-phrase {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .card-translation {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .card-context {
+            font-size: 14px;
+            color: #888;
+            font-style: italic;
+            margin-bottom: 12px;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            background: #e8eaf6;
+            color: #667eea;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .audio-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #667eea;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .audio-button:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+
+        .review-card {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .review-phrase {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .review-translation {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .review-translation.show {
+            display: block;
+        }
+
+        .review-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .review-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-forgot {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-remembered {
+            background: #51cf66;
+            color: white;
+        }
+
+        .btn-show {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 28px;
+            font-weight: 700;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .collection-item {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .collection-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .collection-count {
+            font-size: 14px;
+            color: #666;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <div class="status-bar">
+            <span>9:41</span>
+            <span>📶 🔋</span>
+        </div>
+
+        <div class="header">
+            <h1>LLYI</h1>
+            <p>Language Learning Your Way</p>
+        </div>
+
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('capture')">Capture</button>
+            <button class="tab-button" onclick="switchTab('review')">Review</button>
+            <button class="tab-button" onclick="switchTab('cards')">Cards</button>
+            <button class="tab-button" onclick="switchTab('progress')">Progress</button>
+        </div>
+
+        <div class="content">
+            <div id="capture-view" class="view active">
+                <div class="capture-section fade-in">
+                    <h2>Quick Phrase Capture</h2>
+                    <div class="input-group">
+                        <label>Phrase</label>
+                        <textarea id="phrase-input" placeholder="Enter or paste a phrase you want to learn..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Source Language</label>
+                        <select id="source-language">
+                            <option value="de">German</option>
+                            <option value="fr">French</option>
+                            <option value="es">Spanish</option>
+                            <option value="it">Italian</option>
+                            <option value="ja">Japanese</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Translation</label>
+                        <input type="text" id="translation-input" placeholder="Auto-detected translation...">
+                    </div>
+                    <div class="input-group">
+                        <label>Context (Optional)</label>
+                        <input type="text" id="context-input" placeholder="Where did you see this phrase?">
+                    </div>
+                    <div class="input-group">
+                        <label>Tags</label>
+                        <input type="text" id="tags-input" placeholder="work, casual, food, etc.">
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="clearCaptureForm()">Clear</button>
+                        <button class="btn btn-primary" onclick="capturePhrase()">Save Phrase</button>
+                    </div>
+                </div>
+
+                <div class="capture-section">
+                    <h2>Import from Apps</h2>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Share text from WhatsApp, Telegram, or any app directly to LLYI</p>
+                    <button class="btn btn-primary" onclick="simulateImport()">Simulate Import</button>
+                </div>
+            </div>
+
+            <div id="review-view" class="view">
+                <div id="review-session" class="card review-card" style="display: none;">
+                    <div class="audio-button" style="margin: 0 auto 20px;" onclick="playAudio()">🔊</div>
+                    <div class="review-phrase" id="review-phrase-text"></div>
+                    <div class="review-translation" id="review-translation-text"></div>
+                    <div class="review-buttons">
+                        <button class="review-btn btn-show" id="show-answer-btn" onclick="showAnswer()">Show Answer</button>
+                    </div>
+                    <div class="review-buttons" id="rate-buttons" style="display: none;">
+                        <button class="review-btn btn-forgot" onclick="rateCard('forgot')">Forgot</button>
+                        <button class="review-btn btn-remembered" onclick="rateCard('remembered')">Remembered</button>
+                    </div>
+                    <div style="margin-top: 20px; font-size: 14px; color: #666;">
+                        <span id="review-progress"></span>
+                    </div>
+                </div>
+
+                <div id="no-review" class="empty-state">
+                    <div class="empty-state-icon">✅</div>
+                    <div class="empty-state-text">No reviews due right now!</div>
+                    <p style="font-size: 14px; color: #888; margin-bottom: 20px;">Come back later or add more phrases to review.</p>
+                    <button class="btn btn-primary" onclick="startReviewSession()">Start Practice Session</button>
+                </div>
+            </div>
+
+            <div id="cards-view" class="view">
+                <div style="margin-bottom: 20px;">
+                    <div class="input-group">
+                        <input type="text" id="search-cards" placeholder="Search cards..." oninput="searchCards()">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="filterCards('all')">All</button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="filterCards('work')">Work</button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="filterCards('casual')">Casual</button>
+                    </div>
+                </div>
+                <div id="cards-container">
+                </div>
+            </div>
+
+            <div id="progress-view" class="view">
+                <div class="stats-grid fade-in">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-cards">0</div>
+                        <div class="stat-label">Total Cards</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="cards-reviewed">0</div>
+                        <div class="stat-label">Cards Reviewed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="retention-rate">0%</div>
+                        <div class="stat-label">Retention Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="streak-days">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Weekly Progress</h2>
+                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Cards reviewed this week</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="weekly-progress" style="width: 0%"></div>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #888; margin-top: 5px;">
+                        <span id="weekly-count">0</span> / 21 (Goal: 3 sessions/week)
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Recent Activity</h2>
+                    <div id="activity-log">
+                        <p style="font-size: 14px; color: #888; text-align: center; padding: 20px;">No activity yet. Start capturing and reviewing phrases!</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 style="font-size: 18px; margin-bottom: 15px;">Collections</h2>
+                    <div id="collections-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="success-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">🎉</div>
+                <h2 style="margin-bottom: 15px;">Phrase Saved!</h2>
+                <p style="color: #666; margin-bottom: 20px;">Your phrase has been added to your learning deck.</p>
+                <button class="btn btn-primary" onclick="closeModal()">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cards = [];
+        let currentReviewIndex = 0;
+        let reviewQueue = [];
+        let stats = {
+            totalCards: 0,
+            cardsReviewed: 0,
+            remembered: 0,
+            forgot: 0,
+            streak: 0,
+            weeklyReviews: 0
+        };
+
+        function initializeApp() {
+            loadSampleData();
+            renderCards();
+            updateStats();
+        }
+
+        function loadSampleData() {
+            cards = [
+                {
+                    id: 1,
+                    phrase: "Guten Morgen! Wie geht es Ihnen?",
+                    translation: "Good morning! How are you?",
+                    language: "de",
+                    context: "Greeting at work",
+                    tags: ["work", "greeting"],
+                    reviewCount: 3,
+                    lastReviewed: new Date(),
+                    nextReview: new Date(Date.now() + 86400000)
+                },
+                {
+                    id: 2,
+                    phrase: "Können Sie mir bitte helfen?",
+                    translation: "Can you please help me?",
+                    language: "de",
+                    context: "Asking for assistance",
+                    tags: ["work", "polite"],
+                    reviewCount: 2,
+                    lastReviewed: new Date(),
+                    nextReview: new Date()
+                },
+                {
+                    id: 3,
+                    phrase: "Das Essen schmeckt wunderbar!",
+                    translation: "The food tastes wonderful!",
+                    language: "de",
+                    context: "At a restaurant",
+                    tags: ["casual", "food"],
+                    reviewCount: 1,
+                    lastReviewed: new Date(),
+                    nextReview: new Date()
+                }
+            ];
+            stats.totalCards = cards.length;
+            stats.cardsReviewed = 5;
+            stats.remembered = 4;
+            stats.forgot = 1;
+            stats.streak = 3;
+            stats.weeklyReviews = 8;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-view`).classList.add('active');
+
+            if (tabName === 'review') {
+                checkReviewSession();
+            } else if (tabName === 'cards') {
+                renderCards();
+            } else if (tabName === 'progress') {
+                updateStats();
+            }
+        }
+
+        function capturePhrase() {
+            const phrase = document.getElementById('phrase-input').value.trim();
+            const translation = document.getElementById('translation-input').value.trim();
+            const language = document.getElementById('source-language').value;
+            const context = document.getElementById('context-input').value.trim();
+            const tagsInput = document.getElementById('tags-input').value.trim();
+
+            if (!phrase) {
+                alert('Please enter a phrase to capture.');
+                return;
+            }
+
+            const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : ['general'];
+            
+            const newCard = {
+                id: cards.length + 1,
+                phrase: phrase,
+                translation: translation || 'Translation will be generated...',
+                language: language,
+                context: context || 'No context provided',
+                tags: tags,
+                reviewCount: 0,
+                lastReviewed: null,
+                nextReview: new Date()
+            };
+
+            cards.push(newCard);
+            stats.totalCards = cards.length;
+            
+            clearCaptureForm();
+            showModal();
+            updateActivityLog(`Added new phrase: "${phrase.substring(0, 30)}..."`);
+        }
+
+        function clearCaptureForm() {
+            document.getElementById('phrase-input').value = '';
+            document.getElementById('translation-input').value = '';
+            document.getElementById('context-input').value = '';
+            document.getElementById('tags-input').value = '';
+        }
+
+        function simulateImport() {
+            const samplePhrases = [
+                { phrase: "Ich bin gleich da", translation: "I'll be right there", tags: ["casual"] },
+                { phrase: "Bis später!", translation: "See you later!", tags: ["casual", "greeting"] },
+                { phrase: "Könnten wir das Meeting verschieben?", translation: "Could we reschedule the meeting?", tags: ["work"] }
+            ];
+
+            const random = samplePhrases[Math.floor(Math.random() * samplePhrases.length)];
+            document.getElementById('phrase-input').value = random.phrase;
+            document.getElementById('translation-input').value = random.translation;
+            document.getElementById('tags-input').value = random.tags.join(', ');
+        }
+
+        function renderCards(filteredCards = null) {
+            const container = document.getElementById('cards-container');
+            const cardsToRender = filteredCards || cards;
+
+            if (cardsToRender.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <div class="empty-state-text">No cards yet</div>
+                        <p style="font-size: 14px; color: #888;">Start capturing phrases to build your deck!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cardsToRender.map(card => `
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <div style="flex: 1;">
+                            <div class="card-phrase">${card.phrase}</div>
+                            <div class="card-translation">${card.translation}</div>
+                            ${card.context ? `<div class="card-context">"${card.context}"</div>` : ''}
+                            <div class="card-tags">
+                                ${card.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                            <div style="font-size: 12px; color: #999; margin-top: 10px;">
+                                Reviewed ${card.reviewCount} times
+                            </div>
+                        </div>
+                        <button class="audio-button" onclick="playAudio()">🔊</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function searchCards() {
+            const query = document.getElementById('search-cards').value.toLowerCase();
+            const filtered = cards.filter(card => 
+                card.phrase.toLowerCase().includes(query) ||
+                card.translation.toLowerCase().includes(query) ||
+                card.tags.some(tag => tag.toLowerCase().includes(query))
+            );
+            renderCards(filtered);
+        }
+
+        function filterCards(tag) {
+            if (tag === 'all') {
+                renderCards();
+            } else {
+                const filtered = cards.filter(card => card.tags.includes(tag));
+                renderCards(filtered);
+            }
+        }
+
+        function checkReviewSession() {
+            reviewQueue = cards.filter(card => new Date(card.nextReview) <= new Date());
+            
+            if (reviewQueue.length > 0) {
+                document.getElementById('no-review').style.display = 'none';
+                document.getElementById('review-session').style.display = 'block';
+                currentReviewIndex = 0;
+                showReviewCard();
+            } else {
+                document.getElementById('no-review').style.display = 'block';
+                document.getElementById('review-session').style.display = 'none';
+            }
+        }
+
+        function startReviewSession() {
+            if (cards.length === 0) {
+                alert('Add some phrases first before starting a practice session!');
+                return;
+            }
+            reviewQueue = [...cards].slice(0, Math.min(5, cards.length));
+            currentReviewIndex = 0;
+            document.getElementById('no-review').style.display = 'none';
+            document.getElementById('review-session').style.display = 'block';
+            showReviewCard();
+        }
+
+        function showReviewCard() {
+            if (currentReviewIndex >= reviewQueue.length) {
+                finishReviewSession();
+                return;
+            }
+
+            const card = reviewQueue[currentReviewIndex];
+            document.getElementById('review-phrase-text').textContent = card.phrase;
+            document.getElementById('review-translation-text').textContent = card.translation;
+            document.getElementById('review-translation-text').classList.remove('show');
+            document.getElementById('show-answer-btn').style.display = 'block';
+            document.getElementById('rate-buttons').style.display = 'none';
+            document.getElementById('review-progress').textContent = `Card ${currentReviewIndex + 1} of ${reviewQueue.length}`;
+        }
+
+        function showAnswer() {
+            document.getElementById('review-translation-text').classList.add('show');
+            document.getElementById('show-answer-btn').style.display = 'none';
+            document.getElementById('rate-buttons').style.display = 'flex';
+        }
+
+        function rateCard(rating) {
+            const card = reviewQueue[currentReviewIndex];
+            card.reviewCount++;
+            card.lastReviewed = new Date();
+            
+            if (rating === 'remembered') {
+                card.nextReview = new Date(Date.now() + (card.reviewCount * 86400000));
+                stats.remembered++;
+            } else {
+                card.nextReview = new Date(Date.now() + 3600000);
+                stats.forgot++;
+            }
+
+            stats.cardsReviewed++;
+            stats.weeklyReviews++;
+            
+            currentReviewIndex++;
+            showReviewCard();
+        }
+
+        function finishReviewSession() {
+            document.getElementById('review-session').style.display = 'none';
+            document.getElementById('no-review').style.display = 'block';
+            document.querySelector('.empty-state-icon').textContent = '🎉';
+            document.querySelector('.empty-state-text').textContent = 'Review session complete!';
+            document.querySelector('#no-review p').textContent = `You reviewed ${reviewQueue.length} cards. Great work!`;
+            
+            updateActivityLog(`Completed review session: ${reviewQueue.length} cards`);
+            updateStats();
+        }
+
+        function playAudio() {
+            const button = event.target;
+            button.textContent = '🔊';
+            setTimeout(() => {
+                button.textContent = '🔊';
+            }, 500);
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(document.getElementById('review-phrase-text')?.textContent || 'Sample phrase');
+                utterance.lang = 'de-DE';
+                utterance.rate = 0.8;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('total-cards').textContent = stats.totalCards;
+            document.getElementById('cards-reviewed').textContent = stats.cardsReviewed;
+            
+            const retentionRate = stats.cardsReviewed > 0 
+                ? Math.round((stats.remembered / (stats.remembered + stats.forgot)) * 100)
+                : 0;
+            document.getElementById('retention-rate').textContent = retentionRate + '%';
+            document.getElementById('streak-days').textContent = stats.streak;
+            
+            const weeklyProgress = Math.min((stats.weeklyReviews / 21) * 100, 100);
+            document.getElementById('weekly-progress').style.width = weeklyProgress + '%';
+            document.getElementById('weekly-count').textContent = stats.weeklyReviews;
+
+            updateCollections();
+        }
+
+        function updateCollections() {
+            const allTags = cards.reduce((acc, card) => {
+                card.tags.forEach(tag => {
+                    if (!acc[tag]) acc[tag] = 0;
+                    acc[tag]++;
+                });
+                return acc;
+            }, {});
+
+            const collectionsHTML = Object.entries(allTags).map(([tag, count]) => `
+                <div class="collection-item">
+                    <div>
+                        <div class="collection-name">${tag.charAt(0).toUpperCase() + tag.slice(1)}</div>
+                        <div class="collection-count">${count} phrases</div>
+                    </div>
+                    <button class="btn btn-secondary" style="padding: 8px 16px; flex: none;" onclick="filterCards('${tag}'); switchTab('cards')">View</button>
+                </div>
+            `).join('');
+
+            document.getElementById('collections-list').innerHTML = collectionsHTML || '<p style="text-align: center; color: #888;">No collections yet</p>';
+        }
+
+        function updateActivityLog(activity) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const activityHTML = `<div style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px;"><strong>${timeStr}</strong> - ${activity}</div>`;
+            
+            const log = document.getElementById('activity-log');
+            if (log.querySelector('p')) {
+                log.innerHTML = '';
+            }
+            log.innerHTML = activityHTML + log.innerHTML;
+        }
+
+        function showModal() {
+            document.getElementById('success-modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('success-modal').classList.remove('show');
+        }
+
+        initializeApp();
+    </script>
+</body>
+</html>

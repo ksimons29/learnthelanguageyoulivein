@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "frame0": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mseep/frame0-mcp-server@0.10.0"],
+      "env": {}
+    }
+  }
+}
