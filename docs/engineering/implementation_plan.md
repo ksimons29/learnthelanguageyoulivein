@@ -151,6 +151,7 @@ Client Request → Check Service Worker Cache →
     - nextReviewDate (date) - FSRS calculated next review
     - lastReviewDate (timestamp, nullable)
     - reviewCount (int, default 0)
+    - lapseCount (int, default 0) - times word was forgotten (rating = Again)
     - **Mastery Fields:**
     - consecutiveCorrectSessions (int, default 0) - for 3-correct-recall rule
     - lastCorrectSessionId (uuid, nullable) - prevents same-session double-counting
@@ -365,6 +366,219 @@ function determineExerciseType(words: Word[]): ExerciseType {
   if (avgCorrect < 2) return 'fill_blank'       // Medium
   return 'type_translation'                      // Hardest
 }
+```
+
+### FSRS Algorithm Theory & Implementation
+
+FSRS (Free Spaced Repetition Scheduler) uses the **DSR model** to predict optimal review timing:
+
+#### Core Parameters
+
+| Parameter | Symbol | Description | Initial Value |
+|-----------|--------|-------------|---------------|
+| **Difficulty** | D | How hard it is to increase memory stability (0-10) | 5.0 |
+| **Stability** | S | Days until retrievability drops to 90% | 1.0 |
+| **Retrievability** | R | Probability of successful recall (0-1) | 1.0 |
+
+#### The Forgetting Curve
+
+FSRS models memory decay using a power law:
+
+```
+R(t) = (1 + t/(9·S))^(-1)
+
+Where:
+  R = retrievability (probability of recall)
+  t = days since last review
+  S = stability (memory strength in days)
+```
+
+**Example decay for S=10 days:**
+```
+Day 0:  R = 100%  ████████████████████
+Day 5:  R = 95%   ███████████████████
+Day 10: R = 90%   ██████████████████   ← Target threshold
+Day 15: R = 86%   █████████████████
+Day 20: R = 82%   ████████████████
+Day 30: R = 75%   ███████████████
+```
+
+#### Optimal Interval Calculation
+
+Given target retrievability (default 90%), calculate when to review:
+
+```typescript
+// Calculate days until retrievability drops to target
+function calculateOptimalInterval(stability: number, targetR: number = 0.9): number {
+  // Derived from R(t) = (1 + t/(9·S))^(-1)
+  // Solving for t: t = 9·S·(1/R - 1)
+  return 9 * stability * (1 / targetR - 1)
+}
+
+// Examples:
+// S=1  → interval = 1 day
+// S=10 → interval = 10 days
+// S=30 → interval = 30 days
+```
+
+#### Stability Update After Review
+
+After each review, stability is updated based on the rating:
+
+```typescript
+import { createEmptyCard, fsrs, generatorParameters, Rating } from 'ts-fsrs'
+
+// FSRS-4.5 default parameters (can be personalized later)
+const params = generatorParameters()
+const f = fsrs(params)
+
+// Rating scale
+enum Rating {
+  Again = 1,  // Complete blackout, wrong answer
+  Hard = 2,   // Correct but very difficult
+  Good = 3,   // Correct with normal effort
+  Easy = 4    // Trivially easy
+}
+
+// Update word after review
+async function processReview(
+  word: Word,
+  rating: Rating,
+  sessionId: string
+): Promise<Word> {
+  // Create FSRS card from current word state
+  const card = {
+    due: word.nextReviewDate,
+    stability: word.stability,
+    difficulty: word.difficulty,
+    elapsed_days: daysSince(word.lastReviewDate),
+    scheduled_days: daysBetween(word.lastReviewDate, word.nextReviewDate),
+    reps: word.reviewCount,
+    lapses: word.lapseCount || 0,
+    state: word.reviewCount === 0 ? State.New : State.Review,
+    last_review: word.lastReviewDate
+  }
+
+  // Get next state from FSRS
+  const scheduling = f.repeat(card, new Date())
+  const next = scheduling[rating]
+
+  // Update word with new FSRS parameters
+  const updatedWord = {
+    ...word,
+    difficulty: next.card.difficulty,
+    stability: next.card.stability,
+    retrievability: calculateRetrievability(next.card.stability, 0),
+    nextReviewDate: next.card.due,
+    lastReviewDate: new Date(),
+    reviewCount: word.reviewCount + 1,
+  }
+
+  // Update mastery tracking
+  if (rating >= Rating.Good) {
+    // Correct answer
+    if (word.lastCorrectSessionId !== sessionId) {
+      updatedWord.consecutiveCorrectSessions = word.consecutiveCorrectSessions + 1
+      updatedWord.lastCorrectSessionId = sessionId
+    }
+    if (updatedWord.consecutiveCorrectSessions >= 3) {
+      updatedWord.masteryStatus = 'ready_to_use'
+    }
+  } else {
+    // Wrong answer - reset mastery progress
+    updatedWord.consecutiveCorrectSessions = 0
+    updatedWord.lastCorrectSessionId = null
+    updatedWord.masteryStatus = 'learning'
+  }
+
+  return updatedWord
+}
+```
+
+#### How Ratings Affect Stability
+
+| Rating | Effect on Stability | Next Interval Example (S=10) |
+|--------|--------------------|-----------------------------|
+| **Again (1)** | S decreases significantly | ~1 day (relearn) |
+| **Hard (2)** | S increases slightly | ~8 days |
+| **Good (3)** | S increases normally | ~25 days |
+| **Easy (4)** | S increases significantly | ~60 days |
+
+#### Retrievability Calculation for Due Words
+
+```typescript
+// Calculate current retrievability for a word
+function calculateRetrievability(stability: number, daysSinceReview: number): number {
+  if (daysSinceReview <= 0) return 1.0
+  return Math.pow(1 + daysSinceReview / (9 * stability), -1)
+}
+
+// Word is due when retrievability drops below threshold
+function isDue(word: Word, threshold: number = 0.9): boolean {
+  const daysSince = daysBetween(word.lastReviewDate, new Date())
+  const currentR = calculateRetrievability(word.stability, daysSince)
+  return currentR < threshold
+}
+
+// Get all due words for review session
+async function getDueWords(userId: string): Promise<Word[]> {
+  const words = await db.word.findMany({ where: { userId } })
+  return words.filter(w => isDue(w, 0.9))
+}
+```
+
+#### Complete Review Flow
+
+```
+User answers → Rating (1-4) → FSRS calculates new S, D → New interval → Update DB
+     │                              │                         │
+     │                              │                         ▼
+     │                              │              nextReviewDate = now + interval
+     │                              │
+     │                              ▼
+     │              Stability update formula (ts-fsrs handles this):
+     │              S' = S · (e^w · (11-D) · S^(-w) · (e^(w·(1-R)) - 1) · rating_factor + 1)
+     │
+     ▼
+If rating ≥ 3 (Good/Easy):
+  └─► consecutiveCorrectSessions++ (if new session)
+  └─► If consecutiveCorrectSessions ≥ 3 → masteryStatus = 'ready_to_use'
+
+If rating < 3 (Again/Hard with wrong):
+  └─► consecutiveCorrectSessions = 0
+  └─► masteryStatus = 'learning'
+```
+
+#### Why ts-fsrs Library
+
+We use the `ts-fsrs` library rather than implementing FSRS from scratch because:
+
+1. **Proven accuracy**: FSRS-4.5 is the result of extensive ML research and testing
+2. **Maintained**: Active development and bug fixes
+3. **Parameter optimization**: Future ability to personalize parameters per user
+4. **Edge cases handled**: Leap years, timezone issues, numeric precision
+
+```bash
+npm install ts-fsrs
+```
+
+```typescript
+import { createEmptyCard, fsrs, generatorParameters, Rating, State } from 'ts-fsrs'
+
+// Initialize with default FSRS-4.5 parameters
+const params = generatorParameters()
+const f = fsrs(params)
+
+// Create new card for a captured word
+const card = createEmptyCard()
+
+// After review with rating 3 (Good)
+const scheduling = f.repeat(card, new Date())
+const nextState = scheduling[Rating.Good]
+
+console.log(nextState.card.due)        // Next review date
+console.log(nextState.card.stability)  // New stability
+console.log(nextState.card.difficulty) // Updated difficulty
 ```
 
 ## User Stories
