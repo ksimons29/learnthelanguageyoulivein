@@ -28,317 +28,613 @@ The web MVP includes:
 
 ## Technical Architecture
 
-### Tech Stack Recommendations
+### Tech Stack (Definitive Choices)
 
 **Frontend:**
-- **Framework:** Next.js 14+ with App Router and React
+- **Framework:** Next.js 14+ with App Router and React 18+
 - **UI Components:** shadcn/ui with Tailwind CSS (mobile-first responsive design)
-- **State Management:** React Context API + Zustand for complex state
+- **State Management:** Zustand (single pattern for all state)
 - **PWA:** next-pwa for Progressive Web App capabilities
 - **Audio:** HTML5 Audio API with Web Audio API for advanced features
 
-**Backend/API:**
+**Backend/Infrastructure (Supabase Full Stack):**
 - **API Layer:** Next.js API Routes with Server Actions
-- **Database:** Neon (Serverless PostgreSQL) or Supabase
+- **Database:** Supabase (PostgreSQL)
 - **ORM:** Drizzle ORM
-- **Authentication:** NextAuth.js (Auth.js) or Clerk
-- **File Storage:** Vercel Blob or AWS S3 (for audio files)
-- **Caching:** Vercel Edge caching + Redis (Upstash) for session data
+- **Authentication:** Supabase Auth (built-in, zero additional cost)
+- **File Storage:** Supabase Storage (S3-compatible, edge caching included)
+- **Caching:** Next.js built-in caching (ISR, on-demand revalidation) + browser localStorage
 
 **Audio Services:**
-- **Text-to-Speech:** OpenAI TTS, Google Cloud Text-to-Speech, or ElevenLabs
-- **Audio Format:** AAC or MP3, 44.1kHz minimum
-- **Audio CDN:** Cloudflare or CloudFront for fast global delivery
-- **Audio Caching:** Service Worker caching for offline playback
+- **Text-to-Speech:** OpenAI TTS (primary - best quality/cost ratio, Portuguese support)
+- **Audio Format:** AAC (preferred) or MP3 fallback, 44.1kHz, 128kbps
+- **Audio Delivery:** Supabase Storage CDN + Service Worker caching
 
 **Hosting & Deployment:**
 - **Platform:** Vercel (edge functions for low latency)
 - **CDN:** Vercel Edge Network (automatic)
-- **Analytics:** Vercel Analytics or Mixpanel
+- **Analytics:** Vercel Analytics
 - **Error Tracking:** Sentry
 
-**Additional Services:**
-- **LLM API:** OpenAI GPT-4 for sentence generation
-- **Spaced Repetition:** ts-fsrs library for FSRS algorithm
-- **Payments:** Stripe (future premium features)
-- **Email:** Resend or SendGrid for transactional emails
+**AI Services:**
+- **LLM:** OpenAI GPT-4 for sentence generation and category assignment
+- **Spaced Repetition:** ts-fsrs library for FSRS-4.5 algorithm
+
+**Future (add when scaling requires):**
+- Upstash Redis (if caching becomes bottleneck)
+- Cloudflare CDN (if audio latency issues arise)
+- Stripe (premium features)
 
 ### Architecture Patterns
 - **Responsive-First Design:** Mobile-first CSS with breakpoints (375px, 768px, 1280px)
 - **Progressive Enhancement:** Core features work without JavaScript, enhanced with JS
 - **Server-Side Rendering:** Next.js SSR for fast initial page loads and SEO
 - **API Layer:** RESTful API design with Next.js API routes
-- **State Management:** React Context API for global state, local state for components
+- **State Management:** Zustand for all shared state (auth, words, review session)
 - **PWA Architecture:** Service Worker for offline capabilities and caching
+
+### Session Definition
+A **review session** is defined as:
+- A new session starts when **>2 hours** since last review activity
+- OR when user explicitly starts a new session from home screen
+- Session boundaries are critical for the "3 correct recalls on separate sessions" mastery requirement
+- Each review action records `sessionId` for audit trail
+
+### PWA Cache Strategy
+
+| Content Type | Cache Strategy | TTL |
+|--------------|---------------|-----|
+| Static assets (JS, CSS, images) | Cache-first, stale-while-revalidate | 30 days |
+| Audio files | Cache-first after first play | Forever (until storage limit) |
+| Pre-generated sentences | Network-first with cache fallback | 7 days |
+| Review state | Write-through with sync on reconnect | n/a |
+| Word data | Stale-while-revalidate | 1 day |
 
 ### Audio Architecture
 
 **Audio Generation Pipeline:**
-1. User captures phrase → Backend validates and stores
-2. Backend calls TTS API (OpenAI/Google/ElevenLabs) for native pronunciation
-3. Audio file stored in CDN (S3 + CloudFront or Vercel Blob)
-4. Audio URL returned to frontend and cached
+1. User captures word → Backend validates and stores word
+2. Backend calls OpenAI TTS API for native pronunciation
+3. Audio file stored in Supabase Storage (CDN-enabled)
+4. Audio URL returned to frontend and cached in Service Worker
 
 **Audio Playback Strategy:**
 ```
 Client Request → Check Service Worker Cache →
   If cached: Play immediately (<100ms)
-  If not cached: Fetch from CDN → Cache → Play (<1s)
+  If not cached: Fetch from Supabase CDN → Cache → Play (<1s)
 ```
 
 **Audio Optimization:**
 - **Format:** AAC (preferred for quality/size) or MP3 fallback
 - **Bitrate:** 128kbps (optimal for speech)
 - **Sample Rate:** 44.1kHz minimum
-- **Caching:** Service Worker caches all played audio
-- **Preloading:** Preload audio for due review cards in background
+- **Caching:** Service Worker caches all played audio permanently
+- **Preloading:** Preload audio for due review words in background
 - **Mobile Optimization:** Use native HTML5 `<audio>` element for iOS compatibility
-
-**Audio Quality Providers:**
-- **Primary:** OpenAI TTS (high quality, multilingual, cost-effective)
-- **Alternative:** Google Cloud TTS (good quality, wide language support)
-- **Premium Option:** ElevenLabs (ultra-realistic voices, higher cost)
 
 ### Data Model
 
-#### Entity Relationship Diagram (Text)
+#### Entity Relationship Diagram
 ```
-[User] 1──────M [Phrase]
-    │                 │
-    │                 │
-    M                 1
-[Tag] ──────── [SmartCard]
+[User] 1────────M [Word]
+    │              │
+    │              M
+    │         [GeneratedSentence]
+    │              │
+    1              M
+[ReviewSession]────┘
 ```
 
 #### Core Entities
 
 - **User**
-  - Fields: id (uuid), email (string, unique), name (string), passwordHash (string), createdAt (timestamp), updatedAt (timestamp)
-  - Relationships: has_many Phrases, has_many SmartCards
+  - Fields: id (uuid), email (string, unique), name (string), nativeLanguage (string), targetLanguage (string), createdAt (timestamp), updatedAt (timestamp)
+  - Relationships: has_many Words, has_many ReviewSessions
   - Indexes: email for authentication lookup
+  - Notes: Managed by Supabase Auth
 
-- **Phrase**
-  - Fields: id (uuid), text (string), language (string), translation (string), audioUrl (string, nullable), userId (uuid), createdAt (timestamp), updatedAt (timestamp)
-  - Relationships: belongs_to User, has_one SmartCard
-  - Indexes: userId for user-specific retrieval
-  - Notes: audioUrl points to CDN-hosted TTS audio file
+- **Word** (unified entity - replaces Phrase + SmartCard)
+  - Fields:
+    - id (uuid)
+    - userId (uuid, FK)
+    - originalText (string) - the captured word
+    - translation (string) - auto-generated translation
+    - language ('source' | 'target') - detected language
+    - audioUrl (string, nullable) - Supabase Storage URL
+    - category (string) - auto-assigned: food, work, home, transport, health, social, bureaucracy, greetings, other
+    - categoryConfidence (float) - LLM confidence score
+    - **FSRS Fields:**
+    - difficulty (float, default 0.3) - FSRS difficulty parameter
+    - stability (float, default 1.0) - FSRS stability parameter
+    - retrievability (float, default 1.0) - calculated recall probability
+    - nextReviewDate (date) - FSRS calculated next review
+    - lastReviewDate (timestamp, nullable)
+    - reviewCount (int, default 0)
+    - **Mastery Fields:**
+    - consecutiveCorrectSessions (int, default 0) - for 3-correct-recall rule
+    - lastCorrectSessionId (uuid, nullable) - prevents same-session double-counting
+    - masteryStatus ('learning' | 'learned' | 'ready_to_use', default 'learning')
+    - createdAt (timestamp), updatedAt (timestamp)
+  - Indexes: userId, nextReviewDate (for due words query), category (for grouping)
+  - Notes: FSRS parameters updated on each review using ts-fsrs library
 
-- **SmartCard**
-  - Fields: id (uuid), phraseId (uuid), reviewSchedule (date), difficulty (float), stability (float), retrievability (float), lastReviewDate (timestamp), reviewCount (int), correctCount (int), createdAt (timestamp), updatedAt (timestamp)
-  - Relationships: belongs_to Phrase, has_many Tags
-  - Indexes: phraseId for phrase lookup, reviewSchedule for due cards query
-  - Notes: FSRS parameters (difficulty, stability, retrievability) track learning progress
+- **GeneratedSentence** (tracks unique sentences to prevent repetition)
+  - Fields:
+    - id (uuid)
+    - userId (uuid, FK)
+    - text (string) - the generated sentence (max 10 words)
+    - audioUrl (string, nullable) - sentence audio
+    - wordIds (uuid[]) - array of 2-4 word IDs combined in this sentence
+    - wordIdsHash (string) - sorted wordIds hash for fast dedup lookup
+    - exerciseType ('type_translation' | 'fill_blank' | 'multiple_choice')
+    - sessionId (uuid, nullable, FK) - review session that used it
+    - usedAt (timestamp, nullable) - null means pre-generated but not yet shown
+    - createdAt (timestamp)
+  - Indexes: userId, wordIdsHash (unique), usedAt
+  - Notes: Each word combination generates unique sentences; hash prevents repetition
 
-- **Tag**
-  - Fields: id (uuid), name (string), smartCardId (uuid), createdAt (timestamp), updatedAt (timestamp)
-  - Relationships: belongs_to SmartCard
-  - Indexes: smartCardId for card tagging
+- **ReviewSession** (tracks session boundaries for mastery)
+  - Fields:
+    - id (uuid)
+    - userId (uuid, FK)
+    - startedAt (timestamp)
+    - endedAt (timestamp, nullable)
+    - wordsReviewed (int, default 0)
+    - correctCount (int, default 0)
+  - Indexes: userId, startedAt
+  - Notes: New session created when >2 hours since last activity
+
+- **Tag** (for user-defined organization)
+  - Fields: id (uuid), name (string), wordId (uuid, FK), createdAt (timestamp)
+  - Relationships: belongs_to Word
+  - Indexes: wordId
 
 ### API Routes / Endpoints
 
-#### Authentication Routes
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Authenticate a user
-- `POST /api/auth/logout` - Terminate a session
-- `POST /api/auth/forgot-password` - Initiate password reset
-- `POST /api/auth/reset-password` - Complete password reset
+#### Authentication Routes (Supabase Auth)
+- Authentication handled by Supabase Auth SDK
+- `POST /api/auth/callback` - OAuth callback handler
+- `POST /api/auth/setup` - Complete user setup (set native/target language)
 
-#### Core Feature Routes
+#### Word Management Routes
 
-**Phrase Capture Routes:**
-- `POST /api/phrases` - Capture and create a phrase
-  - Body: { text, language }
-  - Response: { data: { phraseId } }
+- `POST /api/words` - Capture and create a word
+  - Body: `{ text: string, context?: string }`
+  - Process: Auto-detect language → Translate → Generate audio → Assign category
+  - Response: `{ data: { word: Word } }`
 
-**Smart Card Management Routes:**
-- `GET /api/smartcards` - List smart cards with pagination
-  - Query params: page, limit, filter
-- `GET /api/smartcards/:id` - Get a specific smart card
-- `POST /api/smartcards` - Create a smart card from a phrase
-  - Body: { phraseId, audioUrl }
-- `PUT /api/smartcards/:id` - Update a smart card
-- `DELETE /api/smartcards/:id` - Delete a smart card
+- `GET /api/words` - List user's words with pagination
+  - Query params: `page, limit, category, masteryStatus, search`
+  - Response: `{ data: { words: Word[], total: number } }`
 
-**Review System Routes:**
-- `GET /api/reviews/schedule` - Get scheduled reviews for the user
-- `POST /api/reviews/complete` - Mark a review as complete
-  - Body: { smartCardId, success }
+- `GET /api/words/:id` - Get a specific word with full details
+- `PUT /api/words/:id` - Update word (e.g., change category)
+- `DELETE /api/words/:id` - Delete a word
+
+#### Review System Routes
+
+- `GET /api/reviews/due` - Get words due for review
+  - Query params: `limit` (default 20)
+  - Response: `{ data: { words: Word[], sessionId: string } }`
+  - Creates new ReviewSession if >2 hours since last activity
+
+- `POST /api/reviews/complete` - Submit review result
+  - Body: `{ wordId: string, rating: 1 | 2 | 3 | 4, responseTimeMs?: number }`
+  - Rating scale (FSRS standard):
+    - 1 = Again (complete blackout, wrong answer)
+    - 2 = Hard (correct but very difficult)
+    - 3 = Good (correct with normal effort)
+    - 4 = Easy (correct, trivially easy)
+  - Process: Update FSRS parameters → Update mastery tracking → Return next review date
+  - Response: `{ data: { word: Word, nextReviewDate: string } }`
+
+- `POST /api/reviews/end` - End current review session
+  - Response: `{ data: { session: ReviewSession, wordsReviewed: number, masteredCount: number } }`
+
+#### Sentence Generation Routes
+
+- `POST /api/sentences/generate` - Trigger batch sentence pre-generation
+  - Body: `{ lookaheadDays?: number }` (default 7)
+  - Process: Find due words → Group by category + timing → Generate unique sentences
+  - Response: `{ data: { sentencesGenerated: number } }`
+
+- `GET /api/sentences/next` - Get next sentence for review
+  - Query params: `sessionId`
+  - Response: `{ data: { sentence: GeneratedSentence, targetWords: Word[] } }`
+
+#### Session Routes
+
+- `GET /api/sessions/current` - Get or create current session
+  - Response: `{ data: { session: ReviewSession, isNew: boolean } }`
+
+- `GET /api/sessions/history` - Get past review sessions
+  - Query params: `limit, offset`
+  - Response: `{ data: { sessions: ReviewSession[] } }`
+
+### Dynamic SRS Word-Matching Algorithm
+
+The core differentiator: generating sentences that combine 2-4 semantically related words that are due for review at similar times.
+
+**Three constraints balanced:**
+1. **Semantic relatedness** - Words in same sentence share a category
+2. **FSRS timing alignment** - Words are due within 7 days of each other
+3. **Never-repeat** - Each word combination is used exactly once
+
+**Algorithm:**
+```typescript
+interface WordMatchingConfig {
+  minWordsPerSentence: 2
+  maxWordsPerSentence: 4
+  dueDateWindowDays: 7
+  retrievabilityThreshold: 0.9
+}
+
+async function selectWordsForSentences(userId: string): Promise<Word[][]> {
+  // 1. Get words below retrievability threshold
+  const dueWords = await db.word.findMany({
+    where: { userId, retrievability: { lt: 0.9 } },
+    orderBy: { nextReviewDate: 'asc' }
+  })
+
+  // 2. Group by category
+  const categoryGroups = groupBy(dueWords, 'category')
+
+  // 3. Within each category, cluster by due date proximity
+  const combinations: Word[][] = []
+
+  for (const [category, words] of Object.entries(categoryGroups)) {
+    const sorted = words.sort((a, b) =>
+      a.nextReviewDate.getTime() - b.nextReviewDate.getTime()
+    )
+
+    // Sliding window for words due within 7 days
+    let i = 0
+    while (i < sorted.length) {
+      const window: Word[] = [sorted[i]]
+      let j = i + 1
+
+      while (j < sorted.length &&
+             daysBetween(sorted[i].nextReviewDate, sorted[j].nextReviewDate) <= 7) {
+        window.push(sorted[j])
+        j++
+      }
+
+      // Generate 2-4 word combinations
+      if (window.length >= 2) {
+        const combos = generateCombinations(window, 2, 4)
+        const unused = await filterUsedCombinations(userId, combos)
+        combinations.push(...unused)
+      }
+
+      i = j || i + 1
+    }
+  }
+
+  return combinations
+}
+```
+
+**Category Assignment (on word capture):**
+```typescript
+async function assignCategory(word: string, context?: string): Promise<string> {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{
+      role: 'system',
+      content: `Categorize into one: food, restaurant, shopping, work, home,
+                transport, health, social, bureaucracy, emergency, weather,
+                time, greetings, other`
+    }, {
+      role: 'user',
+      content: `Word: "${word}"${context ? `\nContext: "${context}"` : ''}`
+    }]
+  })
+  return response.choices[0].message.content?.toLowerCase() || 'other'
+}
+```
+
+**Batch Pre-generation (triggered on app foreground, after capture, on reconnect):**
+```typescript
+async function preGenerateSentences(userId: string): Promise<void> {
+  const combinations = await selectWordsForSentences(userId)
+
+  for (const wordGroup of combinations.slice(0, 20)) { // Limit batch size
+    const sentence = await generateSentence(wordGroup)
+    await db.generatedSentence.create({
+      userId,
+      text: sentence.text,
+      wordIds: wordGroup.map(w => w.id),
+      wordIdsHash: hashWordIds(wordGroup),
+      exerciseType: determineExerciseType(wordGroup),
+      usedAt: null
+    })
+  }
+}
+```
+
+**Exercise Type Selection:**
+```typescript
+type ExerciseType = 'type_translation' | 'fill_blank' | 'multiple_choice'
+
+function determineExerciseType(words: Word[]): ExerciseType {
+  const avgCorrect = words.reduce((sum, w) =>
+    sum + w.consecutiveCorrectSessions, 0) / words.length
+
+  if (avgCorrect < 1) return 'multiple_choice'  // Easiest
+  if (avgCorrect < 2) return 'fill_blank'       // Medium
+  return 'type_translation'                      // Hardest
+}
+```
 
 ## User Stories
 
-### User Story 1: Quick Phrase Capture
-**Story:** As a user, I want to capture phrases from my chats quickly so that I can review them later.
+### User Story 1: Quick Word Capture
+**Story:** As a user, I want to capture words I encounter quickly so that I can review them later.
 **Priority:** P0
 **Acceptance Criteria:**
-- [ ] Capture phrases via shared text from communication apps
-- [ ] Add phrases manually with minimal input
-- [ ] Detect and suggest language and translation automatically
+- [ ] Capture words via text input on mobile-optimized interface
+- [ ] Auto-detect language (source or target)
+- [ ] Auto-translate and assign category
+- [ ] Generate native audio pronunciation via TTS
 **Dependencies:** None
 **Estimated Complexity:** Medium
 
-### User Story 2: Smart Cards with Audio
-**Story:** As a user, I want to listen to native audio pronunciations so that I can improve my speaking skills.
+### User Story 2: Dynamic Sentence Review
+**Story:** As a user, I want to review words in fresh, contextual sentences so that I learn to recognize them in varied contexts.
 **Priority:** P0
 **Acceptance Criteria:**
-- [ ] Display text and translation for each phrase
-- [ ] Provide high-quality native audio for pronunciation
-- [ ] Include context sentences for better understanding
+- [ ] Generate unique sentences combining 2-4 related due words
+- [ ] Never repeat the same sentence/word combination
+- [ ] Provide high-quality native audio for each sentence
+- [ ] Support multiple exercise types (fill-blank, multiple choice, type translation)
 **Dependencies:** User Story 1
 **Estimated Complexity:** Large
 
-### User Story 3: Spaced Repetition System
-**Story:** As a user, I want to review phrases at the right time so that I retain them longer.
+### User Story 3: FSRS-Based Spaced Repetition
+**Story:** As a user, I want words scheduled at optimal review times so that I retain them with minimal effort.
 **Priority:** P0
 **Acceptance Criteria:**
-- [ ] Schedule reviews based on user retention data
-- [ ] Adapt difficulty based on user's recall accuracy
-- [ ] Notify users when reviews are due
+- [ ] Implement FSRS-4.5 algorithm with 4-point rating scale
+- [ ] Calculate next review based on individual word difficulty and stability
+- [ ] Track mastery via 3-correct-recalls-on-separate-sessions rule
+- [ ] Show "Ready to Use" status when mastery achieved
 **Dependencies:** User Story 2
 **Estimated Complexity:** Large
 
-### User Story 4: Tagging and Collections
-**Story:** As a user, I want to group phrases by context so that I can focus on specific areas as needed.
+### User Story 4: Word Organization (Tags & Categories)
+**Story:** As a user, I want to browse and filter my words by category so that I can focus on specific areas.
 **Priority:** P1
 **Acceptance Criteria:**
-- [ ] Allow users to create and assign tags
-- [ ] Facilitate review sessions by tag or collection
-- [ ] Preload common tags with starter packages
-**Dependencies:** User Story 2
+- [ ] View words grouped by auto-assigned category
+- [ ] Allow users to create and assign custom tags
+- [ ] Filter review sessions by category or tag
+**Dependencies:** User Story 1
 **Estimated Complexity:** Medium
 
-### User Story 5: Basic Progress Overview
-**Story:** As a user, I want to see my progress so that I stay motivated.
+### User Story 5: Progress & Mastery Dashboard
+**Story:** As a user, I want to see my learning progress so that I stay motivated and know what I've mastered.
 **Priority:** P2
 **Acceptance Criteria:**
-- [ ] Display metrics such as cards added and reviews completed
-- [ ] Show retention rate and active streaks
+- [ ] Display words captured, reviewed, and mastered counts
+- [ ] Show retention rate and streak
+- [ ] List "Ready to Use" words separately
 - [ ] Update statistics in real-time
 **Dependencies:** User Story 3
 **Estimated Complexity:** Medium
 
 ## Development Epics
 
-### Epic 1: Phrase Capture
-**Goal:** Enable users to capture phrases effortlessly from various sources
-**User Stories Included:** US-1
-**Tasks:**
-- **Task 1.1:** Implement phrase capture from apps via sharing
-  - **Acceptance Criteria:**
-    - [ ] Integrate with WhatsApp, Telegram for phrase sharing
-    - [ ] Support manual phrase entry
-  - **Estimated Effort:** 16 hours
-
-- **Task 1.2:** Automatic language detection and translation
-  - **Acceptance Criteria:**
-    - [ ] Detect language of captured phrase
-    - [ ] Suggest translation automatically
-  - **Estimated Effort:** 12 hours
-
-### Epic 2: Smart Card Management
-**Goal:** Create and manage smart cards with text and audio
-**User Stories Included:** US-2
-**Tasks:**
-- **Task 2.1:** Implement smart card creation from phrases
-  - **Acceptance Criteria:**
-    - [ ] Convert phrases into smart cards
-    - [ ] Attach native audio to cards
-  - **Estimated Effort:** 20 hours
-
-- **Task 2.2:** Display smart card details
-  - **Acceptance Criteria:**
-    - [ ] Show text, translation, and audio in card view
-  - **Estimated Effort:** 12 hours
-
-### Epic 3: Spaced Repetition System
-**Goal:** Optimize learning retention with a spaced repetition review system
-**User Stories Included:** US-3
-**Tasks:**
-- **Task 3.1:** Develop review scheduling algorithm
-  - **Acceptance Criteria:**
-    - [ ] Schedule reviews based on retention data
-  - **Estimated Effort:** 24 hours
-
-- **Task 3.2:** Integrate notifications for due reviews
-  - **Acceptance Criteria:**
-    - [ ] Notify users when reviews are due
-  - **Estimated Effort:** 10 hours
-
-### Epic 4: Tagging and Collections
-**Goal:** Organize phrases contextually with tags and collections
-**User Stories Included:** US-4
-**Tasks:**
-- **Task 4.1:** Implement tag creation and assignment
-  - **Acceptance Criteria:**
-    - [ ] Allow users to create and assign tags to phrases
-  - **Estimated Effort:** 14 hours
-
-- **Task 4.2:** Facilitate reviews by tags
-  - **Acceptance Criteria:**
-    - [ ] Enable review sessions focused on specific tags
-  - **Estimated Effort:** 10 hours
-
-### Epic 5: Basic Progress Overview
-**Goal:** Provide users with insights into their learning progress
-**User Stories Included:** US-5
-**Tasks:**
-- **Task 5.1:** Develop progress metrics dashboard
-  - **Acceptance Criteria:**
-    - [ ] Show metrics such as cards added and reviews completed
-  - **Estimated Effort:** 15 hours
-
-- **Task 5.2:** Implement real-time statistics update
-  - **Acceptance Criteria:**
-    - [ ] Update retention rate and active streaks in real-time
-  - **Estimated Effort:** 12 hours
-
-### Epic X: Technical Foundation
+### Epic 0: Technical Foundation
 **Goal:** Establish technical infrastructure needed to support feature development
 **Tasks:**
-- Project initialization and framework setup
-- Database schema design and migrations
-- Authentication implementation
-- Deployment pipeline and hosting setup
-- Basic error handling and logging
-- Environment configuration
+- Next.js 14+ project initialization with TypeScript
+- Supabase project setup (database, auth, storage)
+- Drizzle ORM schema and migrations
+- Zustand store setup
+- Vercel deployment pipeline
+- Environment configuration (.env.local, .env.production)
+- Sentry error tracking integration
+- PWA manifest and Service Worker setup
+
+### Epic 1: Word Capture
+**Goal:** Enable users to capture words effortlessly
+**User Stories Included:** US-1
+**Tasks:**
+- **Task 1.1:** Word capture UI and API
+  - **Acceptance Criteria:**
+    - [ ] Mobile-optimized text input
+    - [ ] POST /api/words endpoint
+    - [ ] Word stored in database
+  - **Estimated Effort:** 12 hours
+
+- **Task 1.2:** Language detection and translation
+  - **Acceptance Criteria:**
+    - [ ] Auto-detect source/target language
+    - [ ] Auto-translate via OpenAI API
+    - [ ] Auto-assign category via GPT-4
+  - **Estimated Effort:** 8 hours
+
+- **Task 1.3:** Audio generation
+  - **Acceptance Criteria:**
+    - [ ] Generate TTS audio via OpenAI TTS
+    - [ ] Store in Supabase Storage
+    - [ ] Return audio URL with word
+  - **Estimated Effort:** 8 hours
+
+### Epic 2: Dynamic Sentence Generation
+**Goal:** Generate unique, contextual sentences for review
+**User Stories Included:** US-2
+**Tasks:**
+- **Task 2.1:** Word-matching algorithm
+  - **Acceptance Criteria:**
+    - [ ] Group words by category
+    - [ ] Cluster by due date proximity (7-day window)
+    - [ ] Generate 2-4 word combinations
+    - [ ] Filter out used combinations
+  - **Estimated Effort:** 16 hours
+
+- **Task 2.2:** Sentence generation via LLM
+  - **Acceptance Criteria:**
+    - [ ] Generate sentences via GPT-4
+    - [ ] Validate sentence contains target words
+    - [ ] Max 10 words per sentence
+    - [ ] Store with wordIdsHash for dedup
+  - **Estimated Effort:** 12 hours
+
+- **Task 2.3:** Batch pre-generation system
+  - **Acceptance Criteria:**
+    - [ ] Trigger on app foreground
+    - [ ] Trigger after word capture
+    - [ ] Trigger on connectivity restoration
+    - [ ] Pre-generate 7 days of sentences
+  - **Estimated Effort:** 10 hours
+
+### Epic 3: FSRS Review System
+**Goal:** Optimize learning retention with FSRS algorithm
+**User Stories Included:** US-3
+**Tasks:**
+- **Task 3.1:** FSRS integration
+  - **Acceptance Criteria:**
+    - [ ] Integrate ts-fsrs library
+    - [ ] 4-point rating scale (Again, Hard, Good, Easy)
+    - [ ] Update difficulty, stability, retrievability on review
+    - [ ] Calculate next review date
+  - **Estimated Effort:** 16 hours
+
+- **Task 3.2:** Session management
+  - **Acceptance Criteria:**
+    - [ ] Create ReviewSession entity
+    - [ ] New session after 2-hour gap
+    - [ ] Track session boundaries for mastery
+  - **Estimated Effort:** 8 hours
+
+- **Task 3.3:** Mastery tracking
+  - **Acceptance Criteria:**
+    - [ ] Track consecutiveCorrectSessions
+    - [ ] Prevent same-session double-counting
+    - [ ] Update masteryStatus to 'ready_to_use' after 3 correct
+  - **Estimated Effort:** 8 hours
+
+- **Task 3.4:** Review UI
+  - **Acceptance Criteria:**
+    - [ ] Display sentence with blanked/highlighted words
+    - [ ] Multiple exercise types (fill-blank, multiple-choice, type)
+    - [ ] Immediate feedback on answer
+    - [ ] Audio playback
+  - **Estimated Effort:** 20 hours
+
+### Epic 4: Word Organization
+**Goal:** Browse and filter words by category and tags
+**User Stories Included:** US-4
+**Tasks:**
+- **Task 4.1:** Notebook/browse view
+  - **Acceptance Criteria:**
+    - [ ] View words grouped by category
+    - [ ] Search and filter
+    - [ ] Word detail view
+  - **Estimated Effort:** 12 hours
+
+- **Task 4.2:** Custom tags
+  - **Acceptance Criteria:**
+    - [ ] Create and assign tags to words
+    - [ ] Filter by tag
+  - **Estimated Effort:** 8 hours
+
+### Epic 5: Progress Dashboard
+**Goal:** Provide users with learning progress insights
+**User Stories Included:** US-5
+**Tasks:**
+- **Task 5.1:** Progress metrics
+  - **Acceptance Criteria:**
+    - [ ] Words captured, reviewed, mastered counts
+    - [ ] Retention rate calculation
+    - [ ] Streak tracking
+  - **Estimated Effort:** 12 hours
+
+- **Task 5.2:** Ready to Use list
+  - **Acceptance Criteria:**
+    - [ ] List words with 'ready_to_use' status
+    - [ ] Celebration modal on mastery
+  - **Estimated Effort:** 6 hours
 
 ## Implementation Phases
 
-### Phase 1: Foundation & Core Features (Weeks 1-2)
-**Epics:** Technical Foundation, Epic 1, Epic 2
+### Phase 1: Foundation & Word Capture
+**Epics:** Epic 0 (Foundation), Epic 1 (Word Capture)
 **Key Deliverables:**
-- Project setup with database and authentication
-- Phrase capture and smart card creation
+- Next.js + Supabase infrastructure
+- Word capture with auto-translation and TTS audio
 **Exit Criteria:**
-- [ ] Successful phrase capture and smart card creation
+- [ ] User can sign up and capture words
+- [ ] Words have audio pronunciation
 
-### Phase 2: Secondary Features & Integration (Weeks 3-4)
-**Epics:** Epic 3, Epic 4
+### Phase 2: Dynamic Sentence Generation
+**Epics:** Epic 2 (Sentence Generation)
 **Key Deliverables:**
-- Spaced repetition system and tagging implementation
+- Word-matching algorithm
+- Sentence generation via GPT-4
+- Batch pre-generation system
 **Exit Criteria:**
-- [ ] Review scheduling and tag-based reviews functional
+- [ ] Sentences generated combining 2-4 related words
+- [ ] No sentence repetition
 
-### Phase 3: Polish & Launch Prep (Week 5)
-**Epics:** Epic 5, Final polish tasks
+### Phase 3: FSRS Review System
+**Epics:** Epic 3 (FSRS Review)
 **Key Deliverables:**
-- Progress overview dashboard
-- Final testing and optimization
+- FSRS-4.5 algorithm integration
+- Session management
+- Mastery tracking (3 correct recalls)
+- Review UI with multiple exercise types
 **Exit Criteria:**
-- [ ] All features meet acceptance criteria and are stable
+- [ ] Reviews scheduled based on FSRS
+- [ ] Mastery status updates after 3 correct sessions
+
+### Phase 4: Organization & Progress
+**Epics:** Epic 4 (Organization), Epic 5 (Progress)
+**Key Deliverables:**
+- Notebook view by category
+- Custom tags
+- Progress dashboard
+**Exit Criteria:**
+- [ ] Users can browse and filter words
+- [ ] Progress metrics visible
+
+### Phase 5: Polish & Launch
+**Key Deliverables:**
+- PWA optimization (offline, install prompt)
+- Performance optimization
+- Bug fixes and polish
+**Exit Criteria:**
+- [ ] All P0 features stable
+- [ ] Audio plays <1s on mobile
+- [ ] Works offline with pre-generated content
 
 ## Testing Strategy
 
 ### Unit Testing
-- Components: Phrase capture, Smart card creation, Review scheduling
-- Framework: Jest with React Testing Library
+- **Framework:** Vitest with React Testing Library
+- **Components:** Word capture form, Review card, Audio player, Exercise types
+- **Services:** FSRS calculations, Word-matching algorithm, Category assignment
 
 ### Integration Testing
-- Key Points: API endpoints, Phrase capture to card conversion
-- User Flows: Phrase capture to review completion
+- **Framework:** Playwright for E2E tests
+- **Key Flows:**
+  - Word capture → Audio generation → Storage
+  - Review session → FSRS update → Mastery tracking
+  - Sentence generation → Combination dedup → Pre-caching
+- **API Tests:** All endpoints with realistic payloads
+
+### Verification Tests (Critical)
+1. **Data model test:** Create word → Generate 3 sentences → Verify none repeat
+2. **Mastery test:** Review word correctly 3x across 3 sessions → Verify 'ready_to_use' status
+3. **FSRS test:** Submit ratings 1-4 → Verify next review date changes appropriately
+4. **Offline test:** Go offline → Complete review with pre-cached content → Sync on reconnect
+5. **Latency test:** Sentence generation < 3s with batch pre-generation
 
 ### User Acceptance Testing
-- Validate with real users completing core workflows
-- Success: Positive feedback and successful task completion by 10+ users
+- Validate with 10+ real users completing core workflows
+- Success metrics: Session completion rate >80%, word capture friction <2s
 
 ## Deployment Plan
 
@@ -379,7 +675,7 @@ Client Request → Check Service Worker Cache →
 ### Rollback Plan
 - **Vercel Instant Rollback:** One-click rollback to previous deployment
 - **Database Migrations:** Use Drizzle migration rollback for schema changes
-- **Audio Files:** Keep previous versions in S3 for 30 days
+- **Audio Files:** Supabase Storage retains files; versioning not required
 
 ## Risk Assessment
 
@@ -388,37 +684,55 @@ Client Request → Check Service Worker Cache →
   - *Mitigation:* Require user interaction before first audio play; cache audio after first interaction; thorough iOS testing
 
 - **Risk 2:** TTS API costs escalate with usage
-  - *Mitigation:* Cache generated audio permanently; implement rate limiting; monitor costs per user
+  - *Mitigation:* Cache generated audio permanently in Supabase Storage; implement rate limiting; monitor costs per user
 
-- **Risk 3:** Mobile browser compatibility issues
-  - *Mitigation:* Test on real devices (iPhone Safari, Android Chrome); use progressive enhancement; polyfills for older browsers
+- **Risk 3:** LLM sentence generation latency
+  - *Mitigation:* Batch pre-generation; 7-day lookahead; trigger on foreground/capture/reconnect
 
-- **Risk 4:** Performance issues with spaced repetition calculations
-  - *Mitigation:* Optimize algorithm with ts-fsrs library; run calculations server-side; cache results
+- **Risk 4:** Word combination exhaustion (running out of unique combinations)
+  - *Mitigation:* Algorithm generates fresh combinations as new words added; allow sentence text variation even with same word combo after 30 days
 
 - **Risk 5:** Service Worker caching issues causing stale content
   - *Mitigation:* Implement cache versioning; proper cache invalidation; user-facing "Refresh" option
 
+- **Risk 6:** Supabase free tier limits
+  - *Mitigation:* Monitor usage; upgrade to Pro ($25/month) when approaching limits; free tier generous for MVP (500MB database, 1GB storage)
+
 ### Feature Risks
-- **Risk 1:** User adoption of capture feature may be low
-  - *Mitigation:* Enhance onboarding and in-app guidance
+- **Risk 1:** Dynamic sentence quality varies
+  - *Mitigation:* Validate sentences contain target words; max 10 words; prompt engineering for natural sentences
+
+- **Risk 2:** Category auto-assignment accuracy
+  - *Mitigation:* Allow user to edit category; improve prompt based on feedback; add confidence threshold
 
 ## Success Metrics
 
 ### Feature Adoption
-- Track usage of phrase capture and review sessions
+- Words captured per user per week (target: ≥10)
+- Session completion rate (target: ≥80%)
+- Review sessions per week per active user
 
 ### Technical Metrics
-- Monitor performance, error rates, and notification delivery
+- Word capture latency <2s
+- Sentence generation latency <3s (with pre-caching)
+- Audio playback start <1s
+- Error rate <5%
+
+### Learning Outcomes
+- 7-day word retention rate (target: ≥85%)
+- Words reaching 'ready_to_use' status per user per month
+- Average sessions to mastery (expect ~3-4)
 
 ### User Satisfaction
-- Collect qualitative feedback and track retention rates
+- 30-day user retention (target: ≥40%)
+- NPS score from in-app feedback
+- Qualitative feedback on sentence quality and variety
 
 ---
 
 **Implementation Principles:**
-1. **Feature-First:** Organize work around delivering complete user-facing features
+1. **Supabase-First:** Leverage Supabase ecosystem (auth, storage, realtime) before adding vendors
 2. **Incremental Delivery:** Build and test features incrementally
-3. **User-Centric:** Prioritize user stories that deliver the most value
+3. **Algorithm-Driven:** Core value comes from word-matching + FSRS algorithms
 4. **Quality Bar:** Each feature should meet acceptance criteria before moving on
 5. **Adaptability:** Be ready to adjust based on user feedback and technical discoveries

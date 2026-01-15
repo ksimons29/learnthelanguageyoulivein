@@ -100,21 +100,48 @@ LLYLI addresses these failures through:
 
 **FR-2.6** System validates generated sentence contains target words before presenting.
 
+**FR-2.7** System pre-generates sentences in batch (7-day lookahead) to ensure <3 second latency and offline capability.
+
+**FR-2.8** Pre-generation triggers on: app foreground, after new word capture, on connectivity restoration.
+
 ### 3. Review Session
 
 **FR-3.1** Session presents sentence with target word(s) blanked or highlighted based on exercise type.
 
-**FR-3.2** User provides answer (type translation, select correct option, or type missing word).
+**FR-3.2** User provides answer via one of three exercise types:
+- **Multiple choice**: Select correct word from 4 options (easiest, used for new/struggling words)
+- **Fill-in-the-blank**: Type the missing word in a sentence (medium difficulty)
+- **Type translation**: See word, type its translation (hardest, used for near-mastery words)
 
 **FR-3.3** System provides immediate feedback: correct/incorrect with correct answer shown.
 
-**FR-3.4** System updates FSRS parameters for each reviewed word based on recall success.
+**FR-3.4** User rates recall difficulty using 4-point FSRS scale:
+- **Again (1)**: Complete blackout or wrong answer
+- **Hard (2)**: Correct but required significant effort
+- **Good (3)**: Correct with normal effort
+- **Easy (4)**: Correct, trivially easy
 
-**FR-3.5** Session continues until all due words reviewed or 20-minute soft limit reached.
+**FR-3.5** System updates FSRS parameters for each reviewed word based on rating.
 
-**FR-3.6** Session ends with "Done for today" screen showing words reviewed and streak.
+**FR-3.6** Session continues until all due words reviewed or 20-minute soft limit reached.
 
-**FR-3.7** Optional "Learn new words" button available after daily review complete for motivated users.
+**FR-3.7** Session ends with "Done for today" screen showing words reviewed and streak.
+
+**FR-3.8** Optional "Learn new words" button available after daily review complete for motivated users.
+
+### 3A. Session Definition
+
+**FR-3A.1** A "review session" is defined as a continuous period of review activity.
+
+**FR-3A.2** A new session begins when:
+- User explicitly starts a review from the home screen, AND
+- More than 2 hours have elapsed since the previous session's last activity
+
+**FR-3A.3** If user returns within 2 hours, they continue the existing session (no new session created).
+
+**FR-3A.4** Session boundaries are critical for mastery tracking: the "3 correct recalls on separate sessions" requirement (FR-5.1) requires recalls in 3 distinct sessions, not 3 correct answers within one session.
+
+**FR-3A.5** Each session tracks: session ID, start time, end time, words reviewed count, correct count.
 
 ### 4. Scheduling (FSRS Implementation)
 
