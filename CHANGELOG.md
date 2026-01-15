@@ -4,6 +4,71 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-15 - Progress & Review Pages Alignment
+
+**Session Focus**: Bring Progress and Review pages into alignment with the Moleskine design system established on Home/Notebook pages
+
+### What Was Done
+
+#### 1. Progress Page Redesign
+Complete overhaul to match Moleskine aesthetic:
+- Added `notebook-bg`, `ribbon-bookmark`, and `elastic-band` elements
+- Header now uses `heading-serif ink-text` typography with subtitle
+- Section headers include colored indicator bars and Lucide icons:
+  - Due Today: `TrendingUp` icon with coral accent
+  - Struggling: `AlertCircle` icon with warning accent
+  - Context Readiness: `Target` icon with teal accent
+- Cards wrapped with `binding-edge-stitched` and `page-stack-3d` effects
+- BrandWidget upgraded from `sm/ghost` to `lg/default` with `shadow-lifted`
+
+#### 2. Review Page Updates
+- Added `elastic-band` element (already had ribbon-bookmark)
+- ReviewHeader component updated:
+  - BrandWidget changed from `xs/ghost` to `md/default`
+  - Close button now uses notebook-style muted background
+  - Consistent visual weight with other pages
+
+#### 3. Review Complete Page Redesign
+Full transformation to celebrate session completion:
+- Added notebook background elements (ribbon, elastic band)
+- Trophy icon in green success circle as visual reward
+- Stats card with binding edge and stitch divider
+- Dashed separator using `notebook-stitch` pattern
+- Tomorrow preview with calendar icon and teal border
+- "Done" button with coral binding edge and hover effects
+- Removed generic Card/Button components in favor of custom Moleskine styling
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/app/progress/page.tsx` | Complete Moleskine redesign |
+| `web/src/app/review/page.tsx` | Added elastic band element |
+| `web/src/app/review/complete/page.tsx` | Full celebration-style redesign |
+| `web/src/components/review/review-header.tsx` | Consistent BrandWidget styling |
+
+### Design Consistency Achieved
+
+All pages now follow the same template:
+```
+<div className="min-h-screen notebook-bg relative">
+  <div className="ribbon-bookmark" />
+  <div className="elastic-band ..." />
+  <div className="mx-auto max-w-md px-5 py-6">
+    <header with heading-serif + BrandWidget lg/default />
+    <content with page-stack-3d and binding-edge cards />
+  </div>
+</div>
+```
+
+### Technical Notes
+
+- Build passes with 0 errors
+- Removed dependency on generic Card/Button components where custom Moleskine styling was more appropriate
+- Consistent use of CSS custom properties (--accent-nav, --accent-ribbon, --text-heading, etc.)
+
+---
+
 ## 2026-01-15 - Moleskine Design Enhancement & Icon Organization
 
 **Session Focus**: Transform the UI into an immersive Moleskine notebook aesthetic with realistic paper textures, and organize branding assets
