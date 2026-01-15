@@ -1,7 +1,9 @@
 # LLYLI Screen Order - Logical User Flow
 
 ## Screens Overview
-Total: 12 screens across onboarding, main app flow, and reference views
+Total: 13 screens across onboarding, main app flow, and reference views
+
+**Recent Update (2026-01-15)**: Added dedicated Notebook screen to separate word browsing from analytics. Progress now focuses on stats/analytics while Notebook handles category browsing and word management.
 
 ---
 
@@ -102,19 +104,38 @@ Total: 12 screens across onboarding, main app flow, and reference views
 
 ## 3. Reference Screens (Accessible Anytime)
 
-### 3.1 Progress
-- **Purpose**: Shows overall learning statistics and word categories
+### 3.1 Notebook - Browse Words
+- **Purpose**: Browse and organize captured words by category
+- **Page ID**: `0M6X85P5kILsY5gcWM4qX`
+- **Features**:
+  - Search bar for finding phrases quickly
+  - **Inbox section** (highlighted): New & untagged phrases (5 items shown with badge)
+  - **Categories section**: Emoji-based category cards
+    - 🏢 Work: 24 phrases · 8 due
+    - 💬 Social: 15 phrases · 3 due
+    - 🛍️ Shopping: 9 phrases · 2 due
+  - Each category shows total count + due count
+  - Chevron (›) indicates tappable to view category details
+  - ⓘ Info icon (top-right) → Info page
+- **Actions**:
+  - Tap search → Search phrases
+  - Tap Inbox → View untagged phrases
+  - Tap category → View category detail + practice
+  - Bottom nav → Home, Capture, Review, Notebook (selected), Progress
+
+### 3.2 Progress
+- **Purpose**: Shows overall learning statistics and analytics
 - **Page ID**: `pVJcuX67RRdzbrcloek5R`
 - **Features**:
   - Total words captured
   - Words mastered (with "Ready to Use" badge)
-  - Category breakdown
+  - Learning analytics and trends
   - ⓘ Info icon (top-right) → Info page
 - **Actions**:
-  - Tap word category → Word Detail View
-  - Bottom nav → Home, Capture, Review
+  - View detailed stats
+  - Bottom nav → Home, Capture, Review, Notebook, Progress (selected)
 
-### 3.2 Word Detail View
+### 3.3 Word Detail View
 - **Purpose**: Shows full details for a specific word/phrase
 - **Page ID**: `AFQ-WusaCY2O7domBKc5C`
 - **Features**:
@@ -126,9 +147,9 @@ Total: 12 screens across onboarding, main app flow, and reference views
   - ⓘ Info icon (top-right, positioned at 240px to avoid Edit button) → Info page
 - **Actions**:
   - "Edit" button
-  - Back to Progress
+  - Back to Notebook or Progress (depending on entry point)
 
-### 3.3 Info - How LLYLI Works
+### 3.4 Info - How LLYLI Works
 - **Purpose**: Comprehensive explanation of app methodology and science
 - **Page ID**: `lkvTr-rKTaAlsbm4JvLRe`
 - **Features**:
@@ -154,24 +175,33 @@ Total: 12 screens across onboarding, main app flow, and reference views
 ## Screen Count Summary
 - **Onboarding**: 3 screens (first-time only)
 - **Main Flow**: 6 screens (Home, Capture, Review, Feedback, Done, Celebration)
-- **Reference**: 3 screens (Progress, Word Detail, Info)
-- **Total**: 12 screens
+- **Reference**: 4 screens (Notebook, Progress, Word Detail, Info)
+- **Total**: 13 screens
 
 ---
 
 ## Navigation Patterns
 
 ### Bottom Navigation (persistent on main screens)
-- Home icon → Home - Today
-- Plus icon → Quick Capture
-- Progress icon → Progress
+**5-tab navigation** (iOS standard):
+1. 🏠 Home → Home - Today
+2. ➕ Capture → Quick Capture
+3. 📝 Review → Review Session (if words are due)
+4. 📓 Notebook → Notebook - Browse Words
+5. 📊 Progress → Progress (analytics/stats)
+
+**Design Rationale**:
+- Separates browsing (Notebook) from analytics (Progress) for clearer mental model
+- Inbox feature in Notebook surfaces new, untagged captures
+- All 5 core functions accessible in one tap
 
 ### ⓘ Info Icon (top-right on all screens except onboarding and modals)
 - Present on: Home, Quick Capture, Review Session, Review Feedback, Done for Today, Progress, Word Detail
 - Action: Opens Info - How LLYLI Works (scrollable)
 
 ### Back Button
-- Word Detail View → Progress
+- Word Detail View → Notebook or Progress (depending on entry point)
+- Category Detail → Notebook
 - All screens can navigate back logically
 
 ---
@@ -196,5 +226,6 @@ Total: 12 screens across onboarding, main app flow, and reference views
 
 ---
 
-*Last updated: 2026-01-14*
+*Last updated: 2026-01-15*
 *Frame0 file: prototypes/web/LLYLI.f0*
+*Update: Added dedicated Notebook screen (13 screens total) with 5-tab navigation*
