@@ -4,6 +4,178 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-15 - Brand Widget Integration
+
+**Session Focus**: Integrate LLYLI brand mascot/widget across all pages for brand recognition and help functionality
+
+### What Was Done
+
+#### 1. Created Brand Widget Component
+- Built reusable `BrandWidget` component with CVA-based variants
+- **Size variants**: `xs`, `sm`, `md`, `lg`, `xl` for different contexts
+- **Style variants**: `default` (teal bg), `ghost` (transparent), `outlined` (border), `floating` (shadow)
+- Interactive dialog with app information when clicked
+- Displays key features: Capture Phrases, Native Audio, Smart Reviews, Real Context
+
+#### 2. Integrated Widget Across All Pages
+Replaced generic Info icons with the brand widget mascot:
+
+| Page | Location | Size | Variant |
+|------|----------|------|---------|
+| Home (`/`) | Header right | sm | ghost |
+| Notebook (`/notebook`) | Header right | sm | ghost |
+| Progress (`/progress`) | Header right | sm | ghost |
+| Capture (`/capture`) | Overlay top-right | sm | ghost |
+| Review (`/review`) | ReviewHeader right | xs | ghost |
+| Review Complete (`/review/complete`) | Header right | sm | ghost |
+
+#### 3. Created Info Dialog
+The brand widget opens a dialog explaining LLYLI's core features:
+- What LLYLI does (capture, audio, reviews, context)
+- Scientific methodology explanation
+- Version info and attribution
+
+### Files Created/Modified
+
+**New Files:**
+- `web/public/images/llyli-mascot.png` - Brand mascot image
+- `web/src/components/brand/brand-widget.tsx` - Main widget component
+- `web/src/components/brand/index.ts` - Barrel export
+
+**Modified Files:**
+- `web/src/app/page.tsx` - Added BrandWidget to header
+- `web/src/app/notebook/page.tsx` - Added BrandWidget to header
+- `web/src/app/progress/page.tsx` - Replaced Info link with BrandWidget
+- `web/src/app/capture/page.tsx` - Replaced Info link with BrandWidget
+- `web/src/app/review/complete/page.tsx` - Replaced Info link with BrandWidget
+- `web/src/components/review/review-header.tsx` - Replaced Info link with BrandWidget
+
+### Key Decisions
+
+**Decision 1: Widget as Info Button**
+- Mascot serves dual purpose: brand recognition + help/info access
+- Clicking opens informational dialog (replaces separate `/info` page)
+- Consistent interaction pattern across all pages
+
+**Decision 2: Ghost Variant for Headers**
+- Uses transparent background (`ghost` variant) in headers
+- Doesn't compete visually with primary CTAs
+- Subtle but recognizable brand presence
+
+**Decision 3: Smaller Size in Review Flow**
+- Uses `xs` size during review sessions
+- Minimizes distraction during learning
+- Still accessible for help if needed
+
+### Technical Notes
+
+- Build passes with 0 errors
+- Component uses Next.js Image optimization for mascot
+- Dialog uses existing Radix UI Dialog component
+- Follows existing CVA patterns from button.tsx
+
+### Next Actions
+
+1. Consider adding widget to bottom navigation or FAB area
+2. A/B test widget visibility vs. text-based help link
+3. Add analytics to track info dialog opens
+4. Consider adding contextual help content per page
+
+---
+
+## 2026-01-15 - Next.js Web App Implementation
+
+**Session Focus**: Convert prototype PNG mockups into production-ready Next.js screens with LLYLI brand colors
+
+### What Was Done
+
+#### 1. Project Foundation Setup
+- Created Next.js 14+ project in `/web` directory with App Router and TypeScript
+- Initialized shadcn/ui component library with Tailwind CSS v4
+- Configured LLYLI brand color tokens in CSS variables:
+  - Primary Teal: `#0A696D` (CTAs, selected states)
+  - Accent Coral: `#E85C48` (FAB, capture button)
+  - Background Cream: `#F8F3E6` (page backgrounds)
+  - Surface Beige: `#EFE1D6` (card backgrounds)
+  - Semantic colors: Success green, Warning orange, Danger red for feedback states
+
+#### 2. Shared Navigation Components
+- `BottomNav` - 5-tab persistent navigation (Today, Capture, Review, Notebook, Progress)
+- `FloatingActionButton` - Coral FAB for quick capture, hidden on review/capture screens
+- Both components use Lucide React icons (professional, not sketch-style)
+
+#### 3. Implemented 8 MVP Screens
+
+| Screen | Route | Key Components |
+|--------|-------|----------------|
+| **Home - Today** | `/` | CaptureButton, ReviewDueButton, CapturedTodayList, TodaysProgress |
+| **Quick Capture** | `/capture` | Bottom sheet modal with PhraseInput, camera/mic icons |
+| **Notebook** | `/notebook` | SearchBar, InboxCard (featured), CategoryCard list |
+| **Review Session** | `/review` | SentenceCard with word highlights, GradingButtons (semantic colors), RevealButton |
+| **Immediate Feedback** | (integrated in `/review`) | FeedbackCard showing success/hard state with next review date |
+| **Done for Today** | `/review/complete` | SessionSummaryCard with stats, TomorrowPreviewCard |
+| **Ready to Use Modal** | (component) | MasteryModal for 3-correct-recall celebration |
+| **Progress** | `/progress` | DueTodayCard, StrugglingCard (red borders), ContextReadinessCard |
+
+#### 4. Design Improvements Applied
+- **Color overhaul**: iOS blue → LLYLI teal throughout
+- **Grading buttons**: Changed from intensity-based blue to semantic colors (red=Hard, orange=Good, green=Easy) per Color Strategy document
+- **Word highlights**: Light teal background (`#E8F4F4`) for due words in sentences
+- **Cards**: White cards on cream background for contrast, beige surfaces for secondary elements
+- **Typography**: Inter font family with consistent hierarchy
+
+#### 5. Component Library Created (~25 components)
+```
+components/
+├── ui/           # shadcn/ui base components (Button, Card, Badge, Input, Sheet, Dialog)
+├── navigation/   # BottomNav, FloatingActionButton
+├── home/         # CaptureButton, ReviewDueButton, PhraseCard, CapturedTodayList, TodaysProgress
+├── capture/      # PhraseInput
+├── notebook/     # SearchBar, InboxCard, CategoryCard
+├── review/       # ReviewHeader, SentenceCard, GradingButtons, FeedbackCard, MasteryModal
+└── progress/     # DueTodayCard, StrugglingCard, ContextReadinessCard
+```
+
+### Key Design Decisions
+
+1. **Semantic grading colors**: Hard (red), Good (orange), Easy (green) provide instant visual feedback without reading text - follows Color Strategy document recommendations
+2. **Word highlighting**: Due words in sentences get light teal background to make mixed practice concept visually clear
+3. **Cream background**: Warm brand identity distinguishes from typical white app backgrounds
+4. **Coral accent for capture**: Makes the primary action (capture) stand out with warm, inviting color
+
+### Files Created
+
+**Configuration:**
+- `web/src/app/globals.css` - LLYLI color tokens and utilities
+- `web/src/app/layout.tsx` - Root layout with navigation
+
+**Pages:**
+- `web/src/app/page.tsx` - Home screen
+- `web/src/app/capture/page.tsx` - Quick capture
+- `web/src/app/notebook/page.tsx` - Notebook browser
+- `web/src/app/review/page.tsx` - Review session
+- `web/src/app/review/complete/page.tsx` - Session complete
+- `web/src/app/progress/page.tsx` - Progress dashboard
+
+**Components:** 25+ components across navigation, home, capture, notebook, review, and progress directories
+
+### Technical Notes
+
+- Build passes with 0 errors, 0 warnings
+- All screens use mock data (ready for API integration)
+- Development server runs at http://localhost:3000
+- Mobile-first responsive design (max-w-md container)
+
+### Next Steps
+
+1. Connect to Supabase backend for real data
+2. Implement FSRS algorithm integration
+3. Add audio playback functionality
+4. Create onboarding flow (3 screens)
+5. PWA configuration for offline support
+
+---
+
 ## 2026-01-14 - Frame0 Mockups Update
 
 **Session Focus**: Update Frame0 mobile mockups to match LLYLI product direction

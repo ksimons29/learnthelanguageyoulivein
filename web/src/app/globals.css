@@ -1,0 +1,185 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* LLYLI Brand Color Theme */
+@theme inline {
+  /* Core color mappings */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Standard shadcn colors */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* LLYLI Custom Colors */
+  --color-llyli-teal: var(--llyli-teal);
+  --color-llyli-teal-light: var(--llyli-teal-light);
+  --color-llyli-coral: var(--llyli-coral);
+  --color-llyli-coral-light: var(--llyli-coral-light);
+  --color-llyli-cream: var(--llyli-cream);
+  --color-llyli-beige: var(--llyli-beige);
+  --color-llyli-muted: var(--llyli-muted);
+  --color-llyli-taupe: var(--llyli-taupe);
+  --color-llyli-brown: var(--llyli-brown);
+
+  /* Semantic feedback colors */
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-warning: var(--warning);
+  --color-warning-light: var(--warning-light);
+  --color-danger: var(--danger);
+  --color-danger-light: var(--danger-light);
+
+  /* Border radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* LLYLI Brand Colors */
+  --llyli-teal: #0A696D;           /* Primary - CTAs, selected states */
+  --llyli-teal-light: #E8F4F4;     /* Light teal - highlights, backgrounds */
+  --llyli-coral: #E85C48;          /* Accent - FAB, capture button */
+  --llyli-coral-light: #FDF0EE;    /* Light coral - hover states */
+  --llyli-cream: #F8F3E6;          /* Background - page backgrounds */
+  --llyli-beige: #EFE1D6;          /* Surface - card backgrounds */
+  --llyli-muted: #5B7979;          /* Muted teal - secondary text */
+  --llyli-taupe: #B58B82;          /* Warm taupe - decorative */
+  --llyli-brown: #8C5B52;          /* Deep brown - accents */
+
+  /* Semantic Colors */
+  --success: #34C759;              /* Easy recall, correct answers */
+  --success-light: #E5F7EA;        /* Success background */
+  --warning: #FF9500;              /* Good recall, attention needed */
+  --warning-light: #FFF3E5;        /* Warning background */
+  --danger: #FF3B30;               /* Hard recall, errors */
+  --danger-light: #FFEBEA;         /* Danger background */
+
+  /* Core UI Colors - mapped to LLYLI */
+  --background: #F8F3E6;           /* Cream background */
+  --foreground: #24272C;           /* Dark slate text */
+  --card: #FFFFFF;                 /* White cards for contrast */
+  --card-foreground: #24272C;      /* Dark slate */
+  --popover: #FFFFFF;
+  --popover-foreground: #24272C;
+  --primary: #0A696D;              /* LLYLI Teal */
+  --primary-foreground: #FFFFFF;
+  --secondary: #EFE1D6;            /* Beige surface */
+  --secondary-foreground: #24272C;
+  --muted: #EFE1D6;                /* Beige muted */
+  --muted-foreground: #5B7979;     /* Muted teal text */
+  --accent: #E85C48;               /* Coral accent */
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF3B30;          /* Danger red */
+  --border: #BABEB3;               /* Neutral gray border */
+  --input: #EFE1D6;                /* Beige input background */
+  --ring: #0A696D;                 /* Teal focus ring */
+}
+
+.dark {
+  /* For now, just use light theme - this app doesn't need dark mode */
+  --background: #F8F3E6;
+  --foreground: #24272C;
+  --card: #FFFFFF;
+  --card-foreground: #24272C;
+  --popover: #FFFFFF;
+  --popover-foreground: #24272C;
+  --primary: #0A696D;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EFE1D6;
+  --secondary-foreground: #24272C;
+  --muted: #EFE1D6;
+  --muted-foreground: #5B7979;
+  --accent: #E85C48;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF3B30;
+  --border: #BABEB3;
+  --input: #EFE1D6;
+  --ring: #0A696D;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Custom utility classes for LLYLI */
+@layer utilities {
+  .text-llyli-teal {
+    color: var(--llyli-teal);
+  }
+  .bg-llyli-teal {
+    background-color: var(--llyli-teal);
+  }
+  .text-llyli-coral {
+    color: var(--llyli-coral);
+  }
+  .bg-llyli-coral {
+    background-color: var(--llyli-coral);
+  }
+  .bg-llyli-cream {
+    background-color: var(--llyli-cream);
+  }
+  .bg-llyli-beige {
+    background-color: var(--llyli-beige);
+  }
+  .border-llyli-teal {
+    border-color: var(--llyli-teal);
+  }
+  .text-success {
+    color: var(--success);
+  }
+  .bg-success {
+    background-color: var(--success);
+  }
+  .bg-success-light {
+    background-color: var(--success-light);
+  }
+  .text-warning {
+    color: var(--warning);
+  }
+  .bg-warning {
+    background-color: var(--warning);
+  }
+  .bg-warning-light {
+    background-color: var(--warning-light);
+  }
+  .text-danger {
+    color: var(--danger);
+  }
+  .bg-danger {
+    background-color: var(--danger);
+  }
+  .bg-danger-light {
+    background-color: var(--danger-light);
+  }
+}
