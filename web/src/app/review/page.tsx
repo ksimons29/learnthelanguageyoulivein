@@ -115,6 +115,9 @@ export default function ReviewPage() {
       {/* Ribbon bookmark */}
       <div className="ribbon-bookmark" />
 
+      {/* Elastic band on right edge */}
+      <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
+
       <div className="mx-auto max-w-md px-5 py-4">
       {/* Header */}
       <ReviewHeader

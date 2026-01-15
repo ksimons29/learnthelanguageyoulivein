@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Flame } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Flame, Trophy, Target, Calendar } from "lucide-react";
 import { BrandWidget } from "@/components/brand";
 
 // Mock data - will be replaced with real data
@@ -23,71 +21,218 @@ export default function ReviewCompletePage() {
   };
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-background px-4 py-6">
-      {/* Header with brand widget */}
-      <div className="flex justify-end mb-8">
-        <BrandWidget size="sm" variant="ghost" tooltipText="About LLYLI" />
-      </div>
+    <div className="min-h-screen notebook-bg relative">
+      {/* Ribbon bookmark hanging from top */}
+      <div className="ribbon-bookmark" />
 
-      {/* Title */}
-      <h1 className="mb-8 text-center text-3xl font-bold text-foreground">
-        Session Complete
-      </h1>
+      {/* Elastic band on right edge */}
+      <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
-      {/* Stats Card */}
-      <Card className="mb-6 border-border bg-white p-6">
-        <div className="text-center mb-4">
-          <p className="text-5xl font-bold text-primary">
-            {mockSessionStats.reviewed}
+      <div className="mx-auto max-w-md px-5 py-6">
+        {/* Header with brand widget */}
+        <div className="flex justify-end mb-8">
+          <BrandWidget
+            size="lg"
+            variant="default"
+            tooltipText="About LLYLI"
+            className="shadow-lifted"
+          />
+        </div>
+
+        {/* Title */}
+        <div className="text-center mb-8">
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+            style={{
+              backgroundColor: "var(--state-good)",
+              boxShadow: "0 4px 12px rgba(58, 141, 66, 0.3)",
+            }}
+          >
+            <Trophy className="h-8 w-8 text-white" />
+          </div>
+          <h1
+            className="text-4xl heading-serif ink-text tracking-tight"
+            style={{ color: "var(--text-heading)" }}
+          >
+            Session Complete
+          </h1>
+          <p
+            className="text-sm mt-2 handwritten"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Great work on your learning today!
           </p>
-          <p className="text-muted-foreground">phrases reviewed</p>
         </div>
 
-        <div className="h-px bg-border my-4" />
+        {/* Stats Card */}
+        <div className="page-stack-3d mb-6">
+          <div
+            className="rounded-r-xl rounded-l-sm p-6 relative"
+            style={{
+              backgroundColor: "var(--surface-page)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+            }}
+          >
+            {/* Binding edge */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-3 rounded-l-sm"
+              style={{
+                background:
+                  "linear-gradient(90deg, var(--accent-nav) 0%, rgba(12, 107, 112, 0.7) 100%)",
+              }}
+            />
+            <div
+              className="absolute left-1.5 top-3 bottom-3 w-0.5"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, rgba(248,243,231,0.4) 6px, rgba(248,243,231,0.4) 10px)",
+              }}
+            />
 
-        <div className="flex items-center justify-around">
-          <div className="text-center">
-            <p className="text-xl font-semibold text-foreground">
-              {mockSessionStats.accuracy}%
-            </p>
-            <p className="text-xs text-muted-foreground">Accuracy</p>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1">
-              <p className="text-xl font-semibold text-foreground">
-                {mockSessionStats.streak} days
+            <div className="text-center mb-4">
+              <p
+                className="text-5xl font-bold"
+                style={{ color: "var(--accent-nav)" }}
+              >
+                {mockSessionStats.reviewed}
               </p>
-              <Flame className="h-5 w-5 text-warning" fill="currentColor" />
+              <p style={{ color: "var(--text-muted)" }}>phrases reviewed</p>
             </div>
-            <p className="text-xs text-muted-foreground">Streak</p>
+
+            <div
+              className="h-px my-4"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(to right, var(--notebook-stitch) 0px, var(--notebook-stitch) 4px, transparent 4px, transparent 8px)",
+              }}
+            />
+
+            <div className="flex items-center justify-around">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Target
+                    className="h-4 w-4"
+                    style={{ color: "var(--accent-nav)" }}
+                  />
+                </div>
+                <p
+                  className="text-xl font-semibold"
+                  style={{ color: "var(--text-heading)" }}
+                >
+                  {mockSessionStats.accuracy}%
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Accuracy
+                </p>
+              </div>
+              <div
+                className="h-10 w-px"
+                style={{ backgroundColor: "var(--notebook-stitch)" }}
+              />
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Flame
+                    className="h-4 w-4"
+                    style={{ color: "var(--accent-ribbon)" }}
+                    fill="currentColor"
+                  />
+                </div>
+                <p
+                  className="text-xl font-semibold"
+                  style={{ color: "var(--text-heading)" }}
+                >
+                  {mockSessionStats.streak} days
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Streak
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </Card>
 
-      {/* Tomorrow Preview */}
-      <div className="mb-8 rounded-xl border-2 border-primary bg-[var(--llyli-teal-light)] p-4">
-        <p className="text-sm text-muted-foreground">Tomorrow</p>
-        <p className="text-lg font-semibold text-foreground">
-          {mockSessionStats.tomorrowDue} phrases due
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="space-y-3">
-        <Link
-          href="/review"
-          className="block text-center text-accent font-medium hover:text-accent/80 transition-colors"
+        {/* Tomorrow Preview */}
+        <div
+          className="mb-8 rounded-xl p-4 relative overflow-hidden"
+          style={{
+            backgroundColor: "var(--accent-nav-light)",
+            border: "2px solid var(--accent-nav)",
+          }}
         >
-          Practice more
-        </Link>
+          <div className="flex items-center gap-3">
+            <Calendar
+              className="h-5 w-5"
+              style={{ color: "var(--accent-nav)" }}
+            />
+            <div>
+              <p
+                className="text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Tomorrow
+              </p>
+              <p
+                className="text-lg font-semibold"
+                style={{ color: "var(--text-heading)" }}
+              >
+                {mockSessionStats.tomorrowDue} phrases due
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <Button
-          onClick={handleDone}
-          className="w-full bg-primary py-6 text-lg font-semibold hover:bg-primary/90"
-        >
-          Done
-        </Button>
+        {/* Actions */}
+        <div className="space-y-4">
+          <Link
+            href="/review"
+            className="block text-center font-medium transition-colors"
+            style={{ color: "var(--accent-nav)" }}
+          >
+            Practice more
+          </Link>
+
+          <button
+            onClick={handleDone}
+            className="w-full py-5 text-lg font-semibold rounded-r-xl rounded-l-sm text-white transition-all hover:-translate-y-0.5 active:translate-y-0 relative"
+            style={{
+              backgroundColor: "var(--accent-ribbon)",
+              boxShadow: "0 4px 12px rgba(232, 92, 74, 0.3)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor =
+                "var(--accent-ribbon-hover)";
+              e.currentTarget.style.boxShadow =
+                "0 6px 16px rgba(232, 92, 74, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--accent-ribbon)";
+              e.currentTarget.style.boxShadow =
+                "0 4px 12px rgba(232, 92, 74, 0.3)";
+            }}
+          >
+            {/* Binding edge */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-4 rounded-l-sm"
+              style={{
+                background: "linear-gradient(90deg, #C04A3C 0%, #D94E3E 100%)",
+              }}
+            />
+            <div
+              className="absolute left-1.5 top-3 bottom-3 w-0.5"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, rgba(255,255,255,0.3) 6px, rgba(255,255,255,0.3) 10px)",
+              }}
+            />
+            <span className="relative z-10">Done</span>
+          </button>
+        </div>
       </div>
     </div>
   );
