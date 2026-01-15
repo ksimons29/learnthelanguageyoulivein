@@ -3,39 +3,101 @@
 ## Executive Summary
 
 ### Core Value Proposition
-LLYI transforms real-life language encounters into memorable learning experiences by enabling users to capture, review, and retain phrases seamlessly through smart cards with native audio and a spaced repetition system.
+LLYI transforms real-life language encounters into memorable learning experiences by enabling users to capture, review, and retain phrases seamlessly through smart cards with **high-quality native audio** and a proven spaced repetition system.
+
+### Platform Approach
+**Version 1 (MVP)**: Responsive web application optimized for mobile and desktop browsers. This enables rapid iteration, instant updates, and cross-platform reach without app store dependencies.
+
+**Version 2**: Native iOS app with platform-specific features (Share Extension, Widgets, offline-first architecture).
 
 ### MVP Scope
-The MVP includes core features such as quick phrase capture from various sources, smart card creation with audio, a spaced repetition system for reviews, tagging and collections for organization, and a basic progress overview.
+The web MVP includes:
+- Quick phrase capture via text input (mobile-optimized)
+- Smart card creation with **high-quality native audio playback**
+- Spaced repetition system using FSRS algorithm
+- Tagging and collections for organization
+- Progress overview and analytics
+- Progressive Web App (PWA) capabilities for offline support
 
 ### Success Criteria
 - **Feature Completion:** All P0 features from PRD implemented and tested
 - **User Validation:** At least 30% of users utilize the capture feature daily with positive feedback from 500+ active users
 - **Technical Quality:** Core features work reliably with <5% error rate
+- **Audio Performance:** Audio playback starts within <1 second on mobile
+- **Mobile Experience:** Works seamlessly on iPhone Safari and Android Chrome
 
 ## Technical Architecture
 
 ### Tech Stack Recommendations
 
-**Recommended Stack for Web/Progressive Web App:**
+**Frontend:**
+- **Framework:** Next.js 14+ with App Router and React
+- **UI Components:** shadcn/ui with Tailwind CSS (mobile-first responsive design)
+- **State Management:** React Context API + Zustand for complex state
+- **PWA:** next-pwa for Progressive Web App capabilities
+- **Audio:** HTML5 Audio API with Web Audio API for advanced features
 
-- **Frontend Framework:** Next.js 14+ with React
-- **Backend/API:** Next.js API Routes with Server Actions
-- **Database:** Neon (Serverless PostgreSQL)
+**Backend/API:**
+- **API Layer:** Next.js API Routes with Server Actions
+- **Database:** Neon (Serverless PostgreSQL) or Supabase
 - **ORM:** Drizzle ORM
 - **Authentication:** NextAuth.js (Auth.js) or Clerk
-- **Hosting/Deployment:** Vercel
-- **UI Components:** shadcn/ui with Tailwind CSS
-- **Additional Services:**
-  - Stripe for payments
-  - Resend or SendGrid for transactional emails
-  - Vercel Blob or AWS S3 for file storage
-  - Vercel Analytics or Mixpanel for usage tracking
+- **File Storage:** Vercel Blob or AWS S3 (for audio files)
+- **Caching:** Vercel Edge caching + Redis (Upstash) for session data
+
+**Audio Services:**
+- **Text-to-Speech:** OpenAI TTS, Google Cloud Text-to-Speech, or ElevenLabs
+- **Audio Format:** AAC or MP3, 44.1kHz minimum
+- **Audio CDN:** Cloudflare or CloudFront for fast global delivery
+- **Audio Caching:** Service Worker caching for offline playback
+
+**Hosting & Deployment:**
+- **Platform:** Vercel (edge functions for low latency)
+- **CDN:** Vercel Edge Network (automatic)
+- **Analytics:** Vercel Analytics or Mixpanel
+- **Error Tracking:** Sentry
+
+**Additional Services:**
+- **LLM API:** OpenAI GPT-4 for sentence generation
+- **Spaced Repetition:** ts-fsrs library for FSRS algorithm
+- **Payments:** Stripe (future premium features)
+- **Email:** Resend or SendGrid for transactional emails
 
 ### Architecture Patterns
-- RESTful API design with server-side rendering for SEO
-- State management using React Context API
-- Integration with third-party services via API routes and webhooks
+- **Responsive-First Design:** Mobile-first CSS with breakpoints (375px, 768px, 1280px)
+- **Progressive Enhancement:** Core features work without JavaScript, enhanced with JS
+- **Server-Side Rendering:** Next.js SSR for fast initial page loads and SEO
+- **API Layer:** RESTful API design with Next.js API routes
+- **State Management:** React Context API for global state, local state for components
+- **PWA Architecture:** Service Worker for offline capabilities and caching
+
+### Audio Architecture
+
+**Audio Generation Pipeline:**
+1. User captures phrase → Backend validates and stores
+2. Backend calls TTS API (OpenAI/Google/ElevenLabs) for native pronunciation
+3. Audio file stored in CDN (S3 + CloudFront or Vercel Blob)
+4. Audio URL returned to frontend and cached
+
+**Audio Playback Strategy:**
+```
+Client Request → Check Service Worker Cache →
+  If cached: Play immediately (<100ms)
+  If not cached: Fetch from CDN → Cache → Play (<1s)
+```
+
+**Audio Optimization:**
+- **Format:** AAC (preferred for quality/size) or MP3 fallback
+- **Bitrate:** 128kbps (optimal for speech)
+- **Sample Rate:** 44.1kHz minimum
+- **Caching:** Service Worker caches all played audio
+- **Preloading:** Preload audio for due review cards in background
+- **Mobile Optimization:** Use native HTML5 `<audio>` element for iOS compatibility
+
+**Audio Quality Providers:**
+- **Primary:** OpenAI TTS (high quality, multilingual, cost-effective)
+- **Alternative:** Google Cloud TTS (good quality, wide language support)
+- **Premium Option:** ElevenLabs (ultra-realistic voices, higher cost)
 
 ### Data Model
 
@@ -56,14 +118,16 @@ The MVP includes core features such as quick phrase capture from various sources
   - Indexes: email for authentication lookup
 
 - **Phrase**
-  - Fields: id (uuid), text (string), language (string), translation (string), userId (uuid), createdAt (timestamp), updatedAt (timestamp)
+  - Fields: id (uuid), text (string), language (string), translation (string), audioUrl (string, nullable), userId (uuid), createdAt (timestamp), updatedAt (timestamp)
   - Relationships: belongs_to User, has_one SmartCard
   - Indexes: userId for user-specific retrieval
+  - Notes: audioUrl points to CDN-hosted TTS audio file
 
 - **SmartCard**
-  - Fields: id (uuid), phraseId (uuid), audioUrl (string), reviewSchedule (date), createdAt (timestamp), updatedAt (timestamp)
+  - Fields: id (uuid), phraseId (uuid), reviewSchedule (date), difficulty (float), stability (float), retrievability (float), lastReviewDate (timestamp), reviewCount (int), correctCount (int), createdAt (timestamp), updatedAt (timestamp)
   - Relationships: belongs_to Phrase, has_many Tags
-  - Indexes: phraseId for phrase lookup
+  - Indexes: phraseId for phrase lookup, reviewSchedule for due cards query
+  - Notes: FSRS parameters (difficulty, stability, retrievability) track learning progress
 
 - **Tag**
   - Fields: id (uuid), name (string), smartCardId (uuid), createdAt (timestamp), updatedAt (timestamp)
@@ -279,26 +343,61 @@ The MVP includes core features such as quick phrase capture from various sources
 ## Deployment Plan
 
 ### Environments
-- **Development:** Local setup for feature development
-- **Staging:** Vercel environment for testing and QA
-- **Production:** Vercel environment for live deployment
+- **Development:** Local Next.js dev server (`npm run dev`)
+- **Preview:** Vercel automatic preview deployments for every PR
+- **Staging:** Vercel staging environment (`staging.llyli.app`)
+- **Production:** Vercel production environment (`llyli.app` or custom domain)
 
 ### Deployment Process
-1. Develop and test locally
-2. Push to staging for QA testing
-3. Deploy to production after passing all tests
+1. **Local Development:**
+   - Develop features with hot reload
+   - Test on mobile viewports using browser DevTools
+   - Test audio on actual mobile devices (iPhone Safari, Android Chrome)
+
+2. **Pull Request:**
+   - Create PR → Vercel automatically deploys preview
+   - Review preview on multiple devices
+   - Run automated tests (Playwright for E2E, Vitest for unit)
+
+3. **Staging Deployment:**
+   - Merge to `staging` branch
+   - Automatic deploy to staging environment
+   - QA testing on staging
+
+4. **Production Deployment:**
+   - Merge to `main` branch
+   - Automatic deploy to production
+   - Monitor error rates and performance
+
+### PWA Deployment Checklist
+- [ ] Service Worker registered and caching static assets
+- [ ] manifest.json configured with app icons (192x192, 512x512)
+- [ ] iOS-specific meta tags for Add to Home Screen
+- [ ] Offline fallback page configured
+- [ ] Audio files cached for offline playback
 
 ### Rollback Plan
-- Revert to previous stable deployment on Vercel if issues occur
+- **Vercel Instant Rollback:** One-click rollback to previous deployment
+- **Database Migrations:** Use Drizzle migration rollback for schema changes
+- **Audio Files:** Keep previous versions in S3 for 30 days
 
 ## Risk Assessment
 
 ### Technical Risks
-- **Risk 1:** Integration with communication apps might fail
-  - *Mitigation:* Thorough testing with mock services
+- **Risk 1:** Audio playback issues on iOS Safari (autoplay restrictions)
+  - *Mitigation:* Require user interaction before first audio play; cache audio after first interaction; thorough iOS testing
 
-- **Risk 2:** Performance issues with spaced repetition calculations
-  - *Mitigation:* Optimize algorithm and load testing
+- **Risk 2:** TTS API costs escalate with usage
+  - *Mitigation:* Cache generated audio permanently; implement rate limiting; monitor costs per user
+
+- **Risk 3:** Mobile browser compatibility issues
+  - *Mitigation:* Test on real devices (iPhone Safari, Android Chrome); use progressive enhancement; polyfills for older browsers
+
+- **Risk 4:** Performance issues with spaced repetition calculations
+  - *Mitigation:* Optimize algorithm with ts-fsrs library; run calculations server-side; cache results
+
+- **Risk 5:** Service Worker caching issues causing stale content
+  - *Mitigation:* Implement cache versioning; proper cache invalidation; user-facing "Refresh" option
 
 ### Feature Risks
 - **Risk 1:** User adoption of capture feature may be low

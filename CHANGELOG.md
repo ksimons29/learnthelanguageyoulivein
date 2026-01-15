@@ -582,6 +582,279 @@ The mockups are now **finalized and ready for**:
 
 ---
 
+## 2026-01-15 - Strategic Platform Reorganization: Web-First MVP
+
+**Session Focus**: Reorganize project from iOS-first to web-first MVP with audio as primary feature, preserving all iOS content for Version 2
+
+### What Was Done
+
+#### 1. Strategic Platform Pivot
+- Shifted from native iOS MVP to responsive web application MVP
+- Reorganized all documentation to reflect V1 (web) → V2 (iOS) → V3 (Android) roadmap
+- Preserved all iOS planning for future execution after web validation
+- Positioned audio as a core feature alongside FSRS spaced repetition
+
+**Rationale:**
+- Existing web mockups (13 screens in `/prototypes/web/`) perfectly aligned with V1
+- Web enables faster iteration without App Store review delays
+- Universal reach (iPhone, Android, desktop) from day one
+- Validate learning methodology before platform-specific investment
+- Lower initial development cost (single codebase)
+
+#### 2. Updated PRD (`/docs/product/prd.md`)
+- Added web-first platform strategy section with V1/V2/V3 roadmap
+- Updated NFRs for web:
+  - Browser compatibility (Chrome 90+, Safari 14+, Firefox 88+)
+  - Responsive design breakpoints (375px, 768px, 1280px)
+  - Audio quality requirements (44.1kHz, <1s playback latency)
+  - PWA requirements (service worker, offline, install prompt)
+- Reorganized scope:
+  - In Scope: Text input, TTS audio, FSRS, PWA
+  - Out of Scope V2: iOS Share Extension, Widgets, offline-first, voice/camera input
+  - Out of Scope Future: Browser extension, native Android, chat integration
+- Updated roadmap section with phased approach (V1.0 web, V1.1 web enhancements, V2.0 iOS, V2.1 Android, V3.0 personalization)
+
+#### 3. Updated Implementation Plan (`/docs/engineering/implementation_plan.md`)
+- Emphasized web architecture (Next.js 14+ App Router, React, PWA)
+- Added comprehensive **Audio Architecture** section:
+  - Audio generation pipeline (phrase → TTS API → CDN → cache)
+  - Audio playback strategy (Service Worker cache check → fetch → play)
+  - Audio optimization (AAC/MP3, 128kbps, 44.1kHz, caching, preloading)
+  - TTS provider options (OpenAI TTS primary, Google TTS alternative, ElevenLabs premium)
+- Updated tech stack recommendations:
+  - Frontend: Next.js 14+, shadcn/ui, Tailwind, next-pwa, HTML5 Audio API
+  - Backend: Next.js API Routes, Neon/Supabase, Drizzle ORM
+  - Audio: OpenAI TTS, Vercel Blob/S3, CloudFront CDN
+  - Hosting: Vercel with edge functions
+- Enhanced data model with `audioUrl` field and FSRS parameters (difficulty, stability, retrievability)
+- Updated deployment plan with PWA checklist
+- Updated risk assessment for web-specific concerns (iOS Safari autoplay, TTS costs, mobile compatibility)
+
+#### 4. Updated Vision (`/docs/product/vision.md`)
+- Added Platform Evolution section explaining V1 (web) → V2 (iOS) → V3 (Android)
+- Updated vision statement to mention "web platform" and "hear them pronounced by native speakers"
+- Added audio as 4th core innovation (after capture, sentences, retention)
+- Updated value proposition with web-first benefits:
+  - "Web-first accessibility: No app store, works everywhere instantly"
+  - "High-quality audio: Native pronunciation for every word"
+- Updated long-term vision with realistic timelines:
+  - V1.0 (Months 1-6): Web MVP with audio
+  - V1.1 (Months 7-9): Web enhancements, browser extension
+  - V2.0 (Year 2): Native iOS after 10k users
+  - V2.1 (Year 2): Native Android
+  - V3.0 (Year 3): Personalization engine
+- Added new guiding principle: "Platform follows purpose"
+
+#### 5. Updated CLAUDE.md (`/.claude/CLAUDE.md`)
+- Updated platform context to show V1 (web), V2 (iOS), V3 (Android)
+- Updated Current Focus to emphasize web MVP with audio as primary feature
+- Fixed Key Documentation table with correct file paths:
+  - `/docs/product/prd.md`
+  - `/docs/product/vision.md`
+  - `/docs/engineering/implementation_plan.md`
+  - `/docs/design/wireframes.md`
+  - `/prototypes/web/SCREEN_ORDER.md`
+  - `/docs/product/v2_native_ios_roadmap.md` (new)
+
+#### 6. Created V2 Native iOS Roadmap (`/docs/product/v2_native_ios_roadmap.md`)
+**NEW COMPREHENSIVE DOCUMENT** preserving all iOS planning:
+
+**Contents:**
+- Complete iOS feature scope (Share Extension, Widgets, offline-first, haptic feedback, iCloud sync)
+- Technical architecture (SwiftUI, CoreData, CloudKit, AVFoundation)
+- Data model (CoreData entities with FSRS parameters)
+- Implementation phases (15-20 weeks total):
+  - Phase 1: Core iOS app (8-10 weeks)
+  - Phase 2: iOS-specific features (4-6 weeks)
+  - Phase 3: Testing & App Store (3-4 weeks)
+- iOS Human Interface Guidelines compliance checklist
+- Success metrics (30% web→iOS adoption, 50% Share Extension usage, 40% widget installation)
+- Prerequisites for V2 kickoff:
+  - 10,000+ active web users
+  - 87% retention validated
+  - Funding secured
+  - User demand confirmed
+- Strategic rationale: Why wait until V2?
+- Post-launch iterations (V2.1 Siri Shortcuts, V2.2 Apple Watch)
+
+#### 7. Updated iOS Next Steps (`/confabulator/ios-next-steps.md`)
+- Added warning header: "⚠️ IMPORTANT: This is V2 Planning"
+- Added reference to new comprehensive roadmap
+- Preserved original detailed implementation plan (8 epics, 11 phases) for future use
+- Status changed from "Ready for Development" to "Planned for Version 2 (Year 2)"
+
+#### 8. Created Platform Strategy Summary (`/docs/PLATFORM_STRATEGY_2026-01-15.md`)
+**NEW STRATEGIC DOCUMENT** explaining the reorganization:
+
+**Contents:**
+- Summary of what changed (iOS-first → web-first)
+- Complete list of updated documents with changes made
+- New file structure diagram
+- Strategic rationale (faster validation, universal reach, lower cost, better for audio MVP)
+- Audio architecture overview
+- Migration path for users (web → iOS seamless sync)
+- Next steps timeline (immediate, short-term, medium-term, long-term)
+- Success metrics for web MVP
+- Confirmation that all iOS content preserved, not deleted
+- Open questions with recommendations (TTS provider, PWA, database, FSRS library)
+
+### Files Created/Modified
+
+**Updated Files:**
+- `/docs/product/prd.md` - Web-first platform strategy, NFRs, roadmap
+- `/docs/engineering/implementation_plan.md` - Audio architecture, web stack, data model
+- `/docs/product/vision.md` - Platform evolution, audio innovation, phased vision
+- `/.claude/CLAUDE.md` - Platform context, current focus, documentation paths
+
+**New Files:**
+- `/docs/product/v2_native_ios_roadmap.md` - Comprehensive iOS V2 plan (15-20 weeks)
+- `/docs/PLATFORM_STRATEGY_2026-01-15.md` - Strategic reorganization summary
+
+**Modified Reference:**
+- `/confabulator/ios-next-steps.md` - Added V2 warning header and reference to new roadmap
+
+### Key Decisions
+
+**Decision 1: Web-First MVP (Not iOS-First)**
+- **Why:** Faster iteration, universal reach, lower cost, validate methodology first
+- **Evidence:** 13 web screens already designed in `/prototypes/web/`
+- **Timeline:** 6 months to web MVP vs. 9-12 weeks to iOS App Store (but iOS only serves Apple users)
+
+**Decision 2: Audio as Primary Feature**
+- **Why:** Pronunciation is as important as vocabulary retention for target audience
+- **Implementation:** TTS API integration, CDN delivery, Service Worker caching
+- **Providers:** OpenAI TTS (primary), Google TTS (alternative), ElevenLabs (premium)
+
+**Decision 3: Preserve All iOS Content for V2**
+- **Why:** iOS native apps still valuable for Share Extension, Widgets, offline-first
+- **When:** After 10,000 web users and validated 87% retention metric
+- **Document:** Comprehensive V2 roadmap created with all iOS planning intact
+
+**Decision 4: Progressive Web App (PWA)**
+- **Why:** Offline capabilities, install prompt, app-like experience without app store
+- **Implementation:** Service worker, manifest.json, iOS meta tags
+- **Benefit:** Best of both worlds - web reach + app-like UX
+
+### Audio Architecture Highlights
+
+**Audio Generation Pipeline:**
+1. User captures phrase → Backend validates
+2. Backend calls TTS API (OpenAI/Google/ElevenLabs)
+3. Audio file stored in CDN (S3 + CloudFront or Vercel Blob)
+4. Audio URL cached in database
+5. Frontend plays with <1s latency
+
+**Audio Optimization:**
+- Format: AAC (preferred) or MP3 fallback
+- Quality: 44.1kHz, 128kbps (optimal for speech)
+- Caching: Service Worker caches all played audio
+- Preloading: Background preload for due review cards
+- Mobile: HTML5 `<audio>` element for iOS Safari compatibility
+
+**TTS Provider Comparison:**
+- **OpenAI TTS:** High quality, cost-effective, multilingual → **Recommended for MVP**
+- **Google Cloud TTS:** Good quality, wide language support → Alternative
+- **ElevenLabs:** Ultra-realistic voices, higher cost → Premium option
+
+### Platform Strategy Rationale
+
+**Why Web-First Wins:**
+
+1. **Faster Validation** - Deploy instantly, iterate without App Store review (1-7 days per release)
+2. **Universal Reach** - iPhone, Android, desktop, tablet from single codebase
+3. **Lower Initial Cost** - One web codebase vs. iOS + Android + web
+4. **Better for Audio** - Web Audio API mature, TTS APIs integrate easily, Service Worker caching proven
+5. **Existing Mockups** - 13 screens already designed for web in `/prototypes/web/`
+
+**Why iOS V2 (Not V1):**
+
+Native iOS adds features web cannot match:
+- Share Extension (capture from WhatsApp, iMessage, Safari)
+- Widgets (Home/Lock Screen "words due" count)
+- Offline-First (full functionality without internet)
+- Haptic Feedback (tactile responses for mastery)
+- iCloud Sync (seamless cross-device)
+
+**But these require proven product-market fit first.** Web MVP validates core hypothesis before iOS investment.
+
+### Success Metrics (Web MVP)
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Page Load Time | <2s on 3G | Vercel Analytics |
+| Audio Playback Latency | <1s | Custom instrumentation |
+| 7-day Word Retention | ≥85% | Correct recall rate |
+| 30-day User Retention | ≥40% | Active users D30/D1 |
+| Mobile Usage | ≥70% | Device analytics |
+| Audio Feature Usage | ≥90% | Users who play audio |
+
+### Next Actions
+
+**Immediate (Week 1-2):**
+1. Set up Next.js 14+ project with PWA support (next-pwa)
+2. Choose TTS provider (recommend: OpenAI TTS)
+3. Set up database (recommend: Supabase for auth + storage + real-time)
+4. Design schema with audioUrl and FSRS fields
+5. Build audio playback POC (phrase → TTS → play)
+
+**Short-term (Month 1-2):**
+1. Implement core screens from `/prototypes/web/` (Home, Capture, Review)
+2. Integrate FSRS algorithm using ts-fsrs library
+3. Set up Vercel deployment pipeline
+4. Test on mobile devices (iPhone Safari, Android Chrome)
+
+**Medium-term (Month 3-6):**
+1. Complete all 13 screens from mockups
+2. Add PWA functionality (offline, install prompt)
+3. Launch beta to first 100 users
+4. Gather feedback and iterate
+5. Launch public V1.0
+
+**Long-term (Year 2):**
+1. Reach 10,000+ active web users
+2. Validate 87% retention metric
+3. Secure funding for iOS development
+4. Kickoff V2 iOS app using `/docs/product/v2_native_ios_roadmap.md`
+5. Launch iOS app on App Store
+
+### Key Achievements
+
+✅ **All documentation reorganized** for web-first platform strategy
+✅ **Audio positioned as core feature** with comprehensive architecture
+✅ **All iOS content preserved** in comprehensive V2 roadmap (not deleted)
+✅ **Clear phased approach** (V1 web → V2 iOS → V3 Android)
+✅ **Realistic timelines** based on user validation milestones
+✅ **Strategic rationale documented** for stakeholder communication
+✅ **Implementation-ready** with tech stack, architecture, and next steps defined
+
+### Documentation Organization
+
+```
+docs/
+├── product/
+│   ├── prd.md                      ✅ Updated for web MVP
+│   ├── vision.md                   ✅ Updated for phased approach
+│   ├── v2_native_ios_roadmap.md    ✅ NEW - iOS V2 comprehensive plan
+│   └── business_model_canvas.md    (Unchanged)
+├── engineering/
+│   └── implementation_plan.md      ✅ Updated for web + audio
+├── design/
+│   └── wireframes.md               (Unchanged - already web-focused)
+└── PLATFORM_STRATEGY_2026-01-15.md ✅ NEW - Reorganization summary
+
+prototypes/web/
+├── SCREEN_ORDER.md                 (Existing - 13 web screens)
+└── *.png                           (Existing - web mockups)
+
+.claude/
+└── CLAUDE.md                       ✅ Updated platform context
+
+confabulator/
+└── ios-next-steps.md               ✅ Marked as V2 planning
+```
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

@@ -40,10 +40,12 @@ src/                 # Source code
 Adults who live or work in a country where the main language is not their first language and really want to remember what they learn. Think expats, international professionals and students who already know some basics but need to function in real life at work, with landlords, schools and friends. They use both phone and laptop all day, are motivated to improve, and are already trying language apps or flashcards but feel they are not truly remembering or using the phrases they meet in daily life.
 
 ### Value Proposition
-Because it is built for people who actually want to remember the language they live in. Instead of a generic course, our app lets users capture real phrases from chats, emails, signs and conversations in a couple of taps and instantly turns them into smart cards they can both read and listen to, with clear native audio. A proven spaced repetition system keeps testing whether they still know a phrase and only resurfaces it when they are close to forgetting, so reviews stay short but effective. Compared with Duolingo-style apps or manual Anki decks, this is faster to capture, easier to maintain and much closer to the situations they face every day, which makes it more motivating and leads to better long-term retention.
+Because it is built for people who actually want to remember the language they live in. Instead of a generic course, our web app lets users capture real phrases via text input and instantly turns them into smart cards they can both read and listen to, with high-quality native audio pronunciation. A proven spaced repetition system keeps testing whether they still know a phrase and only resurfaces it when they are close to forgetting, so reviews stay short but effective. Compared with Duolingo-style apps or manual Anki decks, this is faster to capture, easier to maintain and much closer to the situations they face every day, which makes it more motivating and leads to better long-term retention.
 
 ### Platform
-mobile
+**Version 1 (Current):** Responsive web application (mobile + desktop browsers)
+**Version 2 (Planned):** Native iOS app with platform-specific features
+**Version 3 (Future):** Native Android app
 
 ## Tech Stack
 
@@ -51,15 +53,17 @@ TypeScript, JavaScript, Next.js, React, Shadcn, Tailwind, shadcn/ui, Radix UI, R
 
 ## Key Documentation
 
-**CRITICAL**: Before starting any work, familiarize yourself with the Confabulator documentation in `confabulator/`:
+**CRITICAL**: Before starting any work, familiarize yourself with the project documentation:
 
 | Document | Purpose | When to Reference |
 |----------|---------|-------------------|
-| `PRD.md` | Feature specs, user stories, acceptance criteria | Before implementing any feature |
-| `project-vision.md` | Problem statement, target users, goals | For strategic decisions |
-| `implementation-plan.md` | Architecture, tech stack, data model, API routes | Technical implementation |
-| `wireframes.md` | UI layouts, screen flows, component placement | Building UI components |
-| `business-model-canvas.md` | Revenue, costs, partnerships | Business logic decisions |
+| `/docs/product/prd.md` | Feature specs, user stories, acceptance criteria | Before implementing any feature |
+| `/docs/product/vision.md` | Problem statement, target users, goals, platform strategy | For strategic decisions |
+| `/docs/engineering/implementation_plan.md` | Web architecture, tech stack, data model, API routes | Technical implementation |
+| `/docs/design/wireframes.md` | UI layouts, screen flows, component placement | Building UI components |
+| `/prototypes/web/SCREEN_ORDER.md` | Screen flow and mockup reference | Understanding user journey |
+| `/docs/product/v2_native_ios_roadmap.md` | Future native iOS app plans | Understanding V2 roadmap |
+| `/docs/product/business_model_canvas.md` | Revenue, costs, partnerships | Business logic decisions |
 
 ## Development Guidelines
 
@@ -84,13 +88,19 @@ TypeScript, JavaScript, Next.js, React, Shadcn, Tailwind, shadcn/ui, Radix UI, R
 
 ## Current Focus
 
-The MVP focuses on these core capabilities:
+The **Version 1 Web MVP** focuses on these core capabilities:
 
-- •	Fast capture of real-life phrases from mobile (share from WhatsApp, browser, other apps) and manual add
-- •	Smart cards that show the phrase, translation, context sentence and allow the user to listen to high quality audio
-- •	Proven spaced repetition engine that schedules reviews, tests active recall and adapts to how well the user remembers each card
+- **Fast phrase capture:** Text input via mobile-optimized web interface (responsive design)
+- **High-quality native audio:** Every phrase gets TTS-generated native pronunciation
+- **Smart cards:** Display phrase, translation, context sentence with audio playback
+- **Spaced repetition engine:** FSRS algorithm schedules reviews, tests active recall, and adapts to user performance
+- **Progressive Web App (PWA):** Offline capabilities, installable on mobile devices
+- **Cross-platform:** Works seamlessly on mobile browsers (iOS Safari, Android Chrome) and desktop
 
-See `confabulator/implementation-plan.md` for the complete development roadmap.
+**Audio is a primary focus** for this MVP alongside the proven FSRS learning methodology.
+
+See `/docs/engineering/implementation_plan.md` for the complete web development plan.
+See `/docs/product/v2_native_ios_roadmap.md` for future native iOS app plans.
 
 ## Repository
 

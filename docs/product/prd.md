@@ -2,9 +2,13 @@
 
 ## Overview
 
-LLYLI is a mobile app that converts user-captured words into lasting vocabulary knowledge through dynamic sentence-based spaced repetition.
+LLYLI is a **web application** (mobile-responsive and desktop-accessible) that converts user-captured words into lasting vocabulary knowledge through dynamic sentence-based spaced repetition with high-quality audio.
 
-**MVP Goal:** Validate that dynamic sentence generation combined with FSRS scheduling delivers measurably better retention and engagement than static flashcard approaches.
+**MVP Goal:** Validate that dynamic sentence generation combined with FSRS scheduling delivers measurably better retention and engagement than static flashcard approaches, using a web-first platform to enable rapid iteration before native mobile apps.
+
+**Platform Strategy:**
+- **Version 1 (MVP)**: Responsive web app (mobile + desktop browsers) with core learning features and audio
+- **Version 2**: Native iOS app with platform-specific features (Share Extension, Widgets, offline-first)
 
 ## Problem Statement
 
@@ -40,12 +44,19 @@ LLYLI addresses these failures through:
 | Session flow | Daily review with "Done for today" completion screen | Section 2.1.E: habit formation |
 | Session length | Target 15-20 minutes, natural stopping points | Section 3.2: short spaced sessions |
 
-### Out of Scope (Post-MVP)
+### Out of Scope (Version 2 - Native iOS)
 
+- Native iOS app with offline-first architecture
+- iOS Share Extension (capture from WhatsApp, Safari, Messages)
+- iOS Home Screen and Lock Screen Widgets
 - Voice input (speech-to-text word capture)
 - Camera input (OCR word capture from photos)
-- Browser extension
-- Desktop app
+- Push notifications (will use web notifications in MVP)
+
+### Out of Scope (Future Versions)
+
+- Browser extension for desktop
+- Native Android app
 - Chat/email integration
 - Word pack recommendations
 - User preference learning for sentence style
@@ -137,15 +148,38 @@ LLYLI addresses these failures through:
 
 ## Non-Functional Requirements
 
+### Performance
 **NFR-1** Word capture to confirmation: <2 seconds.
 
 **NFR-2** Sentence generation latency: <3 seconds per sentence.
 
-**NFR-3** App must function offline for reviews (pre-generate sentences when online).
+**NFR-3** Audio playback starts within <1 second of button press.
 
-**NFR-4** Data sync when connectivity restored.
+**NFR-4** Page load time: <2 seconds on 3G connection.
 
-**NFR-5** Support iOS 15+ and Android 10+.
+### Platform Compatibility
+**NFR-5** Support modern browsers:
+- Chrome/Edge 90+
+- Safari 14+ (iOS Safari for mobile)
+- Firefox 88+
+
+**NFR-6** Responsive design:
+- Mobile: 375px - 428px (iPhone SE to iPhone Pro Max)
+- Tablet: 768px - 1024px
+- Desktop: 1280px+
+
+### Audio Quality
+**NFR-7** Native pronunciation audio at minimum 44.1kHz, AAC or MP3 format.
+
+**NFR-8** Audio files cached for offline playback after first load.
+
+### Data & Connectivity
+**NFR-9** Progressive Web App (PWA) capabilities:
+- Service worker for caching
+- Works offline for reviews with pre-generated content
+- Install prompt on mobile browsers
+
+**NFR-10** Data sync when connectivity restored.
 
 ---
 
@@ -185,10 +219,35 @@ From Research Notes Section 8, these gaps require validation:
 
 ## Roadmap Context
 
-**MVP (This Document):** Text input → LLM sentences → FSRS scheduling → 3-correct mastery
+**V1.0 MVP (This Document) - Web App:**
+- Responsive web app (mobile + desktop browsers)
+- Text input → LLM sentences → FSRS scheduling → 3-correct mastery
+- High-quality native audio for all phrases
+- Progressive Web App (PWA) with offline capabilities
+- Web-based notifications
 
-**V1.1:** Voice input (speech-to-text capture)
+**V1.1 - Web Enhancements:**
+- Browser extension for quick capture from any webpage
+- Desktop-optimized layouts and keyboard shortcuts
+- Export/import word lists
 
-**V1.2:** Camera input (OCR capture from photos)
+**V2.0 - Native iOS App:**
+- Native iOS app with offline-first architecture
+- iOS Share Extension (capture from WhatsApp, iMessage, Safari)
+- Home Screen and Lock Screen Widgets
+- Voice input (speech-to-text capture)
+- Camera input (OCR from photos)
+- Haptic feedback and native interactions
+- iCloud sync
 
-**V2.0:** Personalization engine. System learns user vocabulary patterns. Recommends related word packs. Adapts sentence style to user preferences.
+**V2.1 - Native Android App:**
+- Android app with Material Design
+- Android Share functionality
+- Home Screen widgets
+- Voice and camera input
+
+**V3.0 - Personalization Engine:**
+- System learns user vocabulary patterns
+- Recommends related word packs
+- Adapts sentence style to user preferences
+- AI-powered context suggestions

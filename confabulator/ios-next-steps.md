@@ -2,7 +2,21 @@
 **Project:** LLYI - Learn the Language You Live In
 **Repository:** https://github.com/ksimons29/learnthelanguageyoulivein
 **Generated:** 2026-01-13
-**Status:** Ready for Development
+**Status:** Planned for Version 2 (Year 2)
+
+---
+
+## ⚠️ IMPORTANT: This is V2 Planning
+
+**Current Focus:** Version 1 is a responsive web application (mobile + desktop).
+
+**This Document:** Contains detailed planning for the Version 2 native iOS app, scheduled for Year 2 after web MVP validation.
+
+**See Updated V2 Roadmap:** [`/docs/product/v2_native_ios_roadmap.md`](/docs/product/v2_native_ios_roadmap.md) for the current strategic approach and timeline.
+
+---
+
+**Original iOS Implementation Plan Below** (preserved for future reference)
 
 ## Overview
 
