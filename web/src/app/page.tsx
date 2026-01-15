@@ -29,38 +29,91 @@ const mockStats = {
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-md px-4 py-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-foreground">Today</h1>
-        <BrandWidget size="sm" variant="ghost" tooltipText="About LLYLI" />
+    <div className="min-h-screen notebook-bg relative">
+      {/* Ribbon bookmark hanging from top */}
+      <div className="ribbon-bookmark" />
+
+      {/* Elastic band on right edge */}
+      <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
+
+      <div className="mx-auto max-w-md px-5 py-6">
+        {/* Header */}
+        <div className="mb-8 flex items-start justify-between">
+          <div className="pt-2">
+            <h1
+              className="text-4xl heading-serif ink-text tracking-tight"
+              style={{ color: "var(--text-heading)" }}
+            >
+              Today
+            </h1>
+            <p
+              className="text-sm mt-1 handwritten"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Your language journey
+            </p>
+          </div>
+          {/* Bigger brand widget */}
+          <BrandWidget
+            size="lg"
+            variant="default"
+            tooltipText="About LLYLI"
+            className="shadow-lifted"
+          />
+        </div>
+
+        {/* Primary Actions - styled as notebook pages */}
+        <div className="space-y-4 mb-10">
+          <div className="page-stack-3d">
+            <CaptureButton />
+          </div>
+          <div className="page-stack-3d">
+            <ReviewDueButton dueCount={mockStats.dueCount} />
+          </div>
+        </div>
+
+        {/* Captured Today Section */}
+        <section className="mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-1 h-6 rounded-full"
+              style={{ backgroundColor: "var(--accent-nav)" }}
+            />
+            <h2
+              className="text-xl font-semibold heading-serif ink-text"
+              style={{ color: "var(--text-heading)" }}
+            >
+              Captured Today
+            </h2>
+          </div>
+          <div className="binding-edge-stitched">
+            <CapturedTodayList phrases={mockCapturedPhrases} />
+          </div>
+        </section>
+
+        {/* Today's Progress */}
+        <section className="pb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-1 h-6 rounded-full"
+              style={{ backgroundColor: "var(--accent-nav)" }}
+            />
+            <h2
+              className="text-xl font-semibold heading-serif ink-text"
+              style={{ color: "var(--text-heading)" }}
+            >
+              Today&apos;s Progress
+            </h2>
+          </div>
+          <div className="page-stack-3d page-curl">
+            <TodaysProgress
+              captured={mockStats.captured}
+              reviewed={mockStats.reviewed}
+              streak={mockStats.streak}
+            />
+          </div>
+        </section>
       </div>
-
-      {/* Primary Actions */}
-      <div className="space-y-3 mb-8">
-        <CaptureButton />
-        <ReviewDueButton dueCount={mockStats.dueCount} />
-      </div>
-
-      {/* Captured Today Section */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold text-foreground">
-          Captured Today
-        </h2>
-        <CapturedTodayList phrases={mockCapturedPhrases} />
-      </section>
-
-      {/* Today's Progress */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-foreground">
-          Today&apos;s Progress
-        </h2>
-        <TodaysProgress
-          captured={mockStats.captured}
-          reviewed={mockStats.reviewed}
-          streak={mockStats.streak}
-        />
-      </section>
     </div>
   );
 }

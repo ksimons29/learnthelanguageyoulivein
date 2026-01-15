@@ -1,7 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { Flame } from "lucide-react";
+import { Flame, PenLine, BookCheck } from "lucide-react";
 
 interface TodaysProgressProps {
   captured: number;
@@ -15,26 +14,111 @@ export function TodaysProgress({
   streak,
 }: TodaysProgressProps) {
   return (
-    <Card className="border-border bg-white p-4">
-      <div className="flex items-center justify-around">
+    <div
+      className="relative rounded-r-xl rounded-l-none p-6 ml-5"
+      style={{
+        backgroundColor: "#FFFEF9",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)",
+      }}
+    >
+      {/* Binding edge */}
+      <div
+        className="absolute left-0 top-0 bottom-0 -ml-5 w-5 rounded-l-sm"
+        style={{
+          background: "linear-gradient(90deg, #0A5A5E 0%, #0C6B70 40%, #F5EFE0 40%, #F5EFE0 100%)",
+        }}
+      />
+      {/* Stitching */}
+      <div
+        className="absolute -ml-3 top-3 bottom-3 w-0.5"
+        style={{
+          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 8px, rgba(248,243,231,0.6) 8px, rgba(248,243,231,0.6) 14px)",
+        }}
+      />
+
+      {/* Ruled lines background */}
+      <div
+        className="absolute inset-0 rounded-r-xl pointer-events-none opacity-50"
+        style={{
+          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(180, 170, 155, 0.2) 27px, rgba(180, 170, 155, 0.2) 28px)",
+          backgroundPosition: "0 12px",
+        }}
+      />
+
+      <div className="flex items-center justify-around relative z-10">
+        {/* Captured */}
         <div className="text-center">
-          <p className="text-2xl font-bold text-success">{captured}</p>
-          <p className="text-xs text-muted-foreground">Captured</p>
-        </div>
-        <div className="h-8 w-px bg-border" />
-        <div className="text-center">
-          <p className="text-2xl font-bold text-primary">{reviewed}</p>
-          <p className="text-xs text-muted-foreground">Reviewed</p>
-        </div>
-        <div className="h-8 w-px bg-border" />
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-1">
-            <p className="text-2xl font-bold text-warning">{streak}</p>
-            <Flame className="h-5 w-5 text-warning" fill="currentColor" />
+          <div
+            className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg"
+            style={{ backgroundColor: "var(--state-easy-bg)" }}
+          >
+            <PenLine className="h-5 w-5" style={{ color: "var(--state-easy)" }} />
           </div>
-          <p className="text-xs text-muted-foreground">Streak</p>
+          <p
+            className="text-3xl font-bold heading-serif"
+            style={{ color: "var(--state-easy)" }}
+          >
+            {captured}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            Captured
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div
+          className="h-16 w-px"
+          style={{ backgroundColor: "rgba(180, 170, 155, 0.3)" }}
+        />
+
+        {/* Reviewed */}
+        <div className="text-center">
+          <div
+            className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg"
+            style={{ backgroundColor: "var(--accent-nav-light)" }}
+          >
+            <BookCheck className="h-5 w-5" style={{ color: "var(--accent-nav)" }} />
+          </div>
+          <p
+            className="text-3xl font-bold heading-serif"
+            style={{ color: "var(--accent-nav)" }}
+          >
+            {reviewed}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            Reviewed
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div
+          className="h-16 w-px"
+          style={{ backgroundColor: "rgba(180, 170, 155, 0.3)" }}
+        />
+
+        {/* Streak */}
+        <div className="text-center">
+          <div
+            className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg"
+            style={{ backgroundColor: "var(--accent-ribbon-light)" }}
+          >
+            <Flame
+              className="h-5 w-5"
+              fill="currentColor"
+              style={{ color: "var(--accent-ribbon)" }}
+            />
+          </div>
+          <p
+            className="text-3xl font-bold heading-serif"
+            style={{ color: "var(--accent-ribbon)" }}
+          >
+            {streak}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            Day Streak
+          </p>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

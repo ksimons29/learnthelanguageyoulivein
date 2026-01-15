@@ -1028,4 +1028,84 @@ Update these existing files:
 
 ---
 
+## Part 9: Branding Assets & Icons
+
+### Icon System
+
+LLYLI uses a professional icon featuring a location pin with language learning elements (chat bubbles, "ã" character, note cards). This represents "Learn the Language You Live In."
+
+**Icon Locations (Next.js web app):**
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `favicon.ico` | `/web/src/app/` | Browser tab icon |
+| `apple-touch-icon.png` | `/web/public/` | iOS home screen (180x180) |
+| `icon-192.png` | `/web/public/` | PWA manifest, Android |
+| `icon-512.png` | `/web/public/` | PWA manifest, high-res |
+| `llyli-icon.png` | `/web/public/images/` | BrandWidget component (192x192) |
+
+**Why these sizes:**
+- **192x192** - Standard PWA icon, works well at all scales with good quality
+- **512x512** - High-resolution for app stores and large displays
+- **180x180** - Apple's required touch icon size for iOS home screen
+
+**Source icons available at:** `/assets/examples/LLYLI icons/`
+- Full icon set from 16x16 to 1024x1024
+- Button variations (320x80, 640x160)
+- Square and original variations
+
+### BrandWidget Component
+
+The `BrandWidget` component (`/web/src/components/brand/brand-widget.tsx`) displays the LLYLI icon with an interactive dialog showing app features.
+
+**Variants:**
+- `default` - Shadow, scales on hover
+- `ghost` - Minimal, subtle hover effect
+- `outlined` - Teal border, changes to coral on hover
+- `floating` - Larger shadow, more prominent scale
+- `notebook` - Matches Moleskine paper aesthetic
+
+**Sizes:** `xs` (8), `sm` (10), `md` (12), `lg` (14), `xl` (20)
+
+---
+
+## Part 10: Implementation Status
+
+**Completed (Jan 15, 2025):**
+
+### CSS & Design Tokens
+- [x] Updated `globals.css` with complete Moleskine color system
+- [x] Added realistic paper textures with SVG noise filters
+- [x] Added `.notebook-bg` - cream paper with fiber texture
+- [x] Added `.page-stack-3d` - visible page layers beneath cards
+- [x] Added `.binding-edge-stitched` - teal binding with thread stitches
+- [x] Added `.ribbon-bookmark` - coral ribbon hanging from top
+- [x] Added `.elastic-band` - black Moleskine-style band
+- [x] Added `.ruled-lines` - faint notebook paper lines
+- [x] Added `.page-curl` / `.page-dogear` - corner effects
+- [x] Added `.ink-text` / `.handwritten` - typography effects
+
+### Components Created
+- [x] `NotebookPage` - Layout wrapper with paper texture
+- [x] `NotebookCard` - Cards with binding strip effect
+- [x] `RibbonButton` - Primary CTA in coral
+- [x] `SecondaryButton` - Teal navigation buttons
+- [x] `GradingButton` - Review grading (hard/good/easy)
+- [x] `PageHeading` - Serif typography headings
+- [x] `BrandWidget` - Professional icon with dialog
+
+### Pages Updated
+- [x] Home (`/`) - Notebook background, ribbon bookmark, elastic band
+- [x] Notebook (`/notebook`) - Lucide icons for categories, enhanced cards
+- [x] Review (`/review`) - Notebook styling with grading flow
+- [x] Capture (`/capture`) - Bottom sheet with ruled lines, notebook theme
+
+### Assets Organized
+- [x] Professional LLYLI icon deployed to proper locations
+- [x] PWA icons configured (192, 512)
+- [x] Apple touch icon in place (180x180)
+- [x] Favicon updated
+
+---
+
 *End of implementation guide*

@@ -4,6 +4,127 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-15 - Moleskine Design Enhancement & Icon Organization
+
+**Session Focus**: Transform the UI into an immersive Moleskine notebook aesthetic with realistic paper textures, and organize branding assets
+
+### What Was Done
+
+#### 1. Enhanced Moleskine Paper Textures (globals.css)
+Added comprehensive CSS utilities for realistic notebook feel:
+
+| Class | Effect |
+|-------|--------|
+| `.notebook-bg` | Cream paper with SVG noise texture (fiber-like grain) |
+| `.page-stack-3d` | 3D layered pages visible beneath cards |
+| `.binding-edge-stitched` | Thread stitching on left edge of cards |
+| `.ribbon-bookmark` | Coral ribbon hanging from top of page |
+| `.elastic-band` | Black Moleskine-style band on right edge |
+| `.ruled-lines` | Horizontal notebook ruling |
+| `.page-curl` | Subtle paper curl on bottom-right corner |
+| `.page-dogear` | Folded corner effect |
+| `.ink-text` | Text with slight blur for handwritten feel |
+| `.handwritten` | Slight rotation and ink-like appearance |
+
+#### 2. Applied Notebook Styling to All Pages
+- **Home page**: Added ribbon bookmark, elastic band, enhanced card styling
+- **Capture page**: Ruled lines background, binding edge accents, notebook modal
+- **Review page**: Paper texture, page stack effects, card refinements
+- **Notebook page**: Category cards with binding stitches
+
+#### 3. Category Icons Redesign
+Changed from emojis to professional Lucide icons:
+
+| Category | Old (Emoji) | New (Lucide Icon) |
+|----------|-------------|-------------------|
+| Work | 💼 | `Briefcase` |
+| Social | 💬 | `MessageCircle` |
+| Shopping | 🛒 | `ShoppingBag` |
+| Family | ❤️ | `Heart` |
+| Transport | 🚗 | `Car` |
+
+Updated `CategoryCard` component to accept `LucideIcon` type instead of emoji string.
+
+#### 4. BrandWidget Improvements
+- Increased default size from `sm` to `lg` on home page
+- Added new variants: `notebook` (Moleskine shadow style)
+- Enhanced hover states with scale and shadow transitions
+- Replaced mascot image with professional LLYLI icon
+
+#### 5. Icon Organization
+Consolidated 18+ source icon files into 4 properly-placed files:
+
+| File | Location | Purpose | Size |
+|------|----------|---------|------|
+| `llyli-icon.png` | `/public/images/` | BrandWidget component | 192×192 |
+| `icon-192.png` | `/public/` | PWA manifest (Android) | 192×192 |
+| `icon-512.png` | `/public/` | PWA manifest (high-res) | 512×512 |
+| `apple-touch-icon.png` | `/public/` | iOS home screen | 180×180 |
+
+#### 6. Documentation Updates
+Updated `/docs/design/design-system.md` with:
+- **Part 9: Branding Assets & Icons** - Icon locations, sizes, BrandWidget usage
+- **Part 10: Implementation Status** - Complete checklist of work completed
+
+### Files Created/Modified
+
+**New Files:**
+- `web/public/images/llyli-icon.png` - Consolidated brand icon for UI
+- `web/public/icon-192.png` - PWA manifest icon
+- `web/public/icon-512.png` - High-res PWA icon
+- `web/public/apple-touch-icon.png` - iOS home screen icon
+
+**Modified Files:**
+- `web/src/app/globals.css` - Added 600+ lines of Moleskine CSS utilities
+- `web/src/app/page.tsx` - Ribbon bookmark, elastic band, enhanced layout
+- `web/src/app/notebook/page.tsx` - Lucide icons, binding effects
+- `web/src/app/capture/page.tsx` - Ruled lines, notebook modal styling
+- `web/src/app/review/page.tsx` - Paper texture, page stack effects
+- `web/src/components/notebook/category-card.tsx` - LucideIcon prop type
+- `web/src/components/brand/brand-widget.tsx` - Professional icon, new variants
+- `web/src/components/home/capture-button.tsx` - Binding edge redesign
+- `web/src/components/home/review-due-button.tsx` - Binding edge redesign
+- `web/src/components/home/todays-progress.tsx` - Icons and ruled lines
+- `docs/design/design-system.md` - Parts 9 & 10 added
+
+### Key Decisions
+
+**Decision 1: SVG-Based Textures**
+- Used `feTurbulence` SVG filters for paper grain instead of image files
+- Benefits: No additional HTTP requests, scalable, consistent rendering
+- Creates realistic paper fiber texture without performance impact
+
+**Decision 2: CSS Pseudo-Elements for Effects**
+- Ribbon bookmark, elastic band, and binding stitches use `::before`/`::after`
+- Keeps HTML clean while adding rich visual detail
+- Easily toggleable by adding/removing CSS classes
+
+**Decision 3: Single Icon Source of Truth**
+- One professional icon (`llyli-icon.png`) used by BrandWidget
+- PWA icons in standard web locations for automatic discovery
+- Removed redundant variants to reduce maintenance burden
+
+**Decision 4: Lucide Icons Over Emojis**
+- Emojis render inconsistently across platforms
+- Lucide icons match Moleskine's refined aesthetic
+- Consistent stroke weight (1.5) with teal accent color
+
+### Technical Notes
+
+- Fixed Tailwind v4 `@apply` limitation by redefining custom utilities inline
+- Build passes with 0 errors
+- All notebook effects are pure CSS (no JavaScript animation libraries)
+- Icons follow Next.js conventions for automatic metadata discovery
+
+### Next Actions
+
+1. Add page turn animation for card transitions
+2. Consider adding paper texture to Dialog components
+3. Implement dark mode variant (leather notebook aesthetic)
+4. Add haptic feedback for mobile interactions
+
+---
+
 ## 2026-01-15 - Brand Widget Integration
 
 **Session Focus**: Integrate LLYLI brand mascot/widget across all pages for brand recognition and help functionality

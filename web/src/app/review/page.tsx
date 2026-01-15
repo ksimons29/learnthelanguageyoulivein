@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Lightbulb } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   ReviewHeader,
   SentenceCard,
@@ -112,7 +111,11 @@ export default function ReviewPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-background px-4 py-4">
+    <div className="min-h-screen notebook-bg relative">
+      {/* Ribbon bookmark */}
+      <div className="ribbon-bookmark" />
+
+      <div className="mx-auto max-w-md px-5 py-4">
       {/* Header */}
       <ReviewHeader
         current={currentIndex + 1}
@@ -121,10 +124,14 @@ export default function ReviewPage() {
       />
 
       {/* Progress bar */}
-      <div className="mt-4 h-1 w-full rounded-full bg-secondary">
+      <div
+        className="mt-4 h-1 w-full rounded-full"
+        style={{ backgroundColor: "var(--accent-nav-light)" }}
+      >
         <div
-          className="h-1 rounded-full bg-primary transition-all duration-300"
+          className="h-1 rounded-full transition-all duration-300"
           style={{
+            backgroundColor: "var(--accent-nav)",
             width: `${((currentIndex + 1) / mockReviewItems.length) * 100}%`,
           }}
         />
@@ -132,7 +139,10 @@ export default function ReviewPage() {
 
       {/* Mixed Practice Badge */}
       <div className="mt-4 flex justify-center">
-        <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+        <Badge
+          className="text-white"
+          style={{ backgroundColor: "var(--accent-nav)" }}
+        >
           MIXED PRACTICE
         </Badge>
       </div>
@@ -159,10 +169,17 @@ export default function ReviewPage() {
 
         {/* Words Progress (shown after feedback) */}
         {state === "feedback" && (
-          <div className="text-center text-sm text-muted-foreground">
+          <div
+            className="text-center text-sm"
+            style={{ color: "var(--text-muted)" }}
+          >
             <span>Words practiced: </span>
             {currentItem.wordsProgress.map((wp, index) => (
-              <span key={wp.word} className="text-primary font-medium">
+              <span
+                key={wp.word}
+                className="font-medium"
+                style={{ color: "var(--accent-nav)" }}
+              >
                 {wp.word} ({wp.current}/{wp.total})
                 {index < currentItem.wordsProgress.length - 1 && " | "}
               </span>
@@ -172,40 +189,65 @@ export default function ReviewPage() {
 
         {/* Action Buttons */}
         {state === "recall" && (
-          <Button
+          <button
             onClick={handleReveal}
-            className="w-full bg-primary py-6 text-lg font-semibold hover:bg-primary/90"
+            className="w-full py-6 text-lg font-semibold rounded-lg text-white transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+            style={{ backgroundColor: "var(--accent-ribbon)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor =
+                "var(--accent-ribbon-hover)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--accent-ribbon)";
+            }}
           >
             Reveal
-          </Button>
+          </button>
         )}
 
         {state === "revealed" && <GradingButtons onGrade={handleGrade} />}
 
         {state === "feedback" && (
-          <Button
+          <button
             onClick={handleContinue}
-            className="w-full bg-primary py-6 text-lg font-semibold hover:bg-primary/90"
+            className="w-full py-6 text-lg font-semibold rounded-lg text-white transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+            style={{ backgroundColor: "var(--accent-nav)" }}
           >
             Continue
-          </Button>
+          </button>
         )}
 
         {/* Mastery Progress */}
         {state !== "feedback" && (
-          <p className="text-center text-sm text-muted-foreground">
+          <p
+            className="text-center text-sm"
+            style={{ color: "var(--text-muted)" }}
+          >
             Today: {currentIndex + 1} of 3 correct
           </p>
         )}
 
         {/* Report Issue */}
-        <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-white py-3 text-sm text-muted-foreground hover:bg-secondary transition-colors">
-          <AlertTriangle className="h-4 w-4 text-warning" />
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-lg border py-3 text-sm transition-colors"
+          style={{
+            borderColor: "var(--notebook-stitch)",
+            backgroundColor: "var(--surface-page)",
+            color: "var(--text-muted)",
+          }}
+        >
+          <AlertTriangle
+            className="h-4 w-4"
+            style={{ color: "var(--state-good)" }}
+          />
           Report sentence issue
         </button>
 
         {/* Mode indicator */}
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div
+          className="flex items-center justify-center gap-2 text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
           <Lightbulb className="h-3 w-3" />
           Mixing 2 due words per sentence
         </div>
@@ -218,6 +260,7 @@ export default function ReviewPage() {
           onContinue={handleMasteryContinue}
         />
       )}
+      </div>
     </div>
   );
 }

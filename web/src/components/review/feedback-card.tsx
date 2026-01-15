@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type FeedbackType = "success" | "hard";
 
@@ -18,31 +17,45 @@ export function FeedbackCard({
 }: FeedbackCardProps) {
   const isSuccess = type === "success";
 
+  const styles = isSuccess
+    ? {
+        bg: "var(--state-easy-bg)",
+        border: "var(--state-easy)",
+        text: "var(--state-easy)",
+      }
+    : {
+        bg: "var(--state-hard-bg)",
+        border: "var(--state-hard)",
+        text: "var(--state-hard)",
+      };
+
   return (
     <div
-      className={cn(
-        "rounded-xl border-2 p-4",
-        isSuccess
-          ? "border-success bg-success-light"
-          : "border-warning bg-warning-light"
-      )}
+      className="rounded-lg border-2 p-4"
+      style={{
+        backgroundColor: styles.bg,
+        borderColor: styles.border,
+      }}
     >
       <div className="flex items-start gap-3">
         {isSuccess ? (
-          <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
+          <Check
+            className="h-5 w-5 shrink-0 mt-0.5"
+            style={{ color: styles.text }}
+          />
         ) : (
-          <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+          <AlertTriangle
+            className="h-5 w-5 shrink-0 mt-0.5"
+            style={{ color: styles.text }}
+          />
         )}
         <div>
-          <p
-            className={cn(
-              "font-semibold",
-              isSuccess ? "text-success" : "text-warning"
-            )}
-          >
+          <p className="font-semibold" style={{ color: styles.text }}>
             {message}
           </p>
-          <p className="text-sm text-muted-foreground">{nextReviewText}</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {nextReviewText}
+          </p>
         </div>
       </div>
     </div>

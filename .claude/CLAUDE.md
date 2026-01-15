@@ -20,18 +20,21 @@ npm run db:push      # Push schema changes
 
 ### Project Structure
 ```
-confabulator/        # Project documentation (IMPORTANT - read these first)
-├── PRD.md           # Product requirements and features
-├── project-vision.md # Vision and problem statement
-├── implementation-plan.md # Technical architecture and roadmap
-├── wireframes.md    # UI/UX wireframes and screen flows
-├── business-model-canvas.md # Business model
-└── PR-FAQ.md        # Press release and FAQ
-src/                 # Source code
-├── app/             # Next.js app router (if applicable)
-├── components/      # UI components
-├── lib/             # Utility functions and services
-└── types/           # TypeScript types
+docs/                # Project documentation (IMPORTANT - read these first)
+├── product/         # Product requirements and vision
+├── engineering/     # Technical architecture and implementation
+└── design/          # Design system and wireframes
+    ├── design-system.md  # ★ Moleskine design tokens & components (source of truth)
+    ├── wireframes.md     # UI layouts and screen flows
+    └── README.md         # Design system overview
+prototypes/web/      # Visual mockups and screen references
+web/                 # Next.js web application
+├── src/
+│   ├── app/         # Next.js App Router pages
+│   ├── components/  # UI components (brand/, home/, notebook/, review/, ui/)
+│   └── lib/         # Utility functions
+└── public/          # Static assets and icons
+assets/              # Source design files and examples
 ```
 
 ## Project Context
@@ -57,6 +60,7 @@ TypeScript, JavaScript, Next.js, React, Shadcn, Tailwind, shadcn/ui, Radix UI, R
 
 | Document | Purpose | When to Reference |
 |----------|---------|-------------------|
+| `/docs/design/design-system.md` | **★ Moleskine design tokens, CSS utilities, component patterns** | **Always for UI work** |
 | `/docs/product/prd.md` | Feature specs, user stories, acceptance criteria | Before implementing any feature |
 | `/docs/product/vision.md` | Problem statement, target users, goals, platform strategy | For strategic decisions |
 | `/docs/engineering/implementation_plan.md` | Web architecture, tech stack, data model, API routes | Technical implementation |
@@ -75,10 +79,11 @@ TypeScript, JavaScript, Next.js, React, Shadcn, Tailwind, shadcn/ui, Radix UI, R
 - Favor named exports for components and utilities
 
 ### Before Implementing Features
-1. Read the relevant user story in `confabulator/implementation-plan.md`
-2. Check acceptance criteria in `confabulator/PRD.md`
-3. Reference wireframes in `confabulator/wireframes.md` for UI guidance
-4. Follow the data model and API routes in the implementation plan
+1. Check design tokens in `/docs/design/design-system.md` for UI styling
+2. Read the relevant user story in `/docs/engineering/implementation_plan.md`
+3. Check acceptance criteria in `/docs/product/prd.md`
+4. Reference wireframes in `/docs/design/wireframes.md` for UI guidance
+5. Follow the data model and API routes in the implementation plan
 
 ### Error Handling
 - Implement comprehensive error handling at all levels
@@ -101,6 +106,23 @@ The **Version 1 Web MVP** focuses on these core capabilities:
 
 See `/docs/engineering/implementation_plan.md` for the complete web development plan.
 See `/docs/product/v2_native_ios_roadmap.md` for future native iOS app plans.
+
+## Design System - Moleskine Aesthetic
+
+The app uses a **"Moleskine notebook"** visual language. Key concepts:
+
+- **Paper textures**: Cream backgrounds with SVG-based fiber grain (`.notebook-bg`)
+- **Binding elements**: Cards have rounded right corners, square left with stitched binding (`.binding-edge-stitched`)
+- **Signature accents**: Coral ribbon bookmark (`.ribbon-bookmark`), black elastic band (`.elastic-band`)
+- **Typography**: Serif headings (`.heading-serif`), sans-serif UI, handwritten accents (`.handwritten`)
+- **Color tokens**: Teal navigation (#0C6B70), Coral actions (#E85C4A), Cream paper (#F5EFE0)
+
+**Design Rules**:
+1. **Ribbon Rule**: Coral appears as ONE prominent element per screen
+2. **Binding Rule**: Cards rounded on right, square on left (like notebook pages)
+3. **Texture Rule**: Paper grain on backgrounds, clean white on interactive surfaces
+
+See `/docs/design/design-system.md` for complete token reference and CSS utilities.
 
 ## Repository
 
