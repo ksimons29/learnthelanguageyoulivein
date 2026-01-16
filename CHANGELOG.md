@@ -93,6 +93,36 @@ All hardcoded colors replaced with CSS variables:
 - Dark mode borders use `dark:border dark:border-[rgba(200,195,184,0.08)]`
 - State colors (error, success) use semantic variables (`--state-hard`, `--state-easy`)
 
+### Icon Styling Update
+Updated ContextReadinessCard to use Lucide icons instead of emojis for Moleskine consistency:
+- `75ef532` - style: Update Context Readiness card to use Lucide icons
+
+### Design Pattern: Moleskine Icon Styling
+
+**For future icon implementations, use this pattern:**
+
+```tsx
+// Icon container with background
+<div
+  className="flex h-10 w-10 items-center justify-center rounded-lg"
+  style={{ backgroundColor: "var(--accent-nav-light)" }}
+>
+  <Icon
+    className="h-5 w-5"
+    style={{ color: "var(--accent-nav)" }}
+    strokeWidth={1.5}
+  />
+</div>
+```
+
+**Key principles:**
+- Use Lucide icons (not emojis) for professional Moleskine aesthetic
+- Wrap icons in a rounded container with `--accent-nav-light` background
+- Icon color uses `--accent-nav` (teal)
+- Use `strokeWidth={1.5}` for refined, notebook-like line weight
+- Container size: `h-10 w-10` (40px) for category/context cards
+- Icon size: `h-5 w-5` (20px) inside container
+
 ---
 
 ## 2026-01-16 (Session 4) - Dark Mode Implementation
