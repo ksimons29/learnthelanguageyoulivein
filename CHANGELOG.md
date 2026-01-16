@@ -4,6 +4,108 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-16 (Session 4) - Dark Mode Implementation
+
+**Session Focus**: Add dark mode with "leather Moleskine at night" aesthetic and theme toggle in bottom navigation
+
+### What Was Done
+
+#### Dark Mode CSS Variables
+Created complete dark theme with warm, desaturated colors preserving the Moleskine notebook feel:
+
+| Token | Light Value | Dark Value | Purpose |
+|-------|-------------|------------|---------|
+| `--surface-notebook` | #F5EFE0 (cream) | #1C1F21 (charcoal) | Page background |
+| `--surface-page` | #FFFFFF | #2A2D30 (dark leather) | Card backgrounds |
+| `--accent-nav` | #0C6B70 (teal) | #2D9DA3 (lighter teal) | Navigation accent |
+| `--accent-ribbon` | #E85C4A (coral) | #D9534F (warm coral) | CTA accents |
+| `--text-heading` | #1A1A1A | #F5EFE0 (cream) | Headers |
+| `--text-body` | #333333 | #D4CFC5 (warm gray) | Body text |
+
+#### Theme Infrastructure
+- Installed `next-themes` package for theme management
+- Created `ThemeProvider` component wrapping the app
+- Added `suppressHydrationWarning` to html tag for hydration safety
+- Theme persists via localStorage with system preference detection
+
+#### Dark Mode Utility Classes
+Updated all Moleskine CSS utilities with `.dark` variants:
+- `.notebook-bg` → leather texture with subtle grain
+- `.page-stack-3d` → darker page layers
+- `.binding-edge-stitched` → dark binding with visible stitches
+- `.ribbon-bookmark` → warm coral ribbon
+- `.elastic-band` → charcoal band on dark leather
+
+#### Theme Toggle Placement
+Following best practices, added single theme toggle to bottom navigation:
+- Consistent location accessible from every screen
+- Sun/Moon icons indicate current/target theme
+- Uses same styling as other nav items
+
+### Files Created
+
+```
+web/src/components/providers/
+├── theme-provider.tsx    # NextThemesProvider wrapper
+└── index.ts              # Barrel export
+
+web/src/components/ui/
+└── theme-toggle.tsx      # Reusable Moon/Sun toggle button
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/package.json` | Added `next-themes` dependency |
+| `web/src/app/globals.css` | Added `.dark` class with all CSS variables and utility variants (~100 lines) |
+| `web/src/app/layout.tsx` | Wrapped with `ThemeProvider`, added `suppressHydrationWarning` |
+| `web/src/app/page.tsx` | Removed duplicate theme toggle from header |
+| `web/src/components/navigation/bottom-nav.tsx` | Added theme toggle as 6th nav item, updated to use CSS variables |
+| `web/src/components/ui/index.ts` | Exported `ThemeToggle` component |
+
+### Key Design Decisions
+
+**Decision 1: "Leather Moleskine at Night" Aesthetic**
+- Dark mode uses warm charcoals (#1C1F21, #2A2D30) instead of pure blacks
+- Preserves the tactile notebook feel even in dark theme
+- Text uses cream (#F5EFE0) for warmth, not harsh white
+
+**Decision 2: Single Theme Toggle Location**
+- Best practice: one consistent location (bottom nav) vs. toggle on every page
+- Always visible, reduces UI clutter
+- Same pattern as iOS Settings, Slack, Discord
+
+**Decision 3: System Preference Detection**
+- `next-themes` detects OS preference on first visit
+- User can override with manual toggle
+- Preference persists across sessions
+
+### Technical Notes
+
+- Build passes with 0 errors
+- Dark mode transition is instant (no CSS transitions to avoid flash)
+- All CSS variables properly scoped under `.dark` class
+- Hydration mismatch avoided with `mounted` state check
+
+### Git Commits
+
+- `a19c9de` - feat: Add dark mode with leather Moleskine aesthetic
+
+### Next Actions
+
+**Phase 1 Remaining:**
+1. Test end-to-end flow with dark mode across all pages
+2. Ensure auth pages support dark mode properly
+
+**Phase 2 (FSRS Integration):**
+- Install `ts-fsrs` library
+- Implement review API endpoints
+- Build review UI with 4-point rating scale
+- Session management and mastery tracking
+
+---
+
 ## 2026-01-16 (Session 3) - Home Page Real Data & Audio Playback
 
 **Session Focus**: Connect home page to real API data and implement audio playback component
