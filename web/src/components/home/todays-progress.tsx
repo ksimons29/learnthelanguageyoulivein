@@ -15,32 +15,32 @@ export function TodaysProgress({
 }: TodaysProgressProps) {
   return (
     <div
-      className="relative rounded-r-xl rounded-l-none p-6 ml-5"
+      className="relative rounded-r-xl rounded-l-none p-6 ml-5 dark:border dark:border-[rgba(200,195,184,0.08)]"
       style={{
-        backgroundColor: "#FFFEF9",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)",
+        backgroundColor: "var(--surface-page)",
+        boxShadow: "var(--shadow-page, 0 2px 8px rgba(0, 0, 0, 0.08))",
       }}
     >
-      {/* Binding edge */}
+      {/* Binding edge - uses CSS variables for dark mode */}
       <div
         className="absolute left-0 top-0 bottom-0 -ml-5 w-5 rounded-l-sm"
         style={{
-          background: "linear-gradient(90deg, #0A5A5E 0%, #0C6B70 40%, #F5EFE0 40%, #F5EFE0 100%)",
+          background: "linear-gradient(90deg, var(--surface-binding) 0%, var(--accent-nav) 40%, var(--surface-page) 40%, var(--surface-page) 100%)",
         }}
       />
       {/* Stitching */}
       <div
         className="absolute -ml-3 top-3 bottom-3 w-0.5"
         style={{
-          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 8px, rgba(248,243,231,0.6) 8px, rgba(248,243,231,0.6) 14px)",
+          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 8px, var(--notebook-stitch) 8px, var(--notebook-stitch) 14px)",
         }}
       />
 
-      {/* Ruled lines background */}
+      {/* Ruled lines background - hidden in dark mode */}
       <div
-        className="absolute inset-0 rounded-r-xl pointer-events-none opacity-50"
+        className="absolute inset-0 rounded-r-xl pointer-events-none opacity-50 dark:opacity-20"
         style={{
-          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(180, 170, 155, 0.2) 27px, rgba(180, 170, 155, 0.2) 28px)",
+          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, var(--notebook-ruling) 27px, var(--notebook-ruling) 28px)",
           backgroundPosition: "0 12px",
         }}
       />
@@ -68,7 +68,7 @@ export function TodaysProgress({
         {/* Divider */}
         <div
           className="h-16 w-px"
-          style={{ backgroundColor: "rgba(180, 170, 155, 0.3)" }}
+          style={{ backgroundColor: "var(--border)" }}
         />
 
         {/* Reviewed */}
@@ -93,7 +93,7 @@ export function TodaysProgress({
         {/* Divider */}
         <div
           className="h-16 w-px"
-          style={{ backgroundColor: "rgba(180, 170, 155, 0.3)" }}
+          style={{ backgroundColor: "var(--border)" }}
         />
 
         {/* Streak */}

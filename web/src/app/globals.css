@@ -149,12 +149,12 @@
      ====================== */
 
   --shadow-page:
-    0 1px 2px var(--notebook-shadow),
-    0 2px 4px var(--notebook-shadow);
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
 
   --shadow-page-hover:
-    0 2px 4px var(--notebook-shadow-hover),
-    0 4px 8px var(--notebook-shadow-hover);
+    0 6px 16px rgba(0, 0, 0, 0.1),
+    0 3px 6px rgba(0, 0, 0, 0.08);
 
   --shadow-page-stack:
     0 1px 2px var(--notebook-shadow),
@@ -162,6 +162,11 @@
     2px 3px 2px var(--notebook-shadow),
     4px 4px 0 var(--surface-page),
     4px 5px 2px var(--notebook-shadow);
+
+  /* Elevated shadow for cards */
+  --shadow-elevated:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.04);
 
   /* ======================
      TRANSITIONS
@@ -217,81 +222,100 @@
 
 .dark {
   /* ======================
-     DARK MODE: "Leather Moleskine at Night"
-     Warm, sophisticated dark theme that feels like
-     reading a notebook by candlelight
+     DARK MODE: "Premium Leather Journal"
+     Inspired by Notion, Linear, Arc - sophisticated
+     warmth like a candlelit study with a Moleskine
      ====================== */
 
-  /* Surface Hierarchy - Dark leather with warm paper */
-  --surface-notebook: #1C1F21;           /* Dark charcoal - like Moleskine cover */
-  --surface-page: #2A2D30;               /* Slightly lighter for cards */
-  --surface-page-aged: #252729;          /* Darker variant */
-  --surface-binding: #0A5A5E;            /* Darker teal binding */
+  /* Surface Hierarchy - Rich, layered darkness */
+  --surface-notebook: #161819;           /* Deep charcoal base - like aged leather */
+  --surface-page: #1E2023;               /* Elevated card surface */
+  --surface-page-aged: #252830;          /* Slightly warmer variant for depth */
+  --surface-binding: #1A4F52;            /* Dark teal binding - still visible */
+  --surface-elevated: #282B30;           /* Hover/interactive surface */
 
-  /* Accent System - Slightly muted for dark mode */
-  --accent-ribbon: #E85C4A;              /* Keep coral vibrant */
-  --accent-ribbon-hover: #F06B5A;        /* Lighter on hover in dark */
-  --accent-ribbon-light: rgba(232, 92, 74, 0.15);
+  /* Accent System - Vibrant against dark */
+  --accent-ribbon: #F06B5B;              /* Brightened coral for dark backgrounds */
+  --accent-ribbon-hover: #F7867A;        /* Even lighter on hover */
+  --accent-ribbon-light: rgba(240, 107, 91, 0.12);
+  --accent-ribbon-glow: rgba(240, 107, 91, 0.25);
 
-  --accent-nav: #2D9DA3;                 /* Brighter teal for dark bg */
-  --accent-nav-light: rgba(45, 157, 163, 0.15);
+  --accent-nav: #3DB4BB;                 /* Brighter teal - pops on dark */
+  --accent-nav-hover: #5CC5CB;
+  --accent-nav-light: rgba(61, 180, 187, 0.12);
+  --accent-nav-glow: rgba(61, 180, 187, 0.2);
 
-  /* Text Hierarchy - Warm, not harsh white */
-  --text-heading: #F5EFE0;               /* Cream for headings */
-  --text-body: #E0D9CC;                  /* Slightly dimmer for body */
-  --text-muted: #8A8680;                 /* Warm gray muted */
+  /* Text Hierarchy - Warm cream palette */
+  --text-heading: #F2EDE4;               /* Warm cream for headings */
+  --text-body: #C8C3B8;                  /* Soft taupe for body */
+  --text-muted: #7A7670;                 /* Warm gray - not cold */
+  --text-subtle: #5A5650;                /* Very muted, for dividers */
   --text-on-ribbon: #FFFFFF;
-  --text-on-binding: #F5EFE0;
+  --text-on-binding: #F2EDE4;
 
-  /* Notebook Details */
-  --notebook-stitch: rgba(245, 239, 224, 0.2);
-  --notebook-ruling: rgba(245, 239, 224, 0.06);
-  --notebook-shadow: rgba(0, 0, 0, 0.3);
-  --notebook-shadow-hover: rgba(0, 0, 0, 0.4);
+  /* Notebook Details - Visible but subtle */
+  --notebook-stitch: rgba(200, 195, 184, 0.18);
+  --notebook-ruling: rgba(200, 195, 184, 0.05);
+  --notebook-shadow: rgba(0, 0, 0, 0.5);
+  --notebook-shadow-hover: rgba(0, 0, 0, 0.6);
 
-  /* Semantic States - Adjusted for dark */
-  --state-hard: #C4857A;                 /* Lighter brown */
-  --state-hard-bg: rgba(196, 133, 122, 0.15);
-  --state-good: #C9A99F;                 /* Lighter taupe */
-  --state-good-bg: rgba(201, 169, 159, 0.15);
-  --state-easy: #7BA3A3;                 /* Lighter teal */
-  --state-easy-bg: rgba(123, 163, 163, 0.15);
+  /* Semantic States - Balanced for dark */
+  --state-hard: #E8A090;                 /* Warm rose - visible */
+  --state-hard-bg: rgba(232, 160, 144, 0.12);
+  --state-good: #D4B8A8;                 /* Soft taupe */
+  --state-good-bg: rgba(212, 184, 168, 0.12);
+  --state-easy: #7EC4C4;                 /* Bright teal */
+  --state-easy-bg: rgba(126, 196, 196, 0.12);
 
   /* Core UI Colors - Dark Mode */
-  --background: #1C1F21;                 /* Dark charcoal */
-  --foreground: #F5EFE0;                 /* Cream text */
-  --card: #2A2D30;                       /* Dark card surface */
-  --card-foreground: #E0D9CC;            /* Warm body text */
-  --popover: #2A2D30;
-  --popover-foreground: #E0D9CC;
-  --primary: #2D9DA3;                    /* Brighter teal */
-  --primary-foreground: #1C1F21;
-  --secondary: rgba(45, 157, 163, 0.15);
-  --secondary-foreground: #2D9DA3;
-  --muted: #252729;
-  --muted-foreground: #8A8680;
-  --accent: #E85C4A;                     /* Coral stays vibrant */
+  --background: #161819;                 /* Deep base */
+  --foreground: #F2EDE4;                 /* Warm cream */
+  --card: #1E2023;                       /* Card surface */
+  --card-foreground: #C8C3B8;            /* Warm body text */
+  --popover: #252830;
+  --popover-foreground: #C8C3B8;
+  --primary: #3DB4BB;                    /* Bright teal */
+  --primary-foreground: #161819;
+  --secondary: rgba(61, 180, 187, 0.12);
+  --secondary-foreground: #3DB4BB;
+  --muted: #252830;
+  --muted-foreground: #7A7670;
+  --accent: #F06B5B;                     /* Bright coral */
   --accent-foreground: #FFFFFF;
-  --destructive: #C4857A;
-  --border: rgba(245, 239, 224, 0.12);
-  --input: #252729;
-  --ring: #2D9DA3;
+  --destructive: #E8A090;
+  --border: rgba(200, 195, 184, 0.1);
+  --input: #252830;
+  --ring: #3DB4BB;
 
   /* Legacy LLYLI colors - dark variants */
-  --llyli-teal: #2D9DA3;
-  --llyli-teal-light: rgba(45, 157, 163, 0.15);
-  --llyli-coral: #E85C4A;
-  --llyli-coral-light: rgba(232, 92, 74, 0.15);
-  --llyli-cream: #1C1F21;
-  --llyli-beige: #252729;
+  --llyli-teal: #3DB4BB;
+  --llyli-teal-light: rgba(61, 180, 187, 0.12);
+  --llyli-coral: #F06B5B;
+  --llyli-coral-light: rgba(240, 107, 91, 0.12);
+  --llyli-cream: #161819;
+  --llyli-beige: #252830;
 
   /* Semantic Colors */
-  --success: #7BA3A3;
-  --success-light: rgba(123, 163, 163, 0.15);
-  --warning: #C9A99F;
-  --warning-light: rgba(201, 169, 159, 0.15);
-  --danger: #C4857A;
-  --danger-light: rgba(196, 133, 122, 0.15);
+  --success: #7EC4C4;
+  --success-light: rgba(126, 196, 196, 0.12);
+  --warning: #D4B8A8;
+  --warning-light: rgba(212, 184, 168, 0.12);
+  --danger: #E8A090;
+  --danger-light: rgba(232, 160, 144, 0.12);
+
+  /* Dark mode shadows - deeper and more dramatic */
+  --shadow-page:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+
+  --shadow-page-hover:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 12px 32px rgba(0, 0, 0, 0.4);
+
+  --shadow-elevated:
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 @layer base {
@@ -324,14 +348,15 @@
     background-blend-mode: overlay, normal;
   }
 
-  /* Dark mode notebook background - leather texture */
+  /* Dark mode notebook background - premium leather texture */
   .dark .notebook-bg {
-    background-color: #1C1F21;
+    background-color: #161819;
     background-image:
-      /* Leather-like texture */
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='leather'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03' numOctaves='4' stitchTiles='stitch' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%231C1F21' surfaceScale='1.5'%3E%3CfeDistantLight azimuth='45' elevation='50'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23leather)'/%3E%3C/svg%3E"),
-      linear-gradient(180deg, rgba(28, 31, 33, 1) 0%, rgba(24, 27, 29, 1) 100%);
-    background-blend-mode: overlay, normal;
+      /* Subtle grain texture for depth */
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='leather'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='3' stitchTiles='stitch' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23161819' surfaceScale='0.8'%3E%3CfeDistantLight azimuth='45' elevation='65'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23leather)'/%3E%3C/svg%3E"),
+      /* Subtle warm gradient from top */
+      linear-gradient(180deg, rgba(30, 32, 35, 0.5) 0%, rgba(22, 24, 25, 1) 100%);
+    background-blend-mode: soft-light, normal;
   }
 
   /* Page surface - white with subtle texture */
@@ -343,7 +368,8 @@
   }
 
   .dark .page-surface {
-    background-color: #2A2D30;
+    background-color: #1E2023;
+    background-image: none;
   }
 
   /* Aged paper look */
@@ -414,11 +440,12 @@
   }
 
   .dark .notebook-card {
-    background: #2A2D30;
+    background: #1E2023;
+    border: 1px solid rgba(200, 195, 184, 0.06);
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.3),
-      0 4px 6px rgba(0, 0, 0, 0.2),
-      inset 4px 0 8px -4px rgba(0, 0, 0, 0.2);
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.02);
   }
 
   /* Page with visible stack underneath */
@@ -453,15 +480,18 @@
 
   .dark .page-stack-3d::before,
   .dark .page-stack-3d::after {
-    background: #252729;
+    background: #1A1C1E;
+    border: 1px solid rgba(200, 195, 184, 0.04);
   }
 
   .dark .page-stack-3d::before {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    opacity: 0.8;
   }
 
   .dark .page-stack-3d::after {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    opacity: 0.5;
   }
 
   /* ========================================
@@ -507,6 +537,27 @@
       rgba(248, 243, 231, 0.6) 14px
     );
     z-index: 2;
+  }
+
+  /* Dark mode binding */
+  .dark .binding-edge-stitched::before {
+    background: linear-gradient(
+      90deg,
+      #1A4F52 0%,
+      #1F6065 40%,
+      #1E2023 40%,
+      #1E2023 100%
+    );
+  }
+
+  .dark .binding-edge-stitched::after {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 8px,
+      rgba(200, 195, 184, 0.25) 8px,
+      rgba(200, 195, 184, 0.25) 14px
+    );
   }
 
   /* ========================================
@@ -588,6 +639,22 @@
     border-right: 6px solid transparent;
     border-top: 10px solid #D94E3E;
     z-index: 10;
+  }
+
+  /* Dark mode ribbon - slightly brighter coral */
+  .dark .ribbon-bookmark::before {
+    background: linear-gradient(
+      180deg,
+      #F06B5B 0%,
+      #E05A4A 100%
+    );
+    box-shadow:
+      1px 2px 6px rgba(0, 0, 0, 0.4),
+      inset -2px 0 4px rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .ribbon-bookmark::after {
+    border-top-color: #E05A4A;
   }
 
   /* Small ribbon accent */
@@ -766,6 +833,12 @@
     box-shadow:
       0 4px 8px rgba(0, 0, 0, 0.08),
       0 8px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .dark .card-hover-lift:hover {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.5),
+      0 8px 24px rgba(0, 0, 0, 0.4);
   }
 
   /* Page turn animation prep */

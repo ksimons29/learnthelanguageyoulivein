@@ -11,30 +11,24 @@ export function ReviewDueButton({ dueCount }: ReviewDueButtonProps) {
   return (
     <Link
       href="/review"
-      className="group relative flex w-full items-center gap-4 rounded-r-xl rounded-l-none py-5 px-6 transition-all hover:-translate-y-1 active:translate-y-0"
+      className="group relative flex w-full items-center gap-4 rounded-r-xl rounded-l-none py-5 px-6 transition-all hover:-translate-y-1 active:translate-y-0 dark:border dark:border-[rgba(200,195,184,0.08)]"
       style={{
-        backgroundColor: "#FFFEF9",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06), inset 4px 0 8px -4px rgba(0, 0, 0, 0.04)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06), inset 4px 0 8px -4px rgba(0, 0, 0, 0.04)";
+        backgroundColor: "var(--surface-page)",
+        boxShadow: "var(--shadow-page, 0 2px 8px rgba(0, 0, 0, 0.08))",
       }}
     >
-      {/* Binding edge - teal */}
+      {/* Binding edge - teal with dark mode support */}
       <div
         className="absolute left-0 top-0 bottom-0 w-5 rounded-l-sm"
         style={{
-          background: "linear-gradient(90deg, #0A5A5E 0%, #0C6B70 100%)",
+          background: "linear-gradient(90deg, var(--surface-binding) 0%, var(--accent-nav) 100%)",
         }}
       />
       {/* Stitching on binding */}
       <div
         className="absolute left-2 top-3 bottom-3 w-0.5"
         style={{
-          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, rgba(248,243,231,0.5) 6px, rgba(248,243,231,0.5) 10px)",
+          backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, var(--notebook-stitch) 6px, var(--notebook-stitch) 10px)",
         }}
       />
 
@@ -68,7 +62,7 @@ export function ReviewDueButton({ dueCount }: ReviewDueButtonProps) {
           className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-white font-bold text-lg"
           style={{
             backgroundColor: "var(--accent-nav)",
-            boxShadow: "0 2px 6px rgba(12, 107, 112, 0.4)",
+            boxShadow: "0 2px 8px var(--accent-nav-glow, rgba(12, 107, 112, 0.4))",
           }}
         >
           {dueCount}

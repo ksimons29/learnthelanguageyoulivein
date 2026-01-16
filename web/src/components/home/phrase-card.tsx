@@ -36,6 +36,7 @@ export function PhraseCard({
         "flex items-center justify-between gap-3 p-4 ml-4 relative",
         "rounded-r-lg rounded-l-none",
         "transition-all duration-200 hover:-translate-y-0.5",
+        "dark:border dark:border-[rgba(200,195,184,0.06)]",
         className
       )}
       style={{

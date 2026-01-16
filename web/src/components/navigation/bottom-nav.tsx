@@ -40,10 +40,11 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-xl"
       style={{
         backgroundColor: "var(--surface-page)",
         borderColor: "var(--border)",
+        boxShadow: "0 -1px 0 var(--border)",
       }}
     >
       <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
