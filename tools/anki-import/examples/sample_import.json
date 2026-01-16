@@ -1,0 +1,29 @@
+[
+  {
+    "originalText": "apontado",
+    "translation": "pointed",
+    "language": "target",
+    "userId": "user-123",
+    "category": "other",
+    "createdAt": "2025-12-15T00:00:00",
+    "notes": "PT: O dedo dele estava apontado para a direção certa durante a discussão.\nEN: His finger was pointed in the right direction during the discussion."
+  },
+  {
+    "originalText": "goma de mascar",
+    "translation": "chewing gum",
+    "language": "target",
+    "userId": "user-123",
+    "category": "home",
+    "createdAt": "2025-12-15T00:00:00",
+    "notes": "PT: Comprei uma embalagem de goma de mascar para refrescar o hálito depois do almoço.\nEN: I bought a pack of chewing gum to freshen my breath after lunch."
+  },
+  {
+    "originalText": "ensaio",
+    "translation": "dry run",
+    "language": "target",
+    "userId": "user-123",
+    "category": "work",
+    "createdAt": "2025-12-15T00:00:00",
+    "notes": "PT: Fizemos um ensaio para garantir que tudo corre bem no dia da apresentação.\nEN: We did a dry run to ensure everything goes well on the day of the presentation."
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "originalText": "apontado",
+    "translation": "pointed",
+    "language": "target",
+    "userId": "user-123",
+    "category": "other",
+    "createdAt": "2025-12-15T00:00:00",
+    "notes": "PT: O dedo dele estava apontado para a direção certa durante a discussão.\nEN: His finger was pointed in the right direction during the discussion.\n[Source: Google Sheets]",
+    "learningHistory": {
+      "state": "review",
+      "reviewCount": 1,
+      "lapseCount": 0,
+      "interval": 6,
+      "easeFactor": 25.0,
+      "lastReviewed": "2026-01-07T00:51:21",
+      "mastered": false
+    }
+  },
+  {
+    "originalText": "aludindo",
+    "translation": "alluding",
+    "language": "target",
+    "userId": "user-123",
+    "category": "other",
+    "createdAt": "2025-12-07T00:00:00",
+    "notes": "PT: Ele estava aludindo a um evento passado que todos conhecemos bem.\nEN: He was alluding to a past event that we all know well.\n[Source: Google Sheets]",
+    "learningHistory": {
+      "state": "review",
+      "reviewCount": 2,
+      "lapseCount": 0,
+      "interval": 20,
+      "easeFactor": 25.0,
+      "lastReviewed": "2026-01-12T12:04:50",
+      "mastered": true
+    }
+  },
+  {
+    "originalText": "ensaio",
+    "translation": "dry run",
+    "language": "target",
+    "userId": "user-123",
+    "category": "work",
+    "createdAt": "2025-12-15T00:00:00",
+    "notes": "PT: Fizemos um ensaio para garantir que tudo corre bem no dia da apresentação.\nEN: We did a dry run to ensure everything goes well on the day of the presentation.\n[Source: Google Sheets]",
+    "learningHistory": {
+      "state": "new",
+      "reviewCount": 0,
+      "lapseCount": 0,
+      "interval": 0,
+      "easeFactor": 2.5,
+      "lastReviewed": null,
+      "mastered": false
+    }
+  },
+  {
+    "originalText": "aumentar a carga",
+    "translation": "increase the weight",
+    "language": "target",
+    "userId": "user-123",
+    "category": "fitness",
+    "createdAt": "2025-12-10T00:00:00",
+    "notes": "PT: Preciso de aumentar a carga para continuar a ganhar músculo.\nEN: I need to increase the weight to keep gaining muscle.\n[Source: Google Sheets]",
+    "learningHistory": {
+      "state": "struggling",
+      "reviewCount": 3,
+      "lapseCount": 2,
+      "interval": 1,
+      "easeFactor": 15.0,
+      "lastReviewed": "2026-01-15T10:30:00",
+      "mastered": false
+    }
+  }
+]
