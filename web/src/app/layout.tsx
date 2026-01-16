@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
 import { BottomNav, FloatingActionButton } from "@/components/navigation";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -51,12 +52,14 @@ export default function RootLayout({
           backgroundColor: "var(--surface-notebook)",
         }}
       >
-        {/* Main content with bottom padding for nav */}
-        <main className="min-h-screen pb-20">{children}</main>
+        <AuthProvider>
+          {/* Main content with bottom padding for nav */}
+          <main className="min-h-screen pb-20">{children}</main>
 
-        {/* Navigation */}
-        <FloatingActionButton />
-        <BottomNav />
+          {/* Navigation */}
+          <FloatingActionButton />
+          <BottomNav />
+        </AuthProvider>
       </body>
     </html>
   );

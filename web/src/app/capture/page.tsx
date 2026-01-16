@@ -5,24 +5,28 @@ import { useRouter } from "next/navigation";
 import { PhraseInput } from "@/components/capture";
 import { BrandWidget } from "@/components/brand";
 import { PenLine, X } from "lucide-react";
+import { useWordsStore, useUIStore } from "@/lib/store";
 
 export default function CapturePage() {
   const router = useRouter();
   const [phrase, setPhrase] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const { captureWord, isLoading } = useWordsStore();
+  const { showToast } = useUIStore();
 
   const handleSave = async () => {
     if (!phrase.trim()) return;
 
-    setIsSaving(true);
-    // TODO: Save phrase to backend
-    console.log("Saving phrase:", phrase);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    setIsSaving(false);
-    router.push("/");
+    try {
+      await captureWord(phrase.trim());
+      showToast("Phrase captured successfully!", "success");
+      setPhrase("");
+      router.push("/");
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : "Failed to capture phrase",
+        "error"
+      );
+    }
   };
 
   const handleClose = () => {
@@ -133,7 +137,7 @@ export default function CapturePage() {
           {/* Save button - styled as ribbon tab */}
           <button
             onClick={handleSave}
-            disabled={!phrase.trim() || isSaving}
+            disabled={!phrase.trim() || isLoading}
             className="group relative w-full py-5 text-lg font-semibold rounded-r-xl rounded-l-none text-white transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             style={{
               backgroundColor: "var(--accent-ribbon)",
@@ -164,7 +168,7 @@ export default function CapturePage() {
               }}
             />
             <span className="relative z-10 text-xl">
-              {isSaving ? "Saving..." : "Save to Notebook"}
+              {isLoading ? "Capturing..." : "Save to Notebook"}
             </span>
           </button>
 
