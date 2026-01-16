@@ -49,9 +49,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protected routes - redirect to sign-in if not authenticated
-  const protectedPaths = ['/capture', '/review', '/notebook', '/progress'];
+  // For now, allow all pages to be viewed for testing
+  // TODO: Uncomment to enable route protection after testing
+  const protectedPaths: string[] = [];
+  // const protectedPaths = ['/', '/capture', '/review', '/notebook', '/progress'];
   const isProtectedPath = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
   );
 
   if (!user && isProtectedPath) {
