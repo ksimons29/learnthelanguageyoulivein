@@ -222,17 +222,17 @@
 
 .dark {
   /* ======================
-     DARK MODE: "Premium Leather Journal"
-     Inspired by Notion, Linear, Arc - sophisticated
-     warmth like a candlelit study with a Moleskine
+     DARK MODE: "Notebook by Candlelight"
+     Cards feel like cream paper under warm dim lighting
+     Background is rich dark leather
      ====================== */
 
-  /* Surface Hierarchy - Rich, layered darkness */
-  --surface-notebook: #161819;           /* Deep charcoal base - like aged leather */
-  --surface-page: #1E2023;               /* Elevated card surface */
-  --surface-page-aged: #252830;          /* Slightly warmer variant for depth */
-  --surface-binding: #1A4F52;            /* Dark teal binding - still visible */
-  --surface-elevated: #282B30;           /* Hover/interactive surface */
+  /* Surface Hierarchy - Paper pages on dark leather */
+  --surface-notebook: #1A1D20;           /* Dark leather background */
+  --surface-page: #2D3035;               /* Brighter card - like paper in dim light */
+  --surface-page-aged: #353940;          /* Even warmer aged paper variant */
+  --surface-binding: #1F5558;            /* Teal binding - visible but muted */
+  --surface-elevated: #3A3F45;           /* Hover state - lifted paper */
 
   /* Accent System - Vibrant against dark */
   --accent-ribbon: #F06B5B;              /* Brightened coral for dark backgrounds */
@@ -268,32 +268,32 @@
   --state-easy-bg: rgba(126, 196, 196, 0.12);
 
   /* Core UI Colors - Dark Mode */
-  --background: #161819;                 /* Deep base */
-  --foreground: #F2EDE4;                 /* Warm cream */
-  --card: #1E2023;                       /* Card surface */
-  --card-foreground: #C8C3B8;            /* Warm body text */
-  --popover: #252830;
-  --popover-foreground: #C8C3B8;
+  --background: #1A1D20;                 /* Dark leather background */
+  --foreground: #F2EDE4;                 /* Warm cream text */
+  --card: #2D3035;                       /* Brighter card surface */
+  --card-foreground: #D4CFC5;            /* Warmer body text */
+  --popover: #353940;
+  --popover-foreground: #D4CFC5;
   --primary: #3DB4BB;                    /* Bright teal */
-  --primary-foreground: #161819;
-  --secondary: rgba(61, 180, 187, 0.12);
+  --primary-foreground: #1A1D20;
+  --secondary: rgba(61, 180, 187, 0.15);
   --secondary-foreground: #3DB4BB;
-  --muted: #252830;
-  --muted-foreground: #7A7670;
+  --muted: #353940;
+  --muted-foreground: #8A857C;
   --accent: #F06B5B;                     /* Bright coral */
   --accent-foreground: #FFFFFF;
   --destructive: #E8A090;
-  --border: rgba(200, 195, 184, 0.1);
-  --input: #252830;
+  --border: rgba(200, 195, 184, 0.12);
+  --input: #353940;
   --ring: #3DB4BB;
 
   /* Legacy LLYLI colors - dark variants */
   --llyli-teal: #3DB4BB;
-  --llyli-teal-light: rgba(61, 180, 187, 0.12);
+  --llyli-teal-light: rgba(61, 180, 187, 0.15);
   --llyli-coral: #F06B5B;
-  --llyli-coral-light: rgba(240, 107, 91, 0.12);
-  --llyli-cream: #161819;
-  --llyli-beige: #252830;
+  --llyli-coral-light: rgba(240, 107, 91, 0.15);
+  --llyli-cream: #1A1D20;
+  --llyli-beige: #353940;
 
   /* Semantic Colors */
   --success: #7EC4C4;
@@ -348,14 +348,14 @@
     background-blend-mode: overlay, normal;
   }
 
-  /* Dark mode notebook background - premium leather texture */
+  /* Dark mode notebook background - rich leather texture */
   .dark .notebook-bg {
-    background-color: #161819;
+    background-color: #1A1D20;
     background-image:
-      /* Subtle grain texture for depth */
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='leather'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='3' stitchTiles='stitch' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23161819' surfaceScale='0.8'%3E%3CfeDistantLight azimuth='45' elevation='65'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23leather)'/%3E%3C/svg%3E"),
-      /* Subtle warm gradient from top */
-      linear-gradient(180deg, rgba(30, 32, 35, 0.5) 0%, rgba(22, 24, 25, 1) 100%);
+      /* Subtle leather grain texture */
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='leather'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015' numOctaves='3' stitchTiles='stitch' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%231A1D20' surfaceScale='0.6'%3E%3CfeDistantLight azimuth='45' elevation='70'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23leather)'/%3E%3C/svg%3E"),
+      /* Warm gradient from top */
+      linear-gradient(180deg, rgba(35, 38, 42, 0.4) 0%, rgba(26, 29, 32, 1) 100%);
     background-blend-mode: soft-light, normal;
   }
 
@@ -368,7 +368,7 @@
   }
 
   .dark .page-surface {
-    background-color: #1E2023;
+    background-color: #2D3035;
     background-image: none;
   }
 
@@ -440,12 +440,12 @@
   }
 
   .dark .notebook-card {
-    background: #1E2023;
-    border: 1px solid rgba(200, 195, 184, 0.06);
+    background: #2D3035;
+    border: 1px solid rgba(200, 195, 184, 0.08);
     box-shadow:
-      0 2px 8px rgba(0, 0, 0, 0.4),
-      0 8px 24px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 8px 20px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   /* Page with visible stack underneath */
@@ -480,18 +480,18 @@
 
   .dark .page-stack-3d::before,
   .dark .page-stack-3d::after {
-    background: #1A1C1E;
-    border: 1px solid rgba(200, 195, 184, 0.04);
+    background: #262A2E;
+    border: 1px solid rgba(200, 195, 184, 0.05);
   }
 
   .dark .page-stack-3d::before {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    opacity: 0.8;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    opacity: 0.85;
   }
 
   .dark .page-stack-3d::after {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-    opacity: 0.5;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.25);
+    opacity: 0.6;
   }
 
   /* ========================================
@@ -543,10 +543,10 @@
   .dark .binding-edge-stitched::before {
     background: linear-gradient(
       90deg,
-      #1A4F52 0%,
-      #1F6065 40%,
-      #1E2023 40%,
-      #1E2023 100%
+      #1F5558 0%,
+      #267478 40%,
+      #2D3035 40%,
+      #2D3035 100%
     );
   }
 
@@ -555,8 +555,8 @@
       to bottom,
       transparent 0px,
       transparent 8px,
-      rgba(200, 195, 184, 0.25) 8px,
-      rgba(200, 195, 184, 0.25) 14px
+      rgba(200, 195, 184, 0.3) 8px,
+      rgba(200, 195, 184, 0.3) 14px
     );
   }
 
