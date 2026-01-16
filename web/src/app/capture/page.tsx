@@ -64,7 +64,7 @@ export default function CapturePage() {
       <div
         className="rounded-t-3xl relative"
         style={{
-          backgroundColor: "#FFFEF9",
+          backgroundColor: "var(--surface-page)",
           boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.15), 0 -2px 8px rgba(0, 0, 0, 0.1)",
         }}
       >
@@ -72,7 +72,7 @@ export default function CapturePage() {
         <div className="flex justify-center pt-3 pb-2">
           <div
             className="h-1.5 w-14 rounded-full"
-            style={{ backgroundColor: "rgba(180, 170, 155, 0.4)" }}
+            style={{ backgroundColor: "var(--border)" }}
           />
         </div>
 
@@ -114,16 +114,16 @@ export default function CapturePage() {
           <div
             className="mb-6 relative rounded-xl p-4"
             style={{
-              backgroundColor: "#FFFEF9",
+              backgroundColor: "var(--surface-page-aged)",
               boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.04)",
-              border: "1px solid rgba(180, 170, 155, 0.3)",
+              border: "1px solid var(--border)",
             }}
           >
             {/* Ruled lines background */}
             <div
-              className="absolute inset-0 rounded-xl pointer-events-none"
+              className="absolute inset-0 rounded-xl pointer-events-none opacity-50 dark:opacity-20"
               style={{
-                backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(180, 170, 155, 0.2) 27px, rgba(180, 170, 155, 0.2) 28px)",
+                backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, var(--notebook-ruling) 27px, var(--notebook-ruling) 28px)",
                 backgroundPosition: "0 12px",
               }}
             />

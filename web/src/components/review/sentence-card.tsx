@@ -52,7 +52,7 @@ export function SentenceCard({
 
   return (
     <div
-      className="p-5 ml-4 relative rounded-r-lg rounded-l-none"
+      className="p-5 ml-4 relative rounded-r-lg rounded-l-none dark:border dark:border-[rgba(200,195,184,0.08)]"
       style={{
         backgroundColor: "var(--surface-page)",
         boxShadow: "var(--shadow-page)",

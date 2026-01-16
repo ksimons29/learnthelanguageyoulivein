@@ -13,8 +13,8 @@ export function InboxCard({ count }: InboxCardProps) {
       <div
         className="group relative flex items-center gap-4 p-5 ml-5 rounded-r-xl rounded-l-none transition-all duration-200 hover:-translate-y-1"
         style={{
-          backgroundColor: "#FFFEF9",
-          boxShadow: "0 3px 12px rgba(12, 107, 112, 0.15), 0 2px 4px rgba(0, 0, 0, 0.06)",
+          backgroundColor: "var(--surface-page)",
+          boxShadow: "0 3px 12px var(--accent-nav-glow, rgba(12, 107, 112, 0.15)), var(--shadow-page)",
           border: "2px solid var(--accent-nav)",
         }}
       >
@@ -22,14 +22,14 @@ export function InboxCard({ count }: InboxCardProps) {
         <div
           className="absolute left-0 top-0 bottom-0 -ml-5 w-5 rounded-l-sm"
           style={{
-            background: "linear-gradient(90deg, #085458 0%, #0C6B70 100%)",
+            background: "linear-gradient(90deg, var(--surface-binding) 0%, var(--accent-nav) 100%)",
           }}
         />
         {/* Stitching */}
         <div
           className="absolute -ml-3 top-3 bottom-3 w-0.5"
           style={{
-            backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, rgba(248,243,231,0.7) 6px, rgba(248,243,231,0.7) 12px)",
+            backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, var(--notebook-stitch) 6px, var(--notebook-stitch) 12px)",
           }}
         />
 
@@ -44,7 +44,10 @@ export function InboxCard({ count }: InboxCardProps) {
           <Inbox className="h-7 w-7 text-white" strokeWidth={1.5} />
           {/* Sparkle indicator for new items */}
           {count > 0 && (
-            <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E85C4A]">
+            <div
+              className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full"
+              style={{ backgroundColor: "var(--accent-ribbon)" }}
+            >
               <Sparkles className="h-3 w-3 text-white" />
             </div>
           )}

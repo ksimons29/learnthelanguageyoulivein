@@ -108,9 +108,13 @@ export default function UpdatePasswordPage() {
               ))}
             </div>
             <div className="bg-[var(--surface-page)] rounded-r-xl rounded-l-none shadow-lg ml-4 p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+              <div
+                className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "var(--state-hard-bg)" }}
+              >
                 <svg
-                  className="w-8 h-8 text-red-600"
+                  className="w-8 h-8"
+                  style={{ color: "var(--state-hard)" }}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -167,9 +171,13 @@ export default function UpdatePasswordPage() {
             {isSuccess ? (
               /* Success state */
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <div
+                  className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "var(--state-easy-bg)" }}
+                >
                   <svg
-                    className="w-8 h-8 text-green-600"
+                    className="w-8 h-8"
+                    style={{ color: "var(--state-easy)" }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -225,7 +233,14 @@ export default function UpdatePasswordPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <div
+                      className="p-3 border rounded-lg text-sm"
+                      style={{
+                        backgroundColor: "var(--state-hard-bg)",
+                        borderColor: "var(--state-hard)",
+                        color: "var(--state-hard)",
+                      }}
+                    >
                       {error}
                     </div>
                   )}
@@ -243,7 +258,12 @@ export default function UpdatePasswordPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 8 characters"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-nav)] focus:border-transparent transition-shadow"
+                      className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-nav)] focus:border-transparent transition-shadow"
+                      style={{
+                        borderColor: "var(--border)",
+                        backgroundColor: "var(--surface-page-aged)",
+                        color: "var(--text-body)",
+                      }}
                       required
                       minLength={8}
                     />
@@ -262,7 +282,12 @@ export default function UpdatePasswordPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repeat your new password"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-nav)] focus:border-transparent transition-shadow"
+                      className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-nav)] focus:border-transparent transition-shadow"
+                      style={{
+                        borderColor: "var(--border)",
+                        backgroundColor: "var(--surface-page-aged)",
+                        color: "var(--text-body)",
+                      }}
                       required
                       minLength={8}
                     />

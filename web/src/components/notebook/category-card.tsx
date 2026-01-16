@@ -21,24 +21,24 @@ export function CategoryCard({
   return (
     <Link href={href}>
       <div
-        className="group flex items-center gap-4 p-4 ml-5 relative rounded-r-xl rounded-l-none transition-all duration-200 hover:-translate-y-1"
+        className="group flex items-center gap-4 p-4 ml-5 relative rounded-r-xl rounded-l-none transition-all duration-200 hover:-translate-y-1 dark:border dark:border-[rgba(200,195,184,0.08)]"
         style={{
-          backgroundColor: "#FFFEF9",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06), inset 4px 0 8px -4px rgba(0, 0, 0, 0.04)",
+          backgroundColor: "var(--surface-page)",
+          boxShadow: "var(--shadow-page)",
         }}
       >
         {/* Binding edge */}
         <div
           className="absolute left-0 top-0 bottom-0 -ml-5 w-5 rounded-l-sm"
           style={{
-            background: "linear-gradient(90deg, #0A5A5E 0%, #0C6B70 40%, #F5EFE0 40%, #F5EFE0 100%)",
+            background: "linear-gradient(90deg, var(--surface-binding) 0%, var(--accent-nav) 40%, var(--surface-page) 40%, var(--surface-page) 100%)",
           }}
         />
         {/* Stitching */}
         <div
           className="absolute -ml-3 top-3 bottom-3 w-0.5"
           style={{
-            backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 8px, rgba(248,243,231,0.6) 8px, rgba(248,243,231,0.6) 14px)",
+            backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 8px, var(--notebook-stitch) 8px, var(--notebook-stitch) 14px)",
           }}
         />
 

@@ -125,39 +125,46 @@ export default function OnboardingPage() {
             {/* Progress indicator */}
             <div className="flex items-center justify-center gap-2 mb-6">
               <div
-                className={`w-3 h-3 rounded-full ${
-                  step >= 1
-                    ? 'bg-[var(--accent-nav)]'
-                    : 'bg-gray-200'
-                }`}
+                className="w-3 h-3 rounded-full transition-colors"
+                style={{
+                  backgroundColor: step >= 1 ? "var(--accent-nav)" : "var(--border)",
+                }}
               />
-              <div className="w-8 h-0.5 bg-gray-200">
+              <div
+                className="w-8 h-0.5"
+                style={{ backgroundColor: "var(--border)" }}
+              >
                 <div
-                  className={`h-full bg-[var(--accent-nav)] transition-all ${
-                    step >= 2 ? 'w-full' : 'w-0'
-                  }`}
+                  className="h-full transition-all"
+                  style={{
+                    backgroundColor: "var(--accent-nav)",
+                    width: step >= 2 ? "100%" : "0%",
+                  }}
                 />
               </div>
               <div
-                className={`w-3 h-3 rounded-full ${
-                  step >= 2
-                    ? 'bg-[var(--accent-nav)]'
-                    : 'bg-gray-200'
-                }`}
+                className="w-3 h-3 rounded-full transition-colors"
+                style={{
+                  backgroundColor: step >= 2 ? "var(--accent-nav)" : "var(--border)",
+                }}
               />
-              <div className="w-8 h-0.5 bg-gray-200">
+              <div
+                className="w-8 h-0.5"
+                style={{ backgroundColor: "var(--border)" }}
+              >
                 <div
-                  className={`h-full bg-[var(--accent-nav)] transition-all ${
-                    step >= 3 ? 'w-full' : 'w-0'
-                  }`}
+                  className="h-full transition-all"
+                  style={{
+                    backgroundColor: "var(--accent-nav)",
+                    width: step >= 3 ? "100%" : "0%",
+                  }}
                 />
               </div>
               <div
-                className={`w-3 h-3 rounded-full ${
-                  step >= 3
-                    ? 'bg-[var(--accent-nav)]'
-                    : 'bg-gray-200'
-                }`}
+                className="w-3 h-3 rounded-full transition-colors"
+                style={{
+                  backgroundColor: step >= 3 ? "var(--accent-nav)" : "var(--border)",
+                }}
               />
             </div>
 
@@ -181,7 +188,7 @@ export default function OnboardingPage() {
                         className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                           nativeLanguage === code
                             ? 'border-[var(--accent-nav)] bg-[var(--accent-nav-light)]'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-[var(--border)] hover:border-[var(--text-muted)]'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -241,7 +248,7 @@ export default function OnboardingPage() {
                         className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                           targetLanguage === code
                             ? 'border-[var(--accent-nav)] bg-[var(--accent-nav-light)]'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-[var(--border)] hover:border-[var(--text-muted)]'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -275,7 +282,8 @@ export default function OnboardingPage() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setStep(1)}
-                    className="flex-1 py-3 px-4 border border-gray-200 text-[var(--text-body)] font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 px-4 border text-[var(--text-body)] font-medium rounded-lg hover:opacity-80 transition-colors"
+                    style={{ borderColor: "var(--border)" }}
                   >
                     Back
                   </button>
@@ -300,7 +308,14 @@ export default function OnboardingPage() {
                 </p>
 
                 {error && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <div
+                    className="mb-4 p-3 border rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--state-hard-bg)",
+                      borderColor: "var(--state-hard)",
+                      color: "var(--state-hard)",
+                    }}
+                  >
                     {error}
                   </div>
                 )}
@@ -313,7 +328,7 @@ export default function OnboardingPage() {
                       className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                         learningReason === reason.id
                           ? 'border-[var(--accent-nav)] bg-[var(--accent-nav-light)]'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-[var(--border)] hover:border-[var(--text-muted)]'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -347,7 +362,8 @@ export default function OnboardingPage() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setStep(2)}
-                    className="flex-1 py-3 px-4 border border-gray-200 text-[var(--text-body)] font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 px-4 border text-[var(--text-body)] font-medium rounded-lg hover:opacity-80 transition-colors"
+                    style={{ borderColor: "var(--border)" }}
                   >
                     Back
                   </button>
