@@ -4,6 +4,97 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-16 (Session 5) - Dark Mode Polish & App-Wide Consistency
+
+**Session Focus**: Apply dark mode styling consistently across all pages and fix remaining dark mode issues
+
+### What Was Done
+
+#### 1. Fixed PhraseInput Component for Dark Mode
+The capture page input had a white background making text unreadable in dark mode:
+- Changed input container from hardcoded `bg-white` to `var(--surface-page)`
+- Added `var(--text-body)` for typed text color
+- Updated camera/mic button styling from Tailwind classes to CSS variables (`var(--accent-ribbon)`)
+
+#### 2. Fixed BrandWidget Modal (About LLYLI)
+The info modal had a hardcoded white background:
+- Changed dialog background from `#FFFEF9` to `var(--surface-page)`
+- Updated FeatureItem titles to use `var(--text-heading)`
+- Updated FeatureItem descriptions to use `var(--text-muted)`
+
+#### 3. Applied Dark Mode to All Auth Pages
+Comprehensive dark mode update across authentication flow:
+
+| Page | Changes |
+|------|---------|
+| **sign-in** | Form inputs, error messages, social buttons |
+| **sign-up** | Form inputs, error messages, rate limit warnings, social buttons |
+| **reset-password** | Form inputs, error messages, success icon |
+| **update-password** | Form inputs, error messages, success/error icons |
+| **onboarding** | Progress indicators, language selection buttons, back buttons, error messages |
+
+#### 4. Updated All Component Files
+Applied CSS variable styling to components with hardcoded colors:
+
+| Component | Changes |
+|-----------|---------|
+| `capture/phrase-input.tsx` | Background, text, buttons |
+| `notebook/category-card.tsx` | Card surface, binding edge, dark border |
+| `notebook/inbox-card.tsx` | Card surface, binding edge, dark border |
+| `progress/due-today-card.tsx` | Complete rewrite with CSS variables |
+| `progress/struggling-card.tsx` | Complete rewrite with CSS variables |
+| `progress/context-readiness-card.tsx` | Complete rewrite with CSS variables |
+| `review/sentence-card.tsx` | Added dark mode border |
+| `brand/brand-widget.tsx` | Dialog background and feature items |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/components/capture/phrase-input.tsx` | Dark mode input and buttons |
+| `web/src/components/brand/brand-widget.tsx` | Dark mode dialog |
+| `web/src/app/auth/sign-in/page.tsx` | CSS variable styling |
+| `web/src/app/auth/sign-up/page.tsx` | CSS variable styling |
+| `web/src/app/auth/reset-password/page.tsx` | CSS variable styling |
+| `web/src/app/auth/update-password/page.tsx` | CSS variable styling |
+| `web/src/app/auth/onboarding/page.tsx` | CSS variable styling |
+| `web/src/app/capture/page.tsx` | CSS variable backgrounds |
+| `web/src/components/notebook/category-card.tsx` | CSS variable styling |
+| `web/src/components/notebook/inbox-card.tsx` | CSS variable styling |
+| `web/src/components/progress/*.tsx` | Complete dark mode rewrite |
+| `web/src/components/review/sentence-card.tsx` | Dark mode border |
+
+### Key Pattern Used
+
+All hardcoded colors replaced with CSS variables:
+```tsx
+// Before
+<div className="bg-white border-gray-200">
+
+// After
+<div
+  style={{
+    backgroundColor: "var(--surface-page)",
+    borderColor: "var(--border)",
+  }}
+>
+```
+
+### Git Commits
+
+- `c3bf6df` - style: Apply dark mode styling to all pages
+- `f633c04` - fix: Update PhraseInput for dark mode support
+- `3ba24cd` - fix: Update BrandWidget dialog for dark mode
+
+### Technical Notes
+
+- All builds pass with 0 errors
+- Consistent pattern: inline `style={{}}` with CSS variables
+- Dark mode borders use `dark:border dark:border-[rgba(200,195,184,0.08)]`
+- State colors (error, success) use semantic variables (`--state-hard`, `--state-easy`)
+
+---
+
 ## 2026-01-16 (Session 4) - Dark Mode Implementation
 
 **Session Focus**: Add dark mode with "leather Moleskine at night" aesthetic and theme toggle in bottom navigation
