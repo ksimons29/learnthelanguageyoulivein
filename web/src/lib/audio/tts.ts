@@ -1,10 +1,17 @@
 import OpenAI from 'openai';
+import { getTTSVoice, type LanguageConfig } from '@/lib/config/languages';
 
 /**
  * Text-to-Speech Service
  *
  * Generates high-quality native audio pronunciation using OpenAI TTS API.
  * Audio is optimized for speech: MP3 format, 128kbps, 44.1kHz.
+ *
+ * Supports multiple languages with appropriate voice selection:
+ * - Portuguese (Portugal): 'nova' voice
+ * - English: 'alloy' voice
+ * - Swedish: 'nova' voice
+ * - And more (see /lib/config/languages.ts)
  *
  * Reference: /docs/engineering/implementation_plan.md (lines 95-114)
  */
@@ -22,7 +29,7 @@ function getOpenAI() {
 
 export interface TTSOptions {
   text: string;
-  language?: string; // Used to select appropriate voice
+  languageCode?: string; // ISO language code (e.g., 'pt-PT', 'en', 'sv')
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   speed?: number; // 0.25 to 4.0, default 1.0
 }
@@ -34,13 +41,16 @@ export interface TTSOptions {
  * @returns Audio buffer in MP3 format
  */
 export async function generateAudio(options: TTSOptions): Promise<Buffer> {
-  const { text, voice = 'nova', speed = 1.0 } = options;
+  const { text, languageCode, voice, speed = 1.0 } = options;
+
+  // Use provided voice, or get voice based on language code, or default to 'nova'
+  const selectedVoice = voice || (languageCode ? getTTSVoice(languageCode) : 'nova');
   const openai = getOpenAI();
 
   try {
     const response = await openai.audio.speech.create({
       model: 'tts-1', // Use 'tts-1-hd' for higher quality (2x cost)
-      voice,
+      voice: selectedVoice,
       input: text,
       response_format: 'mp3', // AAC preferred but MP3 widely supported
       speed,
@@ -57,30 +67,19 @@ export async function generateAudio(options: TTSOptions): Promise<Buffer> {
 }
 
 /**
- * Select appropriate voice based on language
+ * Select appropriate voice based on language code
  *
- * @param language - Target language code or 'source'/'target'
+ * Uses the language configuration to select the best voice.
+ * Falls back to 'nova' for unknown languages.
+ *
+ * @param languageCode - ISO language code (e.g., 'pt-PT', 'en', 'sv')
  * @returns Recommended voice for the language
  */
 export function selectVoiceForLanguage(
-  language: string
+  languageCode: string
 ): TTSOptions['voice'] {
-  // OpenAI TTS supports multiple languages with same voices
-  // Voice characteristics:
-  // - alloy: neutral, balanced
-  // - echo: male, clear
-  // - fable: expressive, warm
-  // - onyx: deep, authoritative
-  // - nova: female, clear (good for Portuguese/Romance languages)
-  // - shimmer: soft, gentle
-
-  // For Portuguese and Romance languages, 'nova' is recommended
-  if (language.toLowerCase().includes('pt') || language === 'target') {
-    return 'nova';
-  }
-
-  // For English and other languages, use 'alloy' as default
-  return 'alloy';
+  // Use centralized language config
+  return getTTSVoice(languageCode);
 }
 
 /**

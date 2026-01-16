@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
-import { generateAudio, selectVoiceForLanguage } from '@/lib/audio/tts';
+import { generateAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
+import {
+  DEFAULT_LANGUAGE_PREFERENCE,
+  getTranslationName,
+  type UserLanguagePreference,
+} from '@/lib/config/languages';
 import OpenAI from 'openai';
 import { eq, and, or, ilike, sql } from 'drizzle-orm';
 
@@ -44,18 +49,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Detect language (source vs target)
-    // For MVP, we'll assume Portuguese → English
-    // TODO: Implement proper language detection
-    const language: 'source' | 'target' = 'target'; // Portuguese
+    // 3. Get user language preferences
+    // TODO: Fetch from user settings in database
+    // For now, use default (English ↔ Portuguese PT-PT)
+    const languagePreference = DEFAULT_LANGUAGE_PREFERENCE;
 
-    // 4. Auto-translate using OpenAI
-    const translation = await translateText(text, language);
+    // 4. Detect if text is in target language (what user is learning)
+    // For MVP, we assume user captures phrases in their target language
+    const isTargetLanguage = true;
+    const language: 'source' | 'target' = 'target';
 
-    // 5. Auto-assign category using OpenAI
+    // 5. Auto-translate using OpenAI
+    const translation = await translateText(text, isTargetLanguage, languagePreference);
+
+    // 6. Auto-assign category using OpenAI
     const { category, confidence } = await assignCategory(text, context);
 
-    // 6. Create word in database (without audio URL initially)
+    // 7. Create word in database (without audio URL initially)
     const [newWord] = await db
       .insert(words)
       .values({
@@ -77,16 +87,17 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // 7. Generate TTS audio
+    // 8. Generate TTS audio
     let audioUrl: string | null = null;
     try {
-      const voice = selectVoiceForLanguage(language);
-      const audioBuffer = await generateAudio({ text, voice });
+      // Use target language code for TTS voice selection
+      const targetLangCode = languagePreference.targetLanguage;
+      const audioBuffer = await generateAudio({ text, languageCode: targetLangCode });
 
-      // 8. Upload audio to Supabase Storage
+      // 9. Upload audio to Supabase Storage
       audioUrl = await uploadAudio(user.id, newWord.id, audioBuffer);
 
-      // 9. Update word with audio URL
+      // 10. Update word with audio URL
       await db
         .update(words)
         .set({ audioUrl })
@@ -96,7 +107,7 @@ export async function POST(request: NextRequest) {
       // Continue without audio - word is still captured
     }
 
-    // 10. Return created word
+    // 11. Return created word
     return NextResponse.json({
       data: {
         word: { ...newWord, audioUrl },
@@ -200,12 +211,24 @@ export async function GET(request: NextRequest) {
 
 /**
  * Translate text using OpenAI GPT-4
+ *
+ * Uses user's language preferences to determine translation direction.
+ * Default: Portuguese (Portugal) → English
  */
 async function translateText(
   text: string,
-  sourceLanguage: 'source' | 'target'
+  isTargetLanguage: boolean,
+  languagePreference: UserLanguagePreference = DEFAULT_LANGUAGE_PREFERENCE
 ): Promise<string> {
-  const targetLang = sourceLanguage === 'target' ? 'English' : 'Portuguese';
+  // isTargetLanguage: true = text is in target language (what user is learning)
+  // isTargetLanguage: false = text is in native language
+  const sourceLang = isTargetLanguage
+    ? getTranslationName(languagePreference.targetLanguage)
+    : getTranslationName(languagePreference.nativeLanguage);
+  const targetLang = isTargetLanguage
+    ? getTranslationName(languagePreference.nativeLanguage)
+    : getTranslationName(languagePreference.targetLanguage);
+
   const openai = getOpenAI();
 
   const response = await openai.chat.completions.create({
@@ -213,7 +236,7 @@ async function translateText(
     messages: [
       {
         role: 'system',
-        content: `You are a professional translator. Translate the given text to ${targetLang}. Provide ONLY the translation, no explanations or additional text.`,
+        content: `You are a professional translator specializing in ${sourceLang}. Translate the given text to ${targetLang}. Provide ONLY the translation, no explanations or additional text.`,
       },
       {
         role: 'user',

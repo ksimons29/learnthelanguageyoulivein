@@ -39,6 +39,21 @@ assets/              # Source design files and examples
 
 ## Project Context
 
+### Language Configuration
+**Flexible multi-language support** (see `/web/src/lib/config/languages.ts`)
+
+**Currently supported:**
+- English (en) - TTS voice: 'alloy'
+- Portuguese Portugal (pt-PT) - TTS voice: 'nova'
+- Swedish (sv) - TTS voice: 'nova'
+- Portuguese Brazil (pt-BR), Spanish (es), French (fr), German (de), Dutch (nl)
+
+**Default preference:** English ↔ Portuguese (Portugal)
+
+**Adding new languages:**
+1. Add config to `SUPPORTED_LANGUAGES` in `/web/src/lib/config/languages.ts`
+2. TTS and translation will automatically use the new config
+
 ### Target Customer
 Adults who live or work in a country where the main language is not their first language and really want to remember what they learn. Think expats, international professionals and students who already know some basics but need to function in real life at work, with landlords, schools and friends. They use both phone and laptop all day, are motivated to improve, and are already trying language apps or flashcards but feel they are not truly remembering or using the phrases they meet in daily life.
 

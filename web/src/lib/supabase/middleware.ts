@@ -60,8 +60,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect to home if already authenticated and trying to access auth pages
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+  // Redirect to home if already authenticated and trying to access certain auth pages
+  // Exception: /auth/update-password (password reset flow), /auth/callback, /auth/onboarding
+  const authPagesAllowedWhenAuthenticated = [
+    '/auth/update-password',
+    '/auth/callback',
+    '/auth/onboarding',
+  ];
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
+  const isAllowedAuthPage = authPagesAllowedWhenAuthenticated.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  if (user && isAuthPage && !isAllowedAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
