@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+
+/**
+ * Parse Supabase rate limit error to extract wait time
+ * Example: "For security purposes, you can only request this after 32 seconds."
+ */
+function parseRateLimitSeconds(message: string): number | null {
+  const match = message.match(/after (\d+) seconds/);
+  return match ? parseInt(match[1], 10) : null;
+}
 
 /**
  * Sign Up Page
@@ -24,6 +33,24 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
+
+  // Countdown timer for rate limit
+  useEffect(() => {
+    if (rateLimitCountdown === null || rateLimitCountdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setRateLimitCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          setError(null); // Clear error when countdown finishes
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [rateLimitCountdown]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +85,14 @@ export default function SignUpPage() {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        // Check for rate limit error and extract countdown
+        const rateLimitSeconds = parseRateLimitSeconds(signUpError.message);
+        if (rateLimitSeconds) {
+          setRateLimitCountdown(rateLimitSeconds);
+          setError(`Too many attempts. Please wait ${rateLimitSeconds} seconds.`);
+        } else {
+          setError(signUpError.message);
+        }
         return;
       }
 
@@ -160,8 +194,15 @@ export default function SignUpPage() {
             {/* Email/Password form */}
             <form onSubmit={handleSignUp} className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {error}
+                <div className={`p-3 rounded-lg text-sm ${
+                  rateLimitCountdown
+                    ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                    : 'bg-red-50 border border-red-200 text-red-700'
+                }`}>
+                  {rateLimitCountdown
+                    ? `Too many attempts. Please wait ${rateLimitCountdown} seconds before trying again.`
+                    : error
+                  }
                 </div>
               )}
 
@@ -224,10 +265,12 @@ export default function SignUpPage() {
               {/* Primary CTA with coral ribbon accent */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || rateLimitCountdown !== null}
                 className="w-full py-3 px-4 bg-[var(--accent-ribbon)] hover:bg-[var(--accent-ribbon-hover)] text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
-                {isLoading ? (
+                {rateLimitCountdown ? (
+                  `Wait ${rateLimitCountdown}s`
+                ) : isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg
                       className="animate-spin h-5 w-5"

@@ -6,13 +6,15 @@ interface CapturedPhrase {
   id: string;
   phrase: string;
   translation: string;
+  audioUrl?: string | null;
 }
 
 interface CapturedTodayListProps {
   phrases: CapturedPhrase[];
+  onEdit?: (id: string) => void;
 }
 
-export function CapturedTodayList({ phrases }: CapturedTodayListProps) {
+export function CapturedTodayList({ phrases, onEdit }: CapturedTodayListProps) {
   if (phrases.length === 0) {
     return (
       <div
@@ -47,8 +49,8 @@ export function CapturedTodayList({ phrases }: CapturedTodayListProps) {
           key={item.id}
           phrase={item.phrase}
           translation={item.translation}
-          onEdit={() => console.log("Edit", item.id)}
-          onPlay={() => console.log("Play", item.id)}
+          audioUrl={item.audioUrl}
+          onEdit={onEdit ? () => onEdit(item.id) : undefined}
         />
       ))}
     </div>

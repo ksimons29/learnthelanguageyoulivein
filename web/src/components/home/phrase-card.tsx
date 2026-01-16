@@ -1,23 +1,35 @@
 "use client";
 
-import { Pencil, Volume2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AudioPlayButton } from "@/components/audio";
+import { useAudioPlayer } from "@/lib/hooks";
 
 interface PhraseCardProps {
   phrase: string;
   translation: string;
+  audioUrl?: string | null;
   onEdit?: () => void;
-  onPlay?: () => void;
   className?: string;
 }
 
 export function PhraseCard({
   phrase,
   translation,
+  audioUrl,
   onEdit,
-  onPlay,
   className,
 }: PhraseCardProps) {
+  const { play, isPlaying, isLoading, currentUrl } = useAudioPlayer();
+
+  const isThisPlaying = isPlaying && currentUrl === audioUrl;
+
+  const handlePlay = () => {
+    if (audioUrl) {
+      play(audioUrl);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -68,22 +80,13 @@ export function PhraseCard({
             <Pencil className="h-4 w-4" />
           </button>
         )}
-        {onPlay && (
-          <button
-            onClick={onPlay}
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
-            style={{ color: "var(--accent-nav)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--accent-nav-light)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent";
-            }}
-            aria-label="Play audio"
-          >
-            <Volume2 className="h-4 w-4" />
-          </button>
-        )}
+        <AudioPlayButton
+          isPlaying={isThisPlaying}
+          isLoading={isLoading && currentUrl === audioUrl}
+          hasAudio={!!audioUrl}
+          onClick={handlePlay}
+          size="md"
+        />
       </div>
     </div>
   );

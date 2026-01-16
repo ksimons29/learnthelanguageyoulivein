@@ -4,6 +4,99 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-16 (Session 3) - Home Page Real Data & Audio Playback
+
+**Session Focus**: Connect home page to real API data and implement audio playback component
+
+### What Was Done
+
+#### Audio Playback System
+Created a complete audio playback infrastructure:
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `useAudioPlayer` hook | `/web/src/lib/hooks/use-audio-player.ts` | Manages audio state (playing, loading, error) with single Audio element |
+| `AudioPlayButton` | `/web/src/components/audio/audio-play-button.tsx` | Reusable button with visual states (idle, loading, playing) |
+
+**Features:**
+- Single Audio element prevents overlapping playback
+- Toggle behavior (click playing audio to stop)
+- Loading spinner during audio fetch
+- Disabled state when no audio available
+- Follows Moleskine design with teal/coral accents
+
+#### Home Page Real Data Integration
+Converted home page from mock data to live API integration:
+
+- **Authentication check**: Redirects to `/auth/sign-in` if not logged in
+- **Fetches real words**: Uses `useWordsStore.fetchWords()` on mount
+- **Computed stats**:
+  - Captured today: Filters words by `createdAt >= todayStart`
+  - Due for review: Filters words by `nextReviewDate <= now`
+  - Reviewed today: Filters words by `lastReviewDate >= todayStart`
+- **Loading states**: Shows spinner during auth check and data fetch
+
+#### Component Updates
+- **PhraseCard**: Now accepts `audioUrl` prop, integrates `useAudioPlayer` hook
+- **CapturedTodayList**: Updated interface to pass `audioUrl` from Word schema
+
+### Files Created
+
+```
+web/src/lib/hooks/
+├── use-audio-player.ts    # Audio state management hook
+└── index.ts               # Barrel export
+
+web/src/components/audio/
+├── audio-play-button.tsx  # Reusable audio button component
+└── index.ts               # Barrel export
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/app/page.tsx` | Converted to client component, integrated stores, computed real stats |
+| `web/src/components/home/phrase-card.tsx` | Added `audioUrl` prop, integrated audio playback |
+| `web/src/components/home/captured-today-list.tsx` | Added `audioUrl` to interface, optional `onEdit` callback |
+
+### Key Design Decisions
+
+**Audio Hook Pattern:**
+- Used a single `useAudioPlayer` hook per component to manage audio state
+- Each PhraseCard has its own hook instance but they share the same Audio element behavior (auto-stop previous when new plays)
+- Browser handles audio caching automatically via URL
+
+**Client-Side Stats Computation:**
+- Stats (captured today, due count, reviewed count) are computed client-side from the words array
+- Avoids additional API calls for simple date filtering
+- `useMemo` prevents recalculation on every render
+
+**Streak Placeholder:**
+- Streak calculation requires `review_sessions` table data
+- Set to 0 as placeholder until Phase 2 (FSRS integration)
+
+### Technical Notes
+
+- Build passes with 0 errors
+- Dev server runs at http://localhost:3000
+- Audio playback uses HTML5 `<audio>` element for maximum browser compatibility
+- Tailwind's `--tw-ring-color` CSS variable used for dynamic ring color
+
+### Next Actions
+
+**Phase 1 Remaining:**
+1. Test end-to-end flow: Sign in → Capture phrase → See on home page → Play audio
+
+**Phase 2 (FSRS Integration):**
+- Install `ts-fsrs` library
+- Implement review API endpoints
+- Build review UI with 4-point rating scale
+- Session management and mastery tracking
+- Calculate real streak from review_sessions
+
+---
+
 ## 2026-01-16 (Session 2) - Authentication Pages & FSRS Documentation
 
 **Session Focus**: Complete authentication UI pages and create standalone FSRS algorithm documentation for team reference

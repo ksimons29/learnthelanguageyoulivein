@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import {
   CaptureButton,
   ReviewDueButton,
@@ -5,29 +10,95 @@ import {
   TodaysProgress,
 } from "@/components/home";
 import { BrandWidget } from "@/components/brand";
-
-// Mock data - will be replaced with real data from API/state
-const mockCapturedPhrases = [
-  {
-    id: "1",
-    phrase: "Como posso ajudar?",
-    translation: "How can I help?",
-  },
-  {
-    id: "2",
-    phrase: "Vou verificar isso",
-    translation: "I'll check that",
-  },
-];
-
-const mockStats = {
-  captured: 5,
-  reviewed: 8,
-  streak: 7,
-  dueCount: 12,
-};
+import { useAuthStore } from "@/lib/store/auth-store";
+import { useWordsStore } from "@/lib/store/words-store";
 
 export default function HomePage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuthStore();
+  const { words, isLoading: wordsLoading, fetchWords } = useWordsStore();
+
+  // Fetch words when user is authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      fetchWords();
+    }
+  }, [user, authLoading, fetchWords]);
+
+  // Redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth/sign-in");
+    }
+  }, [user, authLoading, router]);
+
+  // Compute stats from words
+  const stats = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Phrases captured today
+    const capturedToday = words.filter((word) => {
+      const createdAt = new Date(word.createdAt);
+      return createdAt >= todayStart;
+    });
+
+    // Phrases due for review (nextReviewDate <= now)
+    const dueForReview = words.filter((word) => {
+      const nextReview = new Date(word.nextReviewDate);
+      return nextReview <= now;
+    });
+
+    // Reviewed today (words with lastReviewDate today)
+    const reviewedToday = words.filter((word) => {
+      if (!word.lastReviewDate) return false;
+      const lastReview = new Date(word.lastReviewDate);
+      return lastReview >= todayStart;
+    });
+
+    // TODO: Implement streak calculation from review_sessions table
+    // For now, show placeholder streak
+    const streak = 0;
+
+    return {
+      capturedToday,
+      capturedCount: capturedToday.length,
+      dueCount: dueForReview.length,
+      reviewedCount: reviewedToday.length,
+      streak,
+    };
+  }, [words]);
+
+  // Map captured today to the format CapturedTodayList expects
+  const capturedTodayPhrases = useMemo(() => {
+    return stats.capturedToday.map((word) => ({
+      id: word.id,
+      phrase: word.originalText,
+      translation: word.translation,
+      audioUrl: word.audioUrl,
+    }));
+  }, [stats.capturedToday]);
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center">
+        <div className="text-center">
+          <Loader2
+            className="h-8 w-8 animate-spin mx-auto mb-3"
+            style={{ color: "var(--accent-nav)" }}
+          />
+          <p style={{ color: "var(--text-muted)" }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen notebook-bg relative">
       {/* Ribbon bookmark hanging from top */}
@@ -68,7 +139,7 @@ export default function HomePage() {
             <CaptureButton />
           </div>
           <div className="page-stack-3d">
-            <ReviewDueButton dueCount={mockStats.dueCount} />
+            <ReviewDueButton dueCount={stats.dueCount} />
           </div>
         </div>
 
@@ -85,9 +156,15 @@ export default function HomePage() {
             >
               Captured Today
             </h2>
+            {wordsLoading && (
+              <Loader2
+                className="h-4 w-4 animate-spin"
+                style={{ color: "var(--accent-nav)" }}
+              />
+            )}
           </div>
           <div className="binding-edge-stitched">
-            <CapturedTodayList phrases={mockCapturedPhrases} />
+            <CapturedTodayList phrases={capturedTodayPhrases} />
           </div>
         </section>
 
@@ -107,9 +184,9 @@ export default function HomePage() {
           </div>
           <div className="page-stack-3d page-curl">
             <TodaysProgress
-              captured={mockStats.captured}
-              reviewed={mockStats.reviewed}
-              streak={mockStats.streak}
+              captured={stats.capturedCount}
+              reviewed={stats.reviewedCount}
+              streak={stats.streak}
             />
           </div>
         </section>
