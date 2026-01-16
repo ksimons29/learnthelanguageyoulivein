@@ -98,7 +98,7 @@ function BrandWidget({
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent
             className="max-w-sm"
-            style={{ backgroundColor: "#FFFEF9" }}
+            style={{ backgroundColor: "var(--surface-page)" }}
           >
             <DialogHeader className="text-center">
               <div className="mx-auto mb-4">
@@ -175,8 +175,8 @@ function FeatureItem({
     <div className="flex items-start gap-3">
       <div className="flex-shrink-0 mt-0.5">{icon}</div>
       <div>
-        <p className="font-medium text-foreground">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="font-medium" style={{ color: "var(--text-heading)" }}>{title}</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>{description}</p>
       </div>
     </div>
   );
