@@ -4,6 +4,94 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-16 (Session 2) - Authentication Pages & FSRS Documentation
+
+**Session Focus**: Complete authentication UI pages and create standalone FSRS algorithm documentation for team reference
+
+### What Was Done
+
+#### Authentication Pages (Moleskine Design)
+Complete auth UI implementation with Moleskine notebook aesthetic:
+
+| Page | Route | Features |
+|------|-------|----------|
+| **Sign In** | `/auth/sign-in` | Email/password login, forgot password link, social login placeholders |
+| **Sign Up** | `/auth/sign-up` | Email/password registration, password confirmation, redirects to onboarding |
+| **Onboarding** | `/auth/onboarding` | Language selection (native + target) |
+| **Reset Password** | `/auth/reset-password` | Password reset email flow |
+| **Update Password** | `/auth/update-password` | Set new password after reset |
+| **OAuth Callback** | `/auth/callback` | Handles OAuth redirect |
+
+**Design Features Applied:**
+- Teal binding edge on left with stitching marks
+- Coral ribbon accent on primary CTA buttons
+- Paper texture background (`notebook-bg`)
+- Social login buttons (Google/Apple) disabled with "Coming soon" labels
+- Consistent input styling with focus states
+
+#### FSRS Algorithm Documentation
+Created standalone reference document for team sharing:
+- **File**: `/docs/engineering/FSRS_IMPLEMENTATION.md`
+- Complete FSRS-4.5 theory (DSR model, forgetting curve formula)
+- TypeScript implementation code
+- Database schema for FSRS fields
+- Rating scale (Again/Hard/Good/Easy) effects table
+- Session management (2-hour boundary rule)
+- Mastery tracking (3 correct recalls)
+- ts-fsrs library integration guide
+
+### Files Created
+
+**Authentication Pages (6 files)**:
+```
+web/src/app/auth/
+├── sign-in/page.tsx       # Email/password login
+├── sign-up/page.tsx       # Registration with confirmation
+├── onboarding/page.tsx    # Language selection
+├── reset-password/page.tsx # Request password reset
+├── update-password/page.tsx # Set new password
+└── callback/route.ts      # OAuth callback handler
+```
+
+**Documentation (1 file)**:
+```
+docs/engineering/FSRS_IMPLEMENTATION.md  # Standalone FSRS reference
+```
+
+### Key Design Decisions
+
+**Auth Page Design Pattern:**
+- Card layout with left binding edge (teal, 16px) + stitching marks
+- Rounded right corners, square left (notebook page aesthetic)
+- Social login disabled (Phase 2) but UI ready
+- Password validation: minimum 8 characters
+- Redirects: Sign up → Onboarding → Home; Sign in → Home
+
+**FSRS Documentation Extraction:**
+- Extracted from implementation_plan.md (lines 371-582) into standalone doc
+- Enables sharing with colleagues without full implementation context
+- Includes testing checklist and API endpoint specs
+
+### Git Commits
+- `4d77474` - added authentication (all auth pages)
+- FSRS documentation committed in previous session
+
+### Next Actions
+
+**Phase 1 Completion (remaining)**:
+1. ~~Create authentication pages~~ ✅ DONE
+2. Update home page to fetch and display real words
+3. Create audio playback component
+4. Test word capture end-to-end with authentication
+
+**Phase 2 (FSRS Integration)**:
+- Install ts-fsrs library
+- Implement review API endpoints
+- Build review UI with 4-point rating scale
+- Session management and mastery tracking
+
+---
+
 ## 2026-01-16 - Phase 1 Implementation: Backend Foundation & Word Capture
 
 **Session Focus**: Implement complete backend foundation including database, authentication, API endpoints, OpenAI integration, and frontend connectivity
