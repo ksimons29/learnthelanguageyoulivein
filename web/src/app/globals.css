@@ -247,9 +247,9 @@
 
   /* Text Hierarchy - Warm cream palette */
   --text-heading: #F2EDE4;               /* Warm cream for headings */
-  --text-body: #C8C3B8;                  /* Soft taupe for body */
-  --text-muted: #7A7670;                 /* Warm gray - not cold */
-  --text-subtle: #5A5650;                /* Very muted, for dividers */
+  --text-body: #D4CFC5;                  /* Soft taupe for body */
+  --text-muted: #A09A90;                 /* Brighter warm gray - readable */
+  --text-subtle: #7A7570;                /* For dividers and hints */
   --text-on-ribbon: #FFFFFF;
   --text-on-binding: #F2EDE4;
 
@@ -279,7 +279,7 @@
   --secondary: rgba(61, 180, 187, 0.15);
   --secondary-foreground: #3DB4BB;
   --muted: #353940;
-  --muted-foreground: #8A857C;
+  --muted-foreground: #A09A90;
   --accent: #F06B5B;                     /* Bright coral */
   --accent-foreground: #FFFFFF;
   --destructive: #E8A090;
