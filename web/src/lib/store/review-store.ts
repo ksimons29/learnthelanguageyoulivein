@@ -15,9 +15,12 @@ interface ReviewStoreState {
   // Session State
   sessionId: string | null;
   dueWords: Word[];
+  totalDue: number;
   currentIndex: number;
   reviewState: ReviewState;
   lastRating: Rating | null;
+  lastNextReviewText: string | null;
+  lastMasteryAchieved: boolean;
 
   // Session Stats
   wordsReviewed: number;
@@ -47,9 +50,12 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   // Initial State
   sessionId: null,
   dueWords: [],
+  totalDue: 0,
   currentIndex: 0,
   reviewState: 'recall',
   lastRating: null,
+  lastNextReviewText: null,
+  lastMasteryAchieved: false,
   wordsReviewed: 0,
   correctCount: 0,
   isLoading: false,
@@ -68,9 +74,12 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
     set({
       sessionId: null,
       dueWords: [],
+      totalDue: 0,
       currentIndex: 0,
       reviewState: 'recall',
       lastRating: null,
+      lastNextReviewText: null,
+      lastMasteryAchieved: false,
       wordsReviewed: 0,
       correctCount: 0,
       error: null,
@@ -80,7 +89,7 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   startSession: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/reviews/due');
+      const response = await fetch('/api/reviews');
       if (!response.ok) {
         throw new Error('Failed to start session');
       }
@@ -89,6 +98,7 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
       set({
         sessionId: data.sessionId,
         dueWords: data.words,
+        totalDue: data.totalDue,
         currentIndex: 0,
         reviewState: 'recall',
         isLoading: false,
@@ -103,12 +113,13 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   },
 
   submitReview: async (wordId: string, rating: 1 | 2 | 3 | 4) => {
+    const { sessionId } = get();
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/reviews/complete', {
+      const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wordId, rating }),
+        body: JSON.stringify({ wordId, rating, sessionId }),
       });
 
       if (!response.ok) {
@@ -127,6 +138,8 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
 
       set((state) => ({
         lastRating: ratingMap[rating],
+        lastNextReviewText: data.nextReviewText || null,
+        lastMasteryAchieved: data.masteryAchieved || false,
         wordsReviewed: state.wordsReviewed + 1,
         correctCount: rating >= 3 ? state.correctCount + 1 : state.correctCount,
         isLoading: false,

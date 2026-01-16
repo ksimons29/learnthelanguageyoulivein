@@ -4,6 +4,146 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-16 (Session 6) - FSRS Review System Implementation (Epic 3)
+
+**Session Focus**: Implement the FSRS spaced repetition algorithm for the review system, connecting frontend to real backend API
+
+### What Was Done
+
+#### 1. Closed Completed GitHub Issues
+Based on CHANGELOG analysis, closed issues that were already implemented:
+- **Epic 0: Technical Foundation (#16)** - Database, auth, state management complete
+- **Epic 1: Word Capture (#11)** - API endpoints, OpenAI integration, audio storage complete
+
+#### 2. Installed ts-fsrs Library
+Added the official FSRS (Free Spaced Repetition Scheduler) library:
+```bash
+npm install ts-fsrs
+```
+
+#### 3. Created FSRS Utility Functions (`/web/src/lib/fsrs/index.ts`)
+Core functions for spaced repetition:
+
+| Function | Purpose |
+|----------|---------|
+| `calculateRetrievability()` | Uses forgetting curve formula: R(t) = (1 + t/(9·S))^(-1) |
+| `isDue()` | Checks if word needs review (retrievability < 90%) |
+| `wordToCard()` | Converts Word entity to ts-fsrs Card format |
+| `processReview()` | Calculates new FSRS parameters after review |
+| `getNextReviewText()` | Human-readable next review timing |
+
+#### 4. Built Review API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/reviews` | GET | Fetch due words + create/resume session |
+| `/api/reviews` | POST | Submit review rating, update FSRS params |
+| `/api/reviews/end` | POST | End session, return summary stats |
+
+**Key Features:**
+- 2-hour session boundary (new session after 2 hours of inactivity)
+- Mastery tracking (3 correct sessions → "ready to use")
+- Next review date calculation using FSRS algorithm
+
+#### 5. Updated Review Store (`review-store.ts`)
+Added new state fields:
+- `totalDue` - Total count of words due
+- `lastNextReviewText` - Human-readable next review text
+- `lastMasteryAchieved` - Flag for mastery celebrations
+- Fixed API endpoint URLs to match new routes
+
+#### 6. Connected Review Page to Real API
+Replaced mock data with live API integration:
+- Fetches due words on mount
+- Submits ratings via API
+- Shows real FSRS-calculated next review times
+- Displays mastery progress (X/3 correct sessions)
+- Audio playback with loading/playing states
+
+#### 7. Updated Review Complete Page
+- Uses real session stats (words reviewed, accuracy, correct count)
+- Ends session via API when page loads
+- Fetches upcoming due words count
+
+#### 8. Enhanced SentenceCard Component
+Added audio state props:
+- `isPlayingAudio` - Shows stop icon when playing
+- `isLoadingAudio` - Shows loading spinner
+
+### Files Created
+
+```
+web/src/lib/fsrs/
+└── index.ts                    # FSRS utility functions
+
+web/src/app/api/reviews/
+├── route.ts                    # GET (due words) + POST (submit review)
+└── end/route.ts                # POST (end session)
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/package.json` | Added `ts-fsrs` dependency |
+| `web/src/lib/store/review-store.ts` | New state fields, fixed API URLs |
+| `web/src/app/review/page.tsx` | Real API integration, removed mock data |
+| `web/src/app/review/complete/page.tsx` | Real session stats, API integration |
+| `web/src/components/review/sentence-card.tsx` | Audio state props |
+
+### Key Technical Decisions
+
+**Decision 1: Use ts-fsrs Library**
+Rather than implementing FSRS from scratch, we use the official library because:
+- ML-optimized parameters (FSRS-4.5)
+- Handles edge cases (leap years, numeric precision)
+- Future ability to personalize per user
+
+**Decision 2: 2-Hour Session Boundary**
+Sessions expire after 2 hours of inactivity. This ensures:
+- "3 correct recalls across 3 sessions" mastery rule works correctly
+- Users can't game mastery by reviewing rapidly in one sitting
+
+**Decision 3: Rating Scale (1-4)**
+Following FSRS standard:
+- 1 (Again): Complete blackout - stability decreases
+- 2 (Hard): Correct but difficult - slight stability increase
+- 3 (Good): Normal recall - normal stability increase
+- 4 (Easy): Trivially easy - significant stability increase
+
+### FSRS Algorithm Summary
+
+```
+Forgetting Curve: R(t) = (1 + t/(9·S))^(-1)
+
+Where:
+- R = retrievability (probability of recall)
+- t = days since last review
+- S = stability (memory strength in days)
+
+Word is "due" when R < 0.9 (90% recall threshold)
+```
+
+### Git Commits
+
+- Pending commit with all FSRS implementation changes
+
+### Remaining Open Issues
+
+| # | Issue | Priority | Status |
+|---|-------|----------|--------|
+| 17 | Epic 2: Dynamic Sentence Generation | MVP | Not started |
+| 14 | Epic 4: Word Organization | P1 | Partial |
+| 15 | Epic 5: Progress Dashboard | P2 | Partial |
+
+### Next Actions
+
+1. **Epic 2 (Sentence Generation)**: Now that FSRS is implemented, we can build the word-matching algorithm to group due words into practice sentences
+2. Test the full review flow end-to-end with real user data
+3. Add "Again" button option for complete blackouts (rating 1)
+
+---
+
 ## 2026-01-16 (Session 5) - Dark Mode Polish & App-Wide Consistency
 
 **Session Focus**: Apply dark mode styling consistently across all pages and fix remaining dark mode issues

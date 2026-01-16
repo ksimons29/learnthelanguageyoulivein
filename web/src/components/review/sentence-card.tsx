@@ -1,6 +1,6 @@
 "use client";
 
-import { Volume2 } from "lucide-react";
+import { Volume2, Loader2, VolumeX } from "lucide-react";
 
 interface SentenceCardProps {
   sentence: string;
@@ -8,6 +8,8 @@ interface SentenceCardProps {
   translation?: string;
   showTranslation: boolean;
   onPlayAudio?: () => void;
+  isPlayingAudio?: boolean;
+  isLoadingAudio?: boolean;
 }
 
 export function SentenceCard({
@@ -16,6 +18,8 @@ export function SentenceCard({
   translation,
   showTranslation,
   onPlayAudio,
+  isPlayingAudio = false,
+  isLoadingAudio = false,
 }: SentenceCardProps) {
   // Split sentence and mark highlighted words
   const renderSentence = () => {
@@ -92,11 +96,18 @@ export function SentenceCard({
         {onPlayAudio && (
           <button
             onClick={onPlayAudio}
-            className="mt-4 flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform hover:scale-105 active:scale-95"
-            style={{ backgroundColor: "var(--accent-nav)" }}
-            aria-label="Play audio"
+            disabled={isLoadingAudio}
+            className="mt-4 flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: isPlayingAudio ? "var(--accent-ribbon)" : "var(--accent-nav)" }}
+            aria-label={isPlayingAudio ? "Stop audio" : "Play audio"}
           >
-            <Volume2 className="h-5 w-5" />
+            {isLoadingAudio ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : isPlayingAudio ? (
+              <VolumeX className="h-5 w-5" />
+            ) : (
+              <Volume2 className="h-5 w-5" />
+            )}
           </button>
         )}
       </div>

@@ -1,24 +1,68 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Flame, Trophy, Target, Calendar } from "lucide-react";
+import { Flame, Trophy, Target, Calendar, Loader2 } from "lucide-react";
 import { BrandWidget } from "@/components/brand";
-
-// Mock data - will be replaced with real data
-const mockSessionStats = {
-  reviewed: 12,
-  accuracy: 83,
-  streak: 7,
-  tomorrowDue: 8,
-};
+import { useReviewStore } from "@/lib/store/review-store";
 
 export default function ReviewCompletePage() {
   const router = useRouter();
+  const { wordsReviewed, correctCount, dueWords, endSession, resetSession } =
+    useReviewStore();
+
+  const [isEnding, setIsEnding] = useState(false);
+  const [tomorrowDue, setTomorrowDue] = useState(0);
+
+  // Calculate accuracy
+  const accuracy =
+    wordsReviewed > 0 ? Math.round((correctCount / wordsReviewed) * 100) : 0;
+
+  // End the session when this page loads
+  useEffect(() => {
+    const endCurrentSession = async () => {
+      setIsEnding(true);
+      try {
+        await endSession();
+        // Fetch tomorrow's due count
+        const response = await fetch("/api/reviews");
+        if (response.ok) {
+          const { data } = await response.json();
+          setTomorrowDue(data.totalDue || 0);
+        }
+      } catch (err) {
+        console.error("Failed to end session:", err);
+      } finally {
+        setIsEnding(false);
+      }
+    };
+
+    // Only end if we had a session (wordsReviewed > 0 indicates we came from review)
+    if (wordsReviewed > 0) {
+      endCurrentSession();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDone = () => {
+    resetSession();
     router.push("/");
   };
+
+  // Loading state while ending session
+  if (isEnding) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2
+            className="h-8 w-8 animate-spin"
+            style={{ color: "var(--accent-nav)" }}
+          />
+          <p style={{ color: "var(--text-muted)" }}>Saving your progress...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen notebook-bg relative">
@@ -94,9 +138,9 @@ export default function ReviewCompletePage() {
                 className="text-5xl font-bold"
                 style={{ color: "var(--accent-nav)" }}
               >
-                {mockSessionStats.reviewed}
+                {wordsReviewed || dueWords.length}
               </p>
-              <p style={{ color: "var(--text-muted)" }}>phrases reviewed</p>
+              <p style={{ color: "var(--text-muted)" }}>words reviewed</p>
             </div>
 
             <div
@@ -119,7 +163,7 @@ export default function ReviewCompletePage() {
                   className="text-xl font-semibold"
                   style={{ color: "var(--text-heading)" }}
                 >
-                  {mockSessionStats.accuracy}%
+                  {accuracy}%
                 </p>
                 <p
                   className="text-xs"
@@ -144,13 +188,13 @@ export default function ReviewCompletePage() {
                   className="text-xl font-semibold"
                   style={{ color: "var(--text-heading)" }}
                 >
-                  {mockSessionStats.streak} days
+                  {correctCount}
                 </p>
                 <p
                   className="text-xs"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  Streak
+                  Correct
                 </p>
               </div>
             </div>
@@ -175,13 +219,13 @@ export default function ReviewCompletePage() {
                 className="text-sm"
                 style={{ color: "var(--text-muted)" }}
               >
-                Tomorrow
+                Coming up
               </p>
               <p
                 className="text-lg font-semibold"
                 style={{ color: "var(--text-heading)" }}
               >
-                {mockSessionStats.tomorrowDue} phrases due
+                {tomorrowDue} words due for review
               </p>
             </div>
           </div>
