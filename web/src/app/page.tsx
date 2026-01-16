@@ -126,7 +126,6 @@ export default function HomePage() {
               Your language journey
             </p>
           </div>
-          {/* Bigger brand widget */}
           <BrandWidget
             size="lg"
             variant="default"

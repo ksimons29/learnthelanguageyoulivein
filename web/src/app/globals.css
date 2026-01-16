@@ -216,25 +216,82 @@
 }
 
 .dark {
-  /* Moleskine is a light theme aesthetic - keep light mode */
-  --background: #F8F3E7;
-  --foreground: #1D262A;
-  --card: #FFFFFF;
-  --card-foreground: #2D3436;
-  --popover: #FFFFFF;
-  --popover-foreground: #2D3436;
-  --primary: #0C6B70;
-  --primary-foreground: #F8F3E7;
-  --secondary: #E8F4F4;
-  --secondary-foreground: #0C6B70;
-  --muted: #F8F3E7;
-  --muted-foreground: #6C7275;
-  --accent: #E85C4A;
+  /* ======================
+     DARK MODE: "Leather Moleskine at Night"
+     Warm, sophisticated dark theme that feels like
+     reading a notebook by candlelight
+     ====================== */
+
+  /* Surface Hierarchy - Dark leather with warm paper */
+  --surface-notebook: #1C1F21;           /* Dark charcoal - like Moleskine cover */
+  --surface-page: #2A2D30;               /* Slightly lighter for cards */
+  --surface-page-aged: #252729;          /* Darker variant */
+  --surface-binding: #0A5A5E;            /* Darker teal binding */
+
+  /* Accent System - Slightly muted for dark mode */
+  --accent-ribbon: #E85C4A;              /* Keep coral vibrant */
+  --accent-ribbon-hover: #F06B5A;        /* Lighter on hover in dark */
+  --accent-ribbon-light: rgba(232, 92, 74, 0.15);
+
+  --accent-nav: #2D9DA3;                 /* Brighter teal for dark bg */
+  --accent-nav-light: rgba(45, 157, 163, 0.15);
+
+  /* Text Hierarchy - Warm, not harsh white */
+  --text-heading: #F5EFE0;               /* Cream for headings */
+  --text-body: #E0D9CC;                  /* Slightly dimmer for body */
+  --text-muted: #8A8680;                 /* Warm gray muted */
+  --text-on-ribbon: #FFFFFF;
+  --text-on-binding: #F5EFE0;
+
+  /* Notebook Details */
+  --notebook-stitch: rgba(245, 239, 224, 0.2);
+  --notebook-ruling: rgba(245, 239, 224, 0.06);
+  --notebook-shadow: rgba(0, 0, 0, 0.3);
+  --notebook-shadow-hover: rgba(0, 0, 0, 0.4);
+
+  /* Semantic States - Adjusted for dark */
+  --state-hard: #C4857A;                 /* Lighter brown */
+  --state-hard-bg: rgba(196, 133, 122, 0.15);
+  --state-good: #C9A99F;                 /* Lighter taupe */
+  --state-good-bg: rgba(201, 169, 159, 0.15);
+  --state-easy: #7BA3A3;                 /* Lighter teal */
+  --state-easy-bg: rgba(123, 163, 163, 0.15);
+
+  /* Core UI Colors - Dark Mode */
+  --background: #1C1F21;                 /* Dark charcoal */
+  --foreground: #F5EFE0;                 /* Cream text */
+  --card: #2A2D30;                       /* Dark card surface */
+  --card-foreground: #E0D9CC;            /* Warm body text */
+  --popover: #2A2D30;
+  --popover-foreground: #E0D9CC;
+  --primary: #2D9DA3;                    /* Brighter teal */
+  --primary-foreground: #1C1F21;
+  --secondary: rgba(45, 157, 163, 0.15);
+  --secondary-foreground: #2D9DA3;
+  --muted: #252729;
+  --muted-foreground: #8A8680;
+  --accent: #E85C4A;                     /* Coral stays vibrant */
   --accent-foreground: #FFFFFF;
-  --destructive: #8C5B52;
-  --border: rgba(108, 114, 117, 0.25);
-  --input: #FBF8F0;
-  --ring: #0C6B70;
+  --destructive: #C4857A;
+  --border: rgba(245, 239, 224, 0.12);
+  --input: #252729;
+  --ring: #2D9DA3;
+
+  /* Legacy LLYLI colors - dark variants */
+  --llyli-teal: #2D9DA3;
+  --llyli-teal-light: rgba(45, 157, 163, 0.15);
+  --llyli-coral: #E85C4A;
+  --llyli-coral-light: rgba(232, 92, 74, 0.15);
+  --llyli-cream: #1C1F21;
+  --llyli-beige: #252729;
+
+  /* Semantic Colors */
+  --success: #7BA3A3;
+  --success-light: rgba(123, 163, 163, 0.15);
+  --warning: #C9A99F;
+  --warning-light: rgba(201, 169, 159, 0.15);
+  --danger: #C4857A;
+  --danger-light: rgba(196, 133, 122, 0.15);
 }
 
 @layer base {
@@ -267,12 +324,26 @@
     background-blend-mode: overlay, normal;
   }
 
+  /* Dark mode notebook background - leather texture */
+  .dark .notebook-bg {
+    background-color: #1C1F21;
+    background-image:
+      /* Leather-like texture */
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='leather'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03' numOctaves='4' stitchTiles='stitch' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%231C1F21' surfaceScale='1.5'%3E%3CfeDistantLight azimuth='45' elevation='50'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23leather)'/%3E%3C/svg%3E"),
+      linear-gradient(180deg, rgba(28, 31, 33, 1) 0%, rgba(24, 27, 29, 1) 100%);
+    background-blend-mode: overlay, normal;
+  }
+
   /* Page surface - white with subtle texture */
   .page-surface {
     background-color: #FFFEF9;
     background-image:
       /* Very subtle paper grain */
       url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='0.02'/%3E%3C/svg%3E");
+  }
+
+  .dark .page-surface {
+    background-color: #2A2D30;
   }
 
   /* Aged paper look */
@@ -342,6 +413,14 @@
       inset 4px 0 8px -4px rgba(0, 0, 0, 0.06);
   }
 
+  .dark .notebook-card {
+    background: #2A2D30;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      0 4px 6px rgba(0, 0, 0, 0.2),
+      inset 4px 0 8px -4px rgba(0, 0, 0, 0.2);
+  }
+
   /* Page with visible stack underneath */
   .page-stack-3d {
     position: relative;
@@ -370,6 +449,19 @@
     height: 100%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     opacity: 0.4;
+  }
+
+  .dark .page-stack-3d::before,
+  .dark .page-stack-3d::after {
+    background: #252729;
+  }
+
+  .dark .page-stack-3d::before {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .page-stack-3d::after {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   /* ========================================

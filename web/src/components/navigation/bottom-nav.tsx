@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Plus, BookOpen, Notebook, BarChart3 } from "lucide-react";
+import { Home, Plus, BookOpen, Notebook, BarChart3, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -21,6 +23,12 @@ const navItems: NavItem[] = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Don't show bottom nav on review session (full-screen experience)
   const hideOnPaths = ["/review/session"];
@@ -28,8 +36,16 @@ export function BottomNav() {
     return null;
   }
 
+  const isDark = resolvedTheme === "dark";
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 border-t"
+      style={{
+        backgroundColor: "var(--surface-page)",
+        borderColor: "var(--border)",
+      }}
+    >
       <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive =
@@ -56,9 +72,30 @@ export function BottomNav() {
             </Link>
           );
         })}
+
+        {/* Theme Toggle */}
+        <button
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          className="flex flex-col items-center justify-center gap-1 py-2 px-3 transition-colors text-muted-foreground hover:text-primary/70"
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {mounted ? (
+            isDark ? (
+              <Sun className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Moon className="h-5 w-5" aria-hidden="true" />
+            )
+          ) : (
+            <Moon className="h-5 w-5" aria-hidden="true" />
+          )}
+          <span className="text-xs font-medium">Theme</span>
+        </button>
       </div>
       {/* Safe area padding for iOS */}
-      <div className="h-safe-area-inset-bottom bg-white" />
+      <div
+        className="h-safe-area-inset-bottom"
+        style={{ backgroundColor: "var(--surface-page)" }}
+      />
     </nav>
   );
 }

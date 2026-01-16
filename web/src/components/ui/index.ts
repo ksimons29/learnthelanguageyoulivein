@@ -16,6 +16,7 @@ export { RibbonButton } from "./ribbon-button";
 export { SecondaryButton } from "./secondary-button";
 export { GradingButton } from "./grading-button";
 export type { GradeType } from "./grading-button";
+export { ThemeToggle } from "./theme-toggle";
 
 // Typography Components
 export { PageHeading } from "./page-heading";
