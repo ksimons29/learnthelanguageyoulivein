@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, AlertCircle, Target } from "lucide-react";
+import { TrendingUp, AlertCircle, Target, Briefcase, type LucideIcon } from "lucide-react";
 import {
   DueTodayCard,
   StrugglingCard,
@@ -16,8 +16,13 @@ const mockStrugglingItems = [
   { id: "2", phrase: "Estou de acordo", failCount: 3 },
 ];
 
-const mockContexts = [
-  { emoji: "🏢", name: "Work", totalPhrases: 24, dueCount: 8 },
+const mockContexts: Array<{
+  icon: LucideIcon;
+  name: string;
+  totalPhrases: number;
+  dueCount: number;
+}> = [
+  { icon: Briefcase, name: "Work", totalPhrases: 24, dueCount: 8 },
 ];
 
 export default function ProgressPage() {
@@ -137,7 +142,7 @@ export default function ProgressPage() {
             {mockContexts.map((context) => (
               <div key={context.name} className="binding-edge-stitched">
                 <ContextReadinessCard
-                  emoji={context.emoji}
+                  icon={context.icon}
                   name={context.name}
                   totalPhrases={context.totalPhrases}
                   dueCount={context.dueCount}

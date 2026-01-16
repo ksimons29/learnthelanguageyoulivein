@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { type LucideIcon } from "lucide-react";
 
 interface ContextReadinessCardProps {
-  emoji: string;
+  icon: LucideIcon;
   name: string;
   totalPhrases: number;
   dueCount: number;
 }
 
 export function ContextReadinessCard({
-  emoji,
+  icon: Icon,
   name,
   totalPhrases,
   dueCount,
@@ -24,9 +25,16 @@ export function ContextReadinessCard({
       }}
     >
       <div className="flex items-center gap-3">
-        <span className="text-2xl" role="img" aria-label={name}>
-          {emoji}
-        </span>
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-lg"
+          style={{ backgroundColor: "var(--accent-nav-light)" }}
+        >
+          <Icon
+            className="h-5 w-5"
+            style={{ color: "var(--accent-nav)" }}
+            strokeWidth={1.5}
+          />
+        </div>
         <div>
           <h3
             className="font-medium"
