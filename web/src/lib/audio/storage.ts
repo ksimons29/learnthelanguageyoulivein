@@ -49,6 +49,47 @@ export async function uploadAudio(
 }
 
 /**
+ * Upload sentence audio file to Supabase Storage
+ *
+ * Sentences use a different path structure than individual words
+ * to keep them organized: {userId}/sentences/{uuid}.mp3
+ *
+ * @param userId - User ID for organizing files
+ * @param audioBuffer - Audio file buffer (MP3 format)
+ * @returns Public URL to the uploaded audio file
+ */
+export async function uploadSentenceAudio(
+  userId: string,
+  audioBuffer: Buffer
+): Promise<string> {
+  const supabase = await createClient();
+
+  // Generate unique ID for sentence audio
+  const sentenceAudioId = crypto.randomUUID();
+  const filePath = `${userId}/sentences/${sentenceAudioId}.mp3`;
+
+  const { data, error } = await supabase.storage
+    .from(AUDIO_BUCKET)
+    .upload(filePath, audioBuffer, {
+      contentType: 'audio/mpeg',
+      upsert: false, // Sentences are unique, no need to replace
+      cacheControl: '31536000', // Cache for 1 year
+    });
+
+  if (error) {
+    console.error('Failed to upload sentence audio:', error);
+    throw new Error(`Failed to upload sentence audio: ${error.message}`);
+  }
+
+  // Get public URL
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(AUDIO_BUCKET).getPublicUrl(filePath);
+
+  return publicUrl;
+}
+
+/**
  * Delete audio file from Supabase Storage
  *
  * @param userId - User ID

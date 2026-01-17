@@ -4,6 +4,210 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-17 (Session 8) - InfoButton Component & Auth Page Styling
+
+**Session Focus**: Replace BrandWidget logo with InfoButton across app, improve auth page styling
+
+### What Was Done
+
+#### 1. Created InfoButton Component
+- New component `info-button.tsx` replaces BrandWidget across all app screens
+- Uses small LLYLI logo (40px) as trigger with Moleskine notebook styling
+- Opens bottom Sheet (not Dialog) with full brand experience:
+  - Logo, title, subtitle
+  - 4 feature cards: Capture Phrases, Native Audio, Smart Reviews, Real Context
+  - Footer with version info
+
+#### 2. Updated All App Pages to Use InfoButton
+Replaced BrandWidget with InfoButton on:
+- Home page (`/page.tsx`)
+- Notebook page (`/notebook/page.tsx`)
+- Progress page (`/progress/page.tsx`)
+- Capture page (`/capture/page.tsx`)
+- Review Complete page (`/review/complete/page.tsx`)
+- Review Header component (`review-header.tsx`)
+
+#### 3. Enhanced Auth Pages
+- Added LLYLI logo (88px) to sign-in and sign-up pages
+- Fixed text readability issues:
+  - Used `.heading-serif` class from design system
+  - Pure black (#000000) color with fontWeight 700
+  - Darker subtitle gray (#5A6268)
+
+#### 4. Created GitHub Issues
+- Issue #18: Manual QA Testing at localhost:3000
+- Issue #19: Epic 6 - Guided Onboarding for New Users
+
+### Files Created
+
+```
+web/src/components/brand/info-button.tsx   # New InfoButton component
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/components/brand/index.ts` | Export InfoButton |
+| `web/src/app/auth/sign-in/page.tsx` | Added logo, fixed heading styling |
+| `web/src/app/auth/sign-up/page.tsx` | Added logo, fixed heading styling |
+| `web/src/app/page.tsx` | BrandWidget → InfoButton |
+| `web/src/app/notebook/page.tsx` | BrandWidget → InfoButton |
+| `web/src/app/progress/page.tsx` | BrandWidget → InfoButton |
+| `web/src/app/capture/page.tsx` | BrandWidget → InfoButton |
+| `web/src/app/review/complete/page.tsx` | BrandWidget → InfoButton |
+| `web/src/components/review/review-header.tsx` | BrandWidget → InfoButton |
+
+### Key Design Decisions
+
+**Decision 1: Keep LLYLI logo as trigger (not generic info icon)**
+User preferred Moleskine aesthetic over generic Lucide info icon. Small logo serves as recognizable brand touch.
+
+**Decision 2: Bottom Sheet over Dialog**
+Sheet slides up from bottom, feels more native on mobile, less intrusive than centered dialog.
+
+**Decision 3: Strategic logo placement**
+- Auth pages: Large (88px) for brand introduction
+- In-app: Small (40px) as subtle info trigger
+- Info sheet: Medium (72px) for full brand experience
+
+### Next Steps
+- Replace InfoButton trigger icon with Moleskine-styled info icon (user requested)
+
+---
+
+## 2026-01-16 (Session 7) - Dynamic Sentence Generation & Anki Import (Epic 2)
+
+**Session Focus**: Implement Epic 2 sentence generation infrastructure and test with real Anki vocabulary data
+
+### What Was Done
+
+#### 1. Closed Epic 3 GitHub Issue
+- Verified FSRS implementation complete from Session 6
+- Closed issue #13 with implementation summary
+
+#### 2. Implemented Epic 2: Dynamic Sentence Generation
+
+**Word-Matching Algorithm** (`/web/src/lib/sentences/word-matcher.ts`)
+- `getDueWordsGroupedByCategory()` - Groups due words by category within lookahead window
+- `generateWordCombinations()` - Creates 2-4 word combinations using sliding window
+- `kCombinations()` - Generates k-combinations with early termination
+- `generateWordIdsHash()` - Deterministic hash for deduplication
+- `filterUsedCombinations()` - Batch query to exclude used combinations
+- **Fixed stack overflow**: Limited to 30 words per category, 100 combinations max
+
+**Sentence Generator** (`/web/src/lib/sentences/generator.ts`)
+- GPT-4o-mini integration (~$0.00006 per sentence)
+- Retry logic with validation (max 3 attempts)
+- Regex validation ensures all target words present
+
+**Exercise Type Logic** (`/web/src/lib/sentences/exercise-type.ts`)
+- Determines difficulty based on average consecutive correct sessions:
+  - `< 1`: multiple_choice | `< 2`: fill_blank | `>= 2`: type_translation
+
+**API Endpoints**
+- `POST /api/sentences/generate` - Batch generation with optional audio
+- `GET /api/sentences/next` - Get next unused sentence for review
+
+**Pre-generation Triggers** (`/web/src/lib/hooks/use-sentence-pregeneration.ts`)
+- `useSentencePreGeneration()` hook - Triggers on app visibility (5-min cooldown)
+- Post-capture trigger in `/api/words` - Generates 3 sentences after word capture
+
+**Review Store Updates** (`/web/src/lib/store/review-store.ts`)
+- Added `reviewMode: 'word' | 'sentence'` state
+- Added `currentSentence`, `sentenceTargetWords` state
+- Added `fetchNextSentence()`, `submitSentenceReview()` actions
+
+#### 3. Created Anki Import Tools
+
+**Dev Import Endpoint** (`/api/dev/import-anki`)
+- Bypasses auth for development testing
+- Creates users via Supabase service role
+- Converts Anki SM-2 params to FSRS (easeFactor → difficulty, interval → stability)
+
+**Bulk Import Endpoint** (`/api/words/bulk-import`)
+- Batch inserts with learning history preservation
+- Progress logging for large imports
+
+**Test Endpoint** (`/api/dev/test-sentences`)
+- Dev-only endpoint to test sentence generation for specific user
+
+#### 4. Successfully Tested with Real Data
+- Created test user: `koossimons91@gmail.com`
+- Imported 903 words from Anki with learning history
+- Generated 5 test sentences combining Portuguese vocabulary
+
+### Files Created
+
+```
+web/src/lib/sentences/
+├── word-matcher.ts        # Word grouping & combination algorithm
+├── generator.ts           # GPT sentence generation
+├── exercise-type.ts       # Exercise type determination
+└── index.ts               # Barrel export
+
+web/src/app/api/sentences/
+├── generate/route.ts      # POST - Batch generation
+└── next/route.ts          # GET - Next sentence for review
+
+web/src/app/api/dev/
+├── import-anki/route.ts   # Dev - Import with user creation
+└── test-sentences/route.ts # Dev - Test sentence generation
+
+web/src/app/api/words/
+└── bulk-import/route.ts   # Bulk import with history
+
+web/src/lib/hooks/
+└── use-sentence-pregeneration.ts  # Visibility-based trigger
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/lib/audio/storage.ts` | Added `uploadSentenceAudio()` |
+| `web/src/lib/store/review-store.ts` | Sentence state & actions |
+| `web/src/components/review/sentence-card.tsx` | Exercise type support |
+| `web/src/app/api/words/route.ts` | Post-capture sentence trigger |
+| `web/src/lib/hooks/index.ts` | Export pre-generation hook |
+| `tools/anki-import/import_to_llyli.py` | Updated for API integration |
+
+### Key Technical Decisions
+
+**Decision 1: gpt-4o-mini over gpt-4**
+33x cheaper ($0.00006 vs $0.002 per sentence), sufficient quality for short constrained sentences
+
+**Decision 2: Pre-generation over on-demand**
+Avoids latency during review, enables background processing
+
+**Decision 3: Limit combinations per category**
+Fixed stack overflow by limiting to 30 words per category, max 100 combinations
+
+**Decision 4: Fire-and-forget post-capture trigger**
+Sentence generation after word capture doesn't block the response
+
+### Test Results
+
+```
+User: koossimons91@gmail.com
+Words imported: 903
+Categories: fitness(61), other(500), bureaucracy(63), home(116), social(60), work(103)
+Sentences generated: 5
+
+Example: "O documento foi apontado, além disso, estava correto."
+```
+
+### Next Steps (Remaining for Epic 2)
+- Integrate sentence review mode into `/review` page UI
+- Add fill-in-the-blank input component
+- Add multiple choice selector component
+- Add word highlighting in sentence display
+
+### GitHub Issue Update
+Added implementation progress comment to issue #17 with acceptance criteria status.
+
+---
+
 ## 2026-01-16 (Session 6) - FSRS Review System Implementation (Epic 3)
 
 **Session Focus**: Implement the FSRS spaced repetition algorithm for the review system, connecting frontend to real backend API

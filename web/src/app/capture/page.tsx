@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PhraseInput } from "@/components/capture";
-import { BrandWidget } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 import { PenLine, X } from "lucide-react";
 import { useWordsStore, useUIStore } from "@/lib/store";
 
@@ -52,11 +52,7 @@ export default function CapturePage() {
           >
             <X className="h-5 w-5 text-white" />
           </button>
-          <BrandWidget
-            size="md"
-            variant="notebook"
-            tooltipText="About LLYLI"
-          />
+          <InfoButton />
         </div>
       </div>
 

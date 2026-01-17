@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -127,12 +128,30 @@ export default function SignUpPage() {
 
           {/* Card content */}
           <div className="bg-[var(--surface-page)] rounded-r-xl rounded-l-none shadow-lg ml-4 p-8">
-            {/* Header */}
+            {/* Header with Logo */}
             <div className="text-center mb-8">
-              <h1 className="heading-serif text-2xl text-[var(--text-heading)] mb-2">
-                Start Your Language Journey
+              <div className="flex justify-center mb-5">
+                <Image
+                  src="/images/llyli-icon.png"
+                  alt="LLYLI"
+                  width={88}
+                  height={88}
+                  className="rounded-2xl shadow-lg"
+                />
+              </div>
+              <h1
+                className="text-[28px] leading-tight mb-3 heading-serif"
+                style={{
+                  fontWeight: 700,
+                  color: '#000000',
+                }}
+              >
+                Start Your Journey
               </h1>
-              <p className="text-[var(--text-muted)] text-sm">
+              <p
+                className="text-[15px] leading-relaxed"
+                style={{ color: '#5A6268' }}
+              >
                 Remember real phrases from your daily life
               </p>
             </div>

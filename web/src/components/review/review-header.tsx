@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { BrandWidget } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 
 interface ReviewHeaderProps {
   current: number;
@@ -33,12 +33,7 @@ export function ReviewHeader({ current, total, onClose }: ReviewHeaderProps) {
         </span>
       </div>
 
-      <BrandWidget
-        size="md"
-        variant="default"
-        tooltipText="About LLYLI"
-        className="shadow-lifted"
-      />
+      <InfoButton />
     </div>
   );
 }

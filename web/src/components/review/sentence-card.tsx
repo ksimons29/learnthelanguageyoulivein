@@ -1,6 +1,7 @@
 "use client";
 
 import { Volume2, Loader2, VolumeX } from "lucide-react";
+import type { ExerciseType } from "@/lib/sentences/exercise-type";
 
 interface SentenceCardProps {
   sentence: string;
@@ -10,6 +11,10 @@ interface SentenceCardProps {
   onPlayAudio?: () => void;
   isPlayingAudio?: boolean;
   isLoadingAudio?: boolean;
+  /** Exercise type determines display mode */
+  exerciseType?: ExerciseType;
+  /** Word to blank out for fill_blank exercises */
+  blankedWord?: string;
 }
 
 export function SentenceCard({
@@ -20,21 +25,42 @@ export function SentenceCard({
   onPlayAudio,
   isPlayingAudio = false,
   isLoadingAudio = false,
+  exerciseType = "type_translation",
+  blankedWord,
 }: SentenceCardProps) {
-  // Split sentence and mark highlighted words
+  // Split sentence and mark highlighted words (and blanked word for fill_blank)
   const renderSentence = () => {
     const words = sentence.split(" ");
     return words.map((word, index) => {
-      const cleanWord = word.replace(/[.,!?]/g, "").toLowerCase();
+      const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
       const isHighlighted = highlightedWords.some(
         (hw) => hw.toLowerCase() === cleanWord
       );
-      const punctuation = word.match(/[.,!?]/)?.[0] || "";
-      const wordWithoutPunct = word.replace(/[.,!?]/g, "");
+      const isBlanked =
+        exerciseType === "fill_blank" &&
+        blankedWord &&
+        blankedWord.toLowerCase() === cleanWord;
+      const punctuation = word.match(/[.,!?;:]/)?.[0] || "";
+      const wordWithoutPunct = word.replace(/[.,!?;:]/g, "");
 
       return (
         <span key={index}>
-          {isHighlighted ? (
+          {isBlanked ? (
+            // Blanked word for fill_blank exercises
+            <span
+              className="inline-block rounded px-2 py-0.5 font-medium border-b-2 border-dashed"
+              style={{
+                borderColor: "var(--accent-nav)",
+                minWidth: "4rem",
+                color: "transparent",
+                backgroundColor: "var(--accent-nav-light)",
+              }}
+            >
+              {/* Show underscores as placeholder */}
+              {"_".repeat(Math.max(wordWithoutPunct.length, 5))}
+            </span>
+          ) : isHighlighted ? (
+            // Highlighted target word
             <span
               className="inline-block rounded px-1 py-0.5 font-medium"
               style={{
@@ -73,7 +99,11 @@ export function SentenceCard({
 
       <div className="relative z-10">
         <p className="mb-2 text-sm" style={{ color: "var(--text-muted)" }}>
-          Recall the meaning:
+          {exerciseType === "fill_blank"
+            ? "Fill in the blank:"
+            : exerciseType === "multiple_choice"
+            ? "Choose the correct meaning:"
+            : "Recall the meaning:"}
         </p>
 
         <p

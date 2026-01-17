@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SearchBar, InboxCard, CategoryCard } from "@/components/notebook";
-import { BrandWidget } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 import { Briefcase, MessageCircle, ShoppingBag, Heart, Car, type LucideIcon } from "lucide-react";
 
 // Mock data - will be replaced with real data
@@ -39,8 +39,8 @@ export default function NotebookPage() {
 
       <div className="mx-auto max-w-md px-5 py-6">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div className="pt-2">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
             <h1
               className="text-4xl heading-serif ink-text tracking-tight"
               style={{ color: "var(--text-heading)" }}
@@ -54,12 +54,7 @@ export default function NotebookPage() {
               Your phrase collection
             </p>
           </div>
-          <BrandWidget
-            size="lg"
-            variant="default"
-            tooltipText="About LLYLI"
-            className="shadow-lifted"
-          />
+          <InfoButton />
         </div>
 
         {/* Search */}

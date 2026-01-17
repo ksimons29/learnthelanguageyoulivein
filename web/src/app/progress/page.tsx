@@ -6,7 +6,7 @@ import {
   StrugglingCard,
   ContextReadinessCard,
 } from "@/components/progress";
-import { BrandWidget } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 
 // Mock data - will be replaced with real data
 const mockDueCount = 12;
@@ -36,8 +36,8 @@ export default function ProgressPage() {
 
       <div className="mx-auto max-w-md px-5 py-6">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div className="pt-2">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
             <h1
               className="text-4xl heading-serif ink-text tracking-tight"
               style={{ color: "var(--text-heading)" }}
@@ -51,13 +51,7 @@ export default function ProgressPage() {
               Track your learning journey
             </p>
           </div>
-          {/* Brand widget - consistent with other pages */}
-          <BrandWidget
-            size="lg"
-            variant="default"
-            tooltipText="About LLYLI"
-            className="shadow-lifted"
-          />
+          <InfoButton />
         </div>
 
         {/* Due Today */}

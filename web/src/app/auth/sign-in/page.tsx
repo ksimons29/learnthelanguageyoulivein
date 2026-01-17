@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -75,12 +76,30 @@ export default function SignInPage() {
 
           {/* Card content */}
           <div className="bg-[var(--surface-page)] rounded-r-xl rounded-l-none shadow-lg ml-4 p-8">
-            {/* Header */}
+            {/* Header with Logo */}
             <div className="text-center mb-8">
-              <h1 className="heading-serif text-2xl text-[var(--text-heading)] mb-2">
+              <div className="flex justify-center mb-5">
+                <Image
+                  src="/images/llyli-icon.png"
+                  alt="LLYLI"
+                  width={88}
+                  height={88}
+                  className="rounded-2xl shadow-lg"
+                />
+              </div>
+              <h1
+                className="text-[28px] leading-tight mb-3 heading-serif"
+                style={{
+                  fontWeight: 700,
+                  color: '#000000',
+                }}
+              >
                 Welcome Back
               </h1>
-              <p className="text-[var(--text-muted)] text-sm">
+              <p
+                className="text-[15px] leading-relaxed"
+                style={{ color: '#5A6268' }}
+              >
                 Continue your language journey
               </p>
             </div>

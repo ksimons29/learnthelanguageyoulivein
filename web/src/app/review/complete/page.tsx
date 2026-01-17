@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Flame, Trophy, Target, Calendar, Loader2 } from "lucide-react";
-import { BrandWidget } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 import { useReviewStore } from "@/lib/store/review-store";
 
 export default function ReviewCompletePage() {
@@ -73,14 +73,9 @@ export default function ReviewCompletePage() {
       <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
       <div className="mx-auto max-w-md px-5 py-6">
-        {/* Header with brand widget */}
+        {/* Header with info button */}
         <div className="flex justify-end mb-8">
-          <BrandWidget
-            size="lg"
-            variant="default"
-            tooltipText="About LLYLI"
-            className="shadow-lifted"
-          />
+          <InfoButton />
         </div>
 
         {/* Title */}

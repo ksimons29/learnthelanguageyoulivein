@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { words } from '@/lib/db/schema';
+import { words, generatedSentences } from '@/lib/db/schema';
 import { generateAudio } from '@/lib/audio/tts';
-import { uploadAudio } from '@/lib/audio/storage';
+import { uploadAudio, uploadSentenceAudio } from '@/lib/audio/storage';
 import {
   DEFAULT_LANGUAGE_PREFERENCE,
   getTranslationName,
   type UserLanguagePreference,
 } from '@/lib/config/languages';
+import {
+  getUnusedWordCombinations,
+  generateSentenceWithRetry,
+  generateWordIdsHash,
+  determineExerciseType,
+} from '@/lib/sentences';
 import OpenAI from 'openai';
 import { eq, and, or, ilike, sql } from 'drizzle-orm';
 
@@ -107,7 +113,13 @@ export async function POST(request: NextRequest) {
       // Continue without audio - word is still captured
     }
 
-    // 11. Return created word
+    // 11. Trigger sentence pre-generation (fire-and-forget)
+    // This opportunistically generates sentences that might include the new word
+    triggerSentenceGeneration(user.id).catch(() => {
+      // Silently fail - this is an optimization, not critical
+    });
+
+    // 12. Return created word
     return NextResponse.json({
       data: {
         word: { ...newWord, audioUrl },
@@ -319,4 +331,75 @@ Respond with ONLY the category name in lowercase, nothing else.`;
   const confidence = 0.8;
 
   return { category: finalCategory, confidence };
+}
+
+/**
+ * Trigger sentence pre-generation after word capture
+ *
+ * Runs in the background to generate sentences that might include
+ * the newly captured word. Fire-and-forget - failures are logged but
+ * don't affect the word capture response.
+ */
+async function triggerSentenceGeneration(userId: string): Promise<void> {
+  try {
+    const languagePreference = DEFAULT_LANGUAGE_PREFERENCE;
+
+    // Get a few unused word combinations
+    const combinations = await getUnusedWordCombinations(
+      userId,
+      {
+        minWordsPerSentence: 2,
+        maxWordsPerSentence: 4,
+        dueDateWindowDays: 7,
+        retrievabilityThreshold: 0.9,
+      },
+      3 // Generate max 3 sentences after capture
+    );
+
+    if (combinations.length === 0) {
+      return;
+    }
+
+    // Generate sentences for each combination
+    for (const wordGroup of combinations) {
+      const result = await generateSentenceWithRetry({
+        words: wordGroup,
+        targetLanguage: languagePreference.targetLanguage,
+        nativeLanguage: languagePreference.nativeLanguage,
+      });
+
+      if (!result) {
+        continue;
+      }
+
+      // Generate audio (optional, non-fatal)
+      let audioUrl: string | null = null;
+      try {
+        const audioBuffer = await generateAudio({
+          text: result.text,
+          languageCode: languagePreference.targetLanguage,
+        });
+        audioUrl = await uploadSentenceAudio(userId, audioBuffer);
+      } catch {
+        // Continue without audio
+      }
+
+      // Determine exercise type
+      const exerciseType = determineExerciseType(wordGroup);
+
+      // Store sentence
+      await db.insert(generatedSentences).values({
+        userId,
+        text: result.text,
+        audioUrl,
+        wordIds: wordGroup.map((w) => w.id),
+        wordIdsHash: generateWordIdsHash(wordGroup.map((w) => w.id)),
+        exerciseType,
+        usedAt: null,
+      });
+    }
+  } catch (error) {
+    console.error('Background sentence generation failed:', error);
+    // Don't rethrow - this is a background optimization
+  }
 }

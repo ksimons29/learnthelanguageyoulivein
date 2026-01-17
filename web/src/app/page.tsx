@@ -9,7 +9,7 @@ import {
   CapturedTodayList,
   TodaysProgress,
 } from "@/components/home";
-import { BrandWidget } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 
@@ -111,8 +111,8 @@ export default function HomePage() {
 
       <div className="mx-auto max-w-md px-5 py-6">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div className="pt-2">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
             <h1
               className="text-4xl heading-serif ink-text tracking-tight"
               style={{ color: "var(--text-heading)" }}
@@ -126,12 +126,7 @@ export default function HomePage() {
               Your language journey
             </p>
           </div>
-          <BrandWidget
-            size="lg"
-            variant="default"
-            tooltipText="About LLYLI"
-            className="shadow-lifted"
-          />
+          <InfoButton />
         </div>
 
         {/* Primary Actions - styled as notebook pages */}
