@@ -1,149 +1,160 @@
 "use client";
 
-import { TrendingUp, AlertCircle, Target, Briefcase, type LucideIcon } from "lucide-react";
-import {
-  DueTodayCard,
-  StrugglingCard,
-  ContextReadinessCard,
-} from "@/components/progress";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { CompactProgressCard, ForecastChart } from "@/components/progress";
 import { InfoButton } from "@/components/brand";
+import type { Word } from "@/lib/db/schema";
 
-// Mock data - will be replaced with real data
-const mockDueCount = 12;
+/**
+ * Progress Data from /api/progress
+ */
+interface ProgressData {
+  totalWords: number;
+  wordsThisWeek: number;
+  masteredWords: number;
+  retentionRate: number;
+  currentStreak: number;
+  dueToday: number;
+  needPractice: number;
+  forecast: { date: string; count: number }[];
+  strugglingWordsList: Word[];
+  newCardsCount: number;
+}
 
-const mockStrugglingItems = [
-  { id: "1", phrase: "Qual é o problema?", failCount: 4 },
-  { id: "2", phrase: "Estou de acordo", failCount: 3 },
-];
-
-const mockContexts: Array<{
-  icon: LucideIcon;
-  name: string;
-  totalPhrases: number;
-  dueCount: number;
-}> = [
-  { icon: Briefcase, name: "Work", totalPhrases: 24, dueCount: 8 },
-];
-
+/**
+ * Progress Page - Compact Moleskine Design
+ *
+ * iPhone-friendly single-screen dashboard.
+ * Uses Moleskine design tokens throughout.
+ */
 export default function ProgressPage() {
+  const [data, setData] = useState<ProgressData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchProgress() {
+      try {
+        const response = await fetch("/api/progress");
+        if (!response.ok) {
+          if (response.status === 401) {
+            setError("Please sign in to view your progress");
+          } else {
+            throw new Error("Failed to fetch progress data");
+          }
+          return;
+        }
+        const result = await response.json();
+        setData(result.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchProgress();
+  }, []);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center">
+        <div className="text-center">
+          <Loader2
+            className="h-8 w-8 animate-spin mx-auto mb-2"
+            style={{ color: "var(--accent-nav)" }}
+          />
+          <p style={{ color: "var(--text-muted)" }}>Loading progress...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center px-5">
+        <div
+          className="text-center p-6 rounded-xl max-w-sm"
+          style={{
+            backgroundColor: "var(--surface-page)",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
+          <p className="mb-4" style={{ color: "var(--text-body)" }}>
+            {error}
+          </p>
+          <a
+            href="/auth/sign-in"
+            className="inline-block px-6 py-2 rounded-lg font-medium"
+            style={{
+              backgroundColor: "var(--accent-ribbon)",
+              color: "var(--text-on-ribbon)",
+            }}
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!data) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center">
+        <div className="text-center">
+          <p style={{ color: "var(--text-muted)" }}>No progress data available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen notebook-bg relative">
-      {/* Ribbon bookmark hanging from top */}
+      {/* Ribbon bookmark */}
       <div className="ribbon-bookmark" />
 
-      {/* Elastic band on right edge */}
-      <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
-
-      <div className="mx-auto max-w-md px-5 py-6">
+      <div className="mx-auto max-w-md px-4 py-5 pb-24">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between">
           <div>
             <h1
-              className="text-4xl heading-serif ink-text tracking-tight"
+              className="text-3xl heading-serif"
               style={{ color: "var(--text-heading)" }}
             >
               Progress
             </h1>
             <p
-              className="text-sm mt-1 handwritten"
+              className="text-sm handwritten"
               style={{ color: "var(--text-muted)" }}
             >
-              Track your learning journey
+              Your learning journey
             </p>
           </div>
           <InfoButton />
         </div>
 
-        {/* Due Today */}
-        <section className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-1 h-6 rounded-full"
-              style={{ backgroundColor: "var(--accent-ribbon)" }}
-            />
-            <div className="flex items-center gap-2">
-              <TrendingUp
-                className="h-5 w-5"
-                style={{ color: "var(--accent-ribbon)" }}
-              />
-              <h2
-                className="text-lg font-semibold"
-                style={{ color: "var(--text-heading)" }}
-              >
-                Due Today
-              </h2>
-            </div>
-          </div>
-          <div className="page-stack-3d">
-            <DueTodayCard count={mockDueCount} />
-          </div>
+        {/* Compact Progress Card */}
+        <section className="mb-4">
+          <CompactProgressCard
+            totalWords={data.totalWords}
+            wordsThisWeek={data.wordsThisWeek}
+            retentionRate={data.retentionRate}
+            currentStreak={data.currentStreak}
+            dueToday={data.dueToday}
+            needPractice={data.needPractice}
+            strugglingWordsList={data.strugglingWordsList}
+            newCardsCount={data.newCardsCount}
+            masteredWords={data.masteredWords}
+          />
         </section>
 
-        {/* Struggling */}
-        <section className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-1 h-6 rounded-full"
-              style={{ backgroundColor: "var(--state-warning)" }}
-            />
-            <div className="flex items-center gap-2">
-              <AlertCircle
-                className="h-5 w-5"
-                style={{ color: "var(--state-warning)" }}
-              />
-              <h2
-                className="text-lg font-semibold"
-                style={{ color: "var(--text-heading)" }}
-              >
-                Struggling
-              </h2>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {mockStrugglingItems.map((item) => (
-              <div key={item.id} className="binding-edge-stitched">
-                <StrugglingCard
-                  phrase={item.phrase}
-                  failCount={item.failCount}
-                  onPractice={() => console.log("Practice", item.id)}
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Context Readiness */}
-        <section className="mb-20">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-1 h-6 rounded-full"
-              style={{ backgroundColor: "var(--accent-nav)" }}
-            />
-            <div className="flex items-center gap-2">
-              <Target
-                className="h-5 w-5"
-                style={{ color: "var(--accent-nav)" }}
-              />
-              <h2
-                className="text-lg font-semibold"
-                style={{ color: "var(--text-heading)" }}
-              >
-                Context Readiness
-              </h2>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {mockContexts.map((context) => (
-              <div key={context.name} className="binding-edge-stitched">
-                <ContextReadinessCard
-                  icon={context.icon}
-                  name={context.name}
-                  totalPhrases={context.totalPhrases}
-                  dueCount={context.dueCount}
-                />
-              </div>
-            ))}
-          </div>
+        {/* Forecast Chart */}
+        <section className="mb-4">
+          <ForecastChart forecast={data.forecast} />
         </section>
       </div>
     </div>
