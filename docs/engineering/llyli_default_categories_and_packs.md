@@ -1,4 +1,4 @@
-# LLYLI Default Categories, Starter Packs, Auto Categorization
+ye# LLYLI Default Categories, Starter Packs, Auto Categorization
 
 ## Goal
 Reduce empty state friction while protecting the core promise:
