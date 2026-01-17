@@ -15,6 +15,8 @@ interface SentenceCardProps {
   exerciseType?: ExerciseType;
   /** Word to blank out for fill_blank exercises */
   blankedWord?: string;
+  /** Render exercise input/options below the sentence */
+  children?: React.ReactNode;
 }
 
 export function SentenceCard({
@@ -27,6 +29,7 @@ export function SentenceCard({
   isLoadingAudio = false,
   exerciseType = "type_translation",
   blankedWord,
+  children,
 }: SentenceCardProps) {
   // Split sentence and mark highlighted words (and blanked word for fill_blank)
   const renderSentence = () => {
@@ -112,6 +115,9 @@ export function SentenceCard({
         >
           {renderSentence()}
         </p>
+
+        {/* Exercise input/options rendered via children */}
+        {children}
 
         {showTranslation && translation && (
           <>

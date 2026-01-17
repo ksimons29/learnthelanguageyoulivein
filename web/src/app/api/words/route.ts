@@ -159,12 +159,17 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const masteryStatus = searchParams.get('masteryStatus');
     const search = searchParams.get('search');
+    const excludeId = searchParams.get('excludeId');
 
     // 3. Build query with filters
     const conditions = [eq(words.userId, user.id)];
 
     if (category) {
       conditions.push(eq(words.category, category));
+    }
+
+    if (excludeId) {
+      conditions.push(sql`${words.id} != ${excludeId}`);
     }
 
     if (masteryStatus) {

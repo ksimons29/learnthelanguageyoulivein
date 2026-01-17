@@ -7,6 +7,8 @@ type Rating = "hard" | "good" | "easy";
 interface GradingButtonsProps {
   onGrade: (rating: Rating) => void;
   disabled?: boolean;
+  /** Pre-highlight a grade (e.g., "hard" after incorrect answer) */
+  suggestedGrade?: Rating;
 }
 
 const gradeStyles = {
@@ -30,7 +32,11 @@ const gradeStyles = {
   },
 };
 
-export function GradingButtons({ onGrade, disabled }: GradingButtonsProps) {
+export function GradingButtons({
+  onGrade,
+  disabled,
+  suggestedGrade,
+}: GradingButtonsProps) {
   return (
     <div className="space-y-3">
       <p className="text-center text-sm" style={{ color: "var(--text-muted)" }}>
@@ -39,6 +45,8 @@ export function GradingButtons({ onGrade, disabled }: GradingButtonsProps) {
       <div className="grid grid-cols-3 gap-3">
         {(["hard", "good", "easy"] as Rating[]).map((rating) => {
           const styles = gradeStyles[rating];
+          const isSuggested = rating === suggestedGrade;
+
           return (
             <button
               key={rating}
@@ -47,12 +55,17 @@ export function GradingButtons({ onGrade, disabled }: GradingButtonsProps) {
               className={cn(
                 "rounded-lg border-2 py-4 text-base font-semibold transition-all active:scale-[0.98]",
                 "hover:-translate-y-0.5",
-                disabled && "opacity-50 cursor-not-allowed"
+                disabled && "opacity-50 cursor-not-allowed",
+                // Add pulse animation for suggested grade
+                isSuggested && "ring-2 ring-offset-2"
               )}
               style={{
-                backgroundColor: styles.bg,
+                backgroundColor: isSuggested ? styles.bgHover : styles.bg,
                 borderColor: styles.border,
-                color: styles.text,
+                color: isSuggested ? "white" : styles.text,
+                // Ring color matches the grade
+                // @ts-expect-error - CSS custom properties
+                "--tw-ring-color": styles.border,
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
@@ -61,8 +74,14 @@ export function GradingButtons({ onGrade, disabled }: GradingButtonsProps) {
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = styles.bg;
-                e.currentTarget.style.color = styles.text;
+                if (!disabled) {
+                  e.currentTarget.style.backgroundColor = isSuggested
+                    ? styles.bgHover
+                    : styles.bg;
+                  e.currentTarget.style.color = isSuggested
+                    ? "white"
+                    : styles.text;
+                }
               }}
             >
               {rating.charAt(0).toUpperCase() + rating.slice(1)}

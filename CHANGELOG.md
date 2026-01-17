@@ -4,6 +4,79 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-17 (Session 9) - Epic 2 UI: Sentence-Based Review Integration
+
+**Session Focus**: Complete Epic 2 UI work by integrating sentence-based exercises into the review flow
+
+### What Was Done
+
+#### 1. Created Exercise Input Components
+- **FillBlankInput** (`fill-blank-input.tsx`): Text input for typing blanked words
+  - Case-insensitive validation
+  - Green/red border feedback on correct/incorrect
+  - Submit on Enter or button click
+- **MultipleChoiceOptions** (`multiple-choice-options.tsx`): 2x2 grid of translation choices
+  - 4 options (1 correct + 3 distractors from same category)
+  - Visual feedback highlighting correct/incorrect after selection
+- **AnswerFeedback** (`answer-feedback.tsx`): Shows "Correct!" or "Not quite. The answer was: X"
+
+#### 2. Created Distractors Utility
+- **distractors.ts** (`/lib/review/distractors.ts`): Utilities for multiple choice exercises
+  - `fetchDistractors()`: Gets same-category words via `/api/words?excludeId=`
+  - `shuffleArray()`: Fisher-Yates shuffle
+  - `buildMultipleChoiceOptions()`: Combines correct + distractors
+  - `prepareMultipleChoiceOptions()`: Convenience wrapper
+
+#### 3. Enhanced Existing Components
+- **SentenceCard**: Added `children` prop to render exercise inputs below sentence
+- **GradingButtons**: Added `suggestedGrade` prop to pre-highlight after wrong answer
+- **/api/words**: Added `excludeId` query parameter for distractor filtering
+
+#### 4. Full Review Page Integration
+- Dual-mode architecture: sentence mode (lines 348-548) vs word mode (lines 551-716)
+- Session initialization tries `fetchNextSentence()` first
+- Exercise type determined dynamically based on target words' mastery levels
+- Three exercise types supported:
+  - `fill_blank`: Type the missing word
+  - `multiple_choice`: Choose correct translation from 4 options
+  - `type_translation`: Existing reveal flow (no new input needed)
+- Wrong answers still show grading, but pre-select "Hard"
+
+### Files Created
+
+```
+web/src/components/review/fill-blank-input.tsx      # Fill-in-blank text input
+web/src/components/review/multiple-choice-options.tsx # 4-option grid
+web/src/components/review/answer-feedback.tsx       # Correct/incorrect feedback
+web/src/lib/review/distractors.ts                   # Distractor fetching utilities
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/components/review/sentence-card.tsx` | Added `children` prop for exercise inputs |
+| `web/src/components/review/grading-buttons.tsx` | Added `suggestedGrade` prop |
+| `web/src/components/review/index.ts` | Exported new components |
+| `web/src/app/api/words/route.ts` | Added `excludeId` query param |
+| `web/src/app/review/page.tsx` | Full sentence mode integration |
+
+### Key Decisions
+
+1. **Distractors from user's vocabulary** - Same-category words fetched client-side
+2. **Client-side answer validation** - Correct answer already in `sentenceTargetWords`
+3. **Wrong answer = still show grading** - Pre-select "Hard" but let user override
+4. **Progressive difficulty** - Exercise type based on mastery (multiple_choice → fill_blank → type_translation)
+
+### Next Actions
+
+- [ ] Manual QA testing of all three exercise types
+- [ ] Verify sentence grading applies to ALL words in sentence
+- [ ] Test fallback to word mode when no sentences available
+- [ ] Consider closing Epic 2 GitHub issue (#17)
+
+---
+
 ## 2026-01-17 (Session 8) - InfoButton Component & Auth Page Styling
 
 **Session Focus**: Replace BrandWidget logo with InfoButton across app, improve auth page styling

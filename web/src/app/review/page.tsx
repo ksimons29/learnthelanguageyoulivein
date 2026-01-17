@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,22 @@ import {
   GradingButtons,
   FeedbackCard,
   MasteryModal,
+  FillBlankInput,
+  MultipleChoiceOptions,
+  AnswerFeedback,
 } from "@/components/review";
 import { useReviewStore } from "@/lib/store/review-store";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useAudioPlayer } from "@/lib/hooks";
+import {
+  determineExerciseType,
+  selectWordToBlank,
+} from "@/lib/sentences/exercise-type";
+import {
+  prepareMultipleChoiceOptions,
+  type MultipleChoiceOption,
+} from "@/lib/review/distractors";
+import type { Word } from "@/lib/db/schema";
 
 type Rating = "hard" | "good" | "easy";
 
@@ -36,14 +48,55 @@ export default function ReviewPage() {
     setReviewState,
     setCurrentIndex,
     resetSession,
+    // Sentence mode state
+    reviewMode,
+    currentSentence,
+    sentenceTargetWords,
+    fetchNextSentence,
+    submitSentenceReview,
   } = useReviewStore();
 
   const [showMastery, setShowMastery] = useState(false);
   const [masteredPhrase, setMasteredPhrase] = useState("");
 
-  // Audio player for current word
+  // Sentence exercise state
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [multipleChoiceOptions, setMultipleChoiceOptions] = useState<
+    MultipleChoiceOption[]
+  >([]);
+  const [correctOptionId, setCorrectOptionId] = useState<string>("");
+  const [isLoadingDistractors, setIsLoadingDistractors] = useState(false);
+
+  // Audio player for current word/sentence
   const currentWord = dueWords[currentIndex];
   const { isPlaying, isLoading: audioLoading, play, stop } = useAudioPlayer();
+
+  // Determine exercise type and blanked word for sentence mode
+  const exerciseType =
+    reviewMode === "sentence" && sentenceTargetWords.length > 0
+      ? determineExerciseType(sentenceTargetWords)
+      : "type_translation";
+  const blankedWord =
+    exerciseType === "fill_blank" && sentenceTargetWords.length > 0
+      ? selectWordToBlank(sentenceTargetWords)
+      : null;
+
+  // Load distractors for multiple choice
+  const loadDistractors = useCallback(async (targetWord: Word) => {
+    setIsLoadingDistractors(true);
+    try {
+      const { options, correctOptionId: correctId } =
+        await prepareMultipleChoiceOptions(targetWord);
+      setMultipleChoiceOptions(options);
+      setCorrectOptionId(correctId);
+    } catch (err) {
+      console.error("Failed to load distractors:", err);
+      setMultipleChoiceOptions([]);
+    } finally {
+      setIsLoadingDistractors(false);
+    }
+  }, []);
 
   // Initialize session on mount
   useEffect(() => {
@@ -53,11 +106,30 @@ export default function ReviewPage() {
     }
 
     if (user && !sessionId && !isLoading) {
-      startSession().catch((err) => {
-        console.error("Failed to start session:", err);
-      });
+      startSession()
+        .then(async () => {
+          // Try sentence mode first after session starts
+          const hasSentence = await fetchNextSentence();
+          if (hasSentence) {
+            // Will load distractors in separate effect when sentenceTargetWords updates
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to start session:", err);
+        });
     }
-  }, [user, authLoading, sessionId, isLoading, startSession, router]);
+  }, [user, authLoading, sessionId, isLoading, startSession, fetchNextSentence, router]);
+
+  // Load distractors when we have a multiple choice sentence
+  useEffect(() => {
+    if (
+      reviewMode === "sentence" &&
+      sentenceTargetWords.length > 0 &&
+      determineExerciseType(sentenceTargetWords) === "multiple_choice"
+    ) {
+      loadDistractors(sentenceTargetWords[0]);
+    }
+  }, [reviewMode, sentenceTargetWords, loadDistractors]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -65,6 +137,14 @@ export default function ReviewPage() {
       stop();
     };
   }, [stop]);
+
+  // Reset sentence state when moving to next item
+  const resetSentenceState = () => {
+    setIsAnswerCorrect(null);
+    setSelectedOptionId(null);
+    setMultipleChoiceOptions([]);
+    setCorrectOptionId("");
+  };
 
   const handleClose = () => {
     resetSession();
@@ -75,10 +155,29 @@ export default function ReviewPage() {
     setReviewState("revealed");
   };
 
+  // Handle fill-in-the-blank answer submission
+  const handleFillBlankSubmit = (userAnswer: string, isCorrect: boolean) => {
+    setIsAnswerCorrect(isCorrect);
+  };
+
+  // Handle multiple choice selection
+  const handleMultipleChoiceSelect = (
+    selectedId: string,
+    isCorrect: boolean
+  ) => {
+    setSelectedOptionId(selectedId);
+    setIsAnswerCorrect(isCorrect);
+  };
+
+  // Proceed to grading after answering
+  const handleProceedToGrading = () => {
+    setReviewState("revealed");
+  };
+
+  // Handle grading for word mode
   const handleGrade = async (rating: Rating) => {
     if (!currentWord || !sessionId) return;
 
-    // Map string rating to numeric
     const ratingMap: Record<Rating, 1 | 2 | 3 | 4> = {
       hard: 2,
       good: 3,
@@ -89,7 +188,6 @@ export default function ReviewPage() {
       await submitReview(currentWord.id, ratingMap[rating]);
       setReviewState("feedback");
 
-      // Check if mastery was achieved
       if (lastMasteryAchieved) {
         setMasteredPhrase(currentWord.originalText);
         setShowMastery(true);
@@ -99,7 +197,35 @@ export default function ReviewPage() {
     }
   };
 
-  const handleContinue = () => {
+  // Handle grading for sentence mode
+  const handleSentenceGrade = async (rating: Rating) => {
+    if (!sessionId || sentenceTargetWords.length === 0) return;
+
+    const ratingMap: Record<Rating, 1 | 2 | 3 | 4> = {
+      hard: 2,
+      good: 3,
+      easy: 4,
+    };
+
+    try {
+      await submitSentenceReview(ratingMap[rating]);
+      setReviewState("feedback");
+    } catch (err) {
+      console.error("Failed to submit sentence review:", err);
+    }
+  };
+
+  const handleContinue = async () => {
+    resetSentenceState();
+
+    // Try to get next sentence
+    const hasSentence = await fetchNextSentence();
+    if (hasSentence) {
+      setReviewState("recall");
+      return;
+    }
+
+    // No more sentences, continue with word mode
     const isLastItem = currentIndex >= dueWords.length - 1;
 
     if (isLastItem) {
@@ -116,11 +242,16 @@ export default function ReviewPage() {
   };
 
   const handlePlayAudio = () => {
-    if (currentWord?.audioUrl) {
+    const audioUrl =
+      reviewMode === "sentence" && currentSentence
+        ? currentSentence.audioUrl
+        : currentWord?.audioUrl;
+
+    if (audioUrl) {
       if (isPlaying) {
         stop();
       } else {
-        play(currentWord.audioUrl);
+        play(audioUrl);
       }
     }
   };
@@ -137,6 +268,11 @@ export default function ReviewPage() {
         return "";
     }
   };
+
+  // Calculate total items (sentences count as 1 item each)
+  const totalItems = dueWords.length;
+  const currentPosition =
+    reviewMode === "sentence" ? wordsReviewed + 1 : currentIndex + 1;
 
   // Loading state
   if (authLoading || (isLoading && !dueWords.length)) {
@@ -208,16 +344,216 @@ export default function ReviewPage() {
     );
   }
 
+  // ========== SENTENCE MODE RENDER ==========
+  if (reviewMode === "sentence" && currentSentence) {
+    return (
+      <div className="min-h-screen notebook-bg relative">
+        <div className="ribbon-bookmark" />
+        <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
+
+        <div className="mx-auto max-w-md px-5 py-4">
+          <ReviewHeader
+            current={currentPosition}
+            total={totalItems}
+            onClose={handleClose}
+          />
+
+          {/* Progress bar */}
+          <div
+            className="mt-4 h-1 w-full rounded-full"
+            style={{ backgroundColor: "var(--accent-nav-light)" }}
+          >
+            <div
+              className="h-1 rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: "var(--accent-nav)",
+                width: `${(currentPosition / totalItems) * 100}%`,
+              }}
+            />
+          </div>
+
+          {/* Sentence Review Badge */}
+          <div className="mt-4 flex justify-center">
+            <Badge
+              className="text-white"
+              style={{ backgroundColor: "var(--accent-ribbon)" }}
+            >
+              SENTENCE REVIEW
+            </Badge>
+          </div>
+
+          {/* Content */}
+          <div className="mt-6 space-y-4">
+            {/* Feedback Card (shown after grading) */}
+            {reviewState === "feedback" && lastRating && (
+              <FeedbackCard
+                type={lastRating === "hard" ? "hard" : "success"}
+                message={getFeedbackMessage()}
+                nextReviewText={lastNextReviewText || "Soon"}
+              />
+            )}
+
+            {/* Sentence Card */}
+            <SentenceCard
+              sentence={currentSentence.text}
+              highlightedWords={sentenceTargetWords.map((w) => w.originalText)}
+              translation={sentenceTargetWords
+                .map((w) => `${w.originalText}: ${w.translation}`)
+                .join(" | ")}
+              showTranslation={
+                reviewState !== "recall" || isAnswerCorrect !== null
+              }
+              onPlayAudio={currentSentence.audioUrl ? handlePlayAudio : undefined}
+              isPlayingAudio={isPlaying}
+              isLoadingAudio={audioLoading}
+              exerciseType={exerciseType}
+              blankedWord={blankedWord?.originalText}
+            >
+              {/* Fill-in-the-blank input */}
+              {exerciseType === "fill_blank" &&
+                reviewState === "recall" &&
+                blankedWord &&
+                isAnswerCorrect === null && (
+                  <FillBlankInput
+                    correctAnswer={blankedWord.originalText}
+                    onSubmit={handleFillBlankSubmit}
+                  />
+                )}
+
+              {/* Multiple choice options */}
+              {exerciseType === "multiple_choice" &&
+                reviewState === "recall" &&
+                !isLoadingDistractors &&
+                multipleChoiceOptions.length > 0 && (
+                  <MultipleChoiceOptions
+                    options={multipleChoiceOptions}
+                    correctOptionId={correctOptionId}
+                    onSelect={handleMultipleChoiceSelect}
+                    disabled={selectedOptionId !== null}
+                    selectedId={selectedOptionId}
+                  />
+                )}
+
+              {/* Loading distractors */}
+              {exerciseType === "multiple_choice" &&
+                reviewState === "recall" &&
+                isLoadingDistractors && (
+                  <div className="mt-4 flex justify-center">
+                    <Loader2
+                      className="h-6 w-6 animate-spin"
+                      style={{ color: "var(--accent-nav)" }}
+                    />
+                  </div>
+                )}
+            </SentenceCard>
+
+            {/* Answer Feedback (shown after answering, before grading) */}
+            {isAnswerCorrect !== null && reviewState === "recall" && (
+              <AnswerFeedback
+                isCorrect={isAnswerCorrect}
+                correctAnswer={
+                  !isAnswerCorrect ? blankedWord?.originalText : undefined
+                }
+              />
+            )}
+
+            {/* Proceed to grading button (after answering exercises) */}
+            {isAnswerCorrect !== null && reviewState === "recall" && (
+              <button
+                onClick={handleProceedToGrading}
+                className="w-full py-4 text-lg font-semibold rounded-lg text-white transition-all hover:shadow-md"
+                style={{ backgroundColor: "var(--accent-nav)" }}
+              >
+                Rate Your Recall
+              </button>
+            )}
+
+            {/* Reveal button for type_translation */}
+            {exerciseType === "type_translation" && reviewState === "recall" && (
+              <button
+                onClick={handleReveal}
+                className="w-full py-6 text-lg font-semibold rounded-lg text-white transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                style={{ backgroundColor: "var(--accent-ribbon)" }}
+              >
+                Reveal
+              </button>
+            )}
+
+            {/* Grading buttons */}
+            {reviewState === "revealed" && (
+              <GradingButtons
+                onGrade={handleSentenceGrade}
+                disabled={isLoading}
+                suggestedGrade={isAnswerCorrect === false ? "hard" : undefined}
+              />
+            )}
+
+            {/* Continue button */}
+            {reviewState === "feedback" && (
+              <button
+                onClick={handleContinue}
+                className="w-full py-6 text-lg font-semibold rounded-lg text-white transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                style={{ backgroundColor: "var(--accent-nav)" }}
+              >
+                Continue
+              </button>
+            )}
+
+            {/* Words in this sentence */}
+            {reviewState !== "feedback" && (
+              <p
+                className="text-center text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {sentenceTargetWords.length} words in this sentence
+              </p>
+            )}
+
+            {/* Report Issue */}
+            <button
+              className="flex w-full items-center justify-center gap-2 rounded-lg border py-3 text-sm transition-colors"
+              style={{
+                borderColor: "var(--notebook-stitch)",
+                backgroundColor: "var(--surface-page)",
+                color: "var(--text-muted)",
+              }}
+            >
+              <AlertTriangle
+                className="h-4 w-4"
+                style={{ color: "var(--state-good)" }}
+              />
+              Report issue with this sentence
+            </button>
+
+            {/* Info indicator */}
+            <div
+              className="flex items-center justify-center gap-2 text-xs"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <Lightbulb className="h-3 w-3" />
+              Learning multiple words in context
+            </div>
+          </div>
+
+          {/* Mastery Modal */}
+          {showMastery && (
+            <MasteryModal
+              phrase={masteredPhrase}
+              onContinue={handleMasteryContinue}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ========== WORD MODE RENDER (Default) ==========
   return (
     <div className="min-h-screen notebook-bg relative">
-      {/* Ribbon bookmark */}
       <div className="ribbon-bookmark" />
-
-      {/* Elastic band on right edge */}
       <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
       <div className="mx-auto max-w-md px-5 py-4">
-        {/* Header */}
         <ReviewHeader
           current={currentIndex + 1}
           total={dueWords.length}
@@ -238,7 +574,7 @@ export default function ReviewPage() {
           />
         </div>
 
-        {/* Mixed Practice Badge */}
+        {/* Review Badge */}
         <div className="mt-4 flex justify-center">
           <Badge
             className="text-white"
@@ -250,7 +586,7 @@ export default function ReviewPage() {
 
         {/* Content */}
         <div className="mt-6 space-y-4">
-          {/* Feedback Card (shown after grading) */}
+          {/* Feedback Card */}
           {reviewState === "feedback" && lastRating && (
             <FeedbackCard
               type={lastRating === "hard" ? "hard" : "success"}
@@ -272,7 +608,7 @@ export default function ReviewPage() {
             />
           )}
 
-          {/* Mastery Progress (shown after feedback) */}
+          {/* Mastery Progress */}
           {reviewState === "feedback" && currentWord && (
             <div
               className="text-center text-sm"
