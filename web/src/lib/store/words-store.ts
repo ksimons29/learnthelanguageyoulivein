@@ -8,6 +8,15 @@ import type { Word } from '@/lib/db/schema';
  * for capturing, retrieving, updating, and deleting words.
  */
 
+/**
+ * Category statistics returned from the API
+ */
+export interface CategoryStats {
+  category: string;
+  totalWords: number;
+  dueCount: number;
+}
+
 interface WordsState {
   // State
   words: Word[];
@@ -19,6 +28,14 @@ interface WordsState {
     search?: string;
   };
 
+  // Categories State
+  categories: CategoryStats[];
+  categoriesLoading: boolean;
+  inboxCount: number;
+
+  // Selected Word State (for detail view)
+  selectedWord: Word | null;
+
   // Actions
   setWords: (words: Word[]) => void;
   addWord: (word: Word) => void;
@@ -27,9 +44,11 @@ interface WordsState {
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   setFilter: (filter: Partial<WordsState['currentFilter']>) => void;
+  setSelectedWord: (word: Word | null) => void;
 
   // API Actions
   fetchWords: () => Promise<void>;
+  fetchCategories: () => Promise<void>;
   captureWord: (text: string, context?: string) => Promise<Word>;
   deleteWord: (id: string) => Promise<void>;
 }
@@ -40,6 +59,14 @@ export const useWordsStore = create<WordsState>((set, get) => ({
   isLoading: false,
   error: null,
   currentFilter: {},
+
+  // Categories Initial State
+  categories: [],
+  categoriesLoading: false,
+  inboxCount: 0,
+
+  // Selected Word Initial State
+  selectedWord: null,
 
   // Setters
   setWords: (words) => set({ words }),
@@ -67,6 +94,8 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       currentFilter: { ...state.currentFilter, ...filter },
     })),
 
+  setSelectedWord: (word) => set({ selectedWord: word }),
+
   // API Actions
   fetchWords: async () => {
     set({ isLoading: true, error: null });
@@ -88,6 +117,28 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch words',
         isLoading: false,
+      });
+    }
+  },
+
+  fetchCategories: async () => {
+    set({ categoriesLoading: true, error: null });
+    try {
+      const response = await fetch('/api/words/categories');
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+
+      const { data } = await response.json();
+      set({
+        categories: data.categories,
+        inboxCount: data.inboxCount,
+        categoriesLoading: false,
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch categories',
+        categoriesLoading: false,
       });
     }
   },
