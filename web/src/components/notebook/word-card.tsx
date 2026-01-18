@@ -6,6 +6,30 @@ import { MasteryBadge } from "./mastery-badge";
 import { useAudioPlayer } from "@/lib/hooks";
 import type { Word } from "@/lib/db/schema";
 
+/**
+ * Format a date as a relative string (e.g., "today", "2d ago", "Jan 15")
+ */
+function formatRelativeDate(date: Date | string): string {
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return "today";
+  } else if (diffDays === 1) {
+    return "yesterday";
+  } else if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return `${weeks}w ago`;
+  } else {
+    // Show month and day for older dates
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+}
+
 interface WordCardProps {
   word: Word;
   onClick?: () => void;
@@ -95,9 +119,17 @@ export function WordCard({ word, onClick, className }: WordCardProps) {
         >
           {word.originalText}
         </p>
-        <p className="text-sm truncate" style={{ color: "var(--text-muted)" }}>
-          {word.translation}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm truncate" style={{ color: "var(--text-muted)" }}>
+            {word.translation}
+          </p>
+          <span
+            className="text-xs shrink-0"
+            style={{ color: "var(--text-muted)", opacity: 0.7 }}
+          >
+            · {formatRelativeDate(word.createdAt)}
+          </span>
+        </div>
       </div>
 
       {/* Mastery badge */}
