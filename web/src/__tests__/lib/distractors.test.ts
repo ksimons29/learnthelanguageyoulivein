@@ -20,7 +20,7 @@ function createMockWord(overrides: Partial<Word> = {}): Word {
     translation: 'test translation',
     language: 'target',
     audioUrl: null,
-    category: 'food',
+    category: 'food_dining',
     categoryConfidence: 0.9,
     difficulty: 0.3,
     stability: 1.0,

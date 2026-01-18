@@ -4,6 +4,77 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-18 (Session 12) - Issue #21: Category Consolidation (Miller's Law)
+
+**Session Focus**: Reduce categories from 14 to 8 following Miller's Law for optimal cognitive load.
+
+### What Was Done
+
+#### Category Consolidation
+Merged 14 categories into 8 for better UX:
+
+| New Category | Merged From | Label |
+|--------------|-------------|-------|
+| `food_dining` | food + restaurant | "Food & Dining" |
+| `work` | work + bureaucracy | "Work" |
+| `daily_life` | home + time | "Daily Life" |
+| `social` | social + greetings | "Social" |
+| `shopping` | (unchanged) | "Shopping" |
+| `transport` | (unchanged) | "Getting Around" |
+| `health` | health + emergency | "Health" |
+| `other` | weather + other | "Other" |
+
+#### Backward Compatibility
+- Added `CATEGORY_MIGRATION_MAP` to map legacy keys to new categories
+- Added `normalizeCategory()` helper function
+- `getCategoryConfig()` now handles legacy category keys transparently
+- Old URLs like `/notebook/food` continue to work
+
+#### GPT-4 Prompt Update
+Updated category assignment prompt with 8 categories + descriptions for better context
+
+#### Test Suite Updates
+- Rewrote `categories.test.ts` with 26 tests for new system + backward compatibility
+- Updated `categories-cognitive.test.ts` - enabled Miller's Law compliance test (17 tests)
+- Updated `distractors.test.ts` mock category from `food` → `food_dining`
+- All 65 tests passing
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/lib/config/categories.ts` | New 8-category config, migration map, normalizeCategory() |
+| `web/src/app/api/words/route.ts` | Updated GPT-4 prompt with 8 categories |
+| `web/src/lib/db/schema/words.ts` | Updated schema comment |
+| `web/src/__tests__/lib/categories.test.ts` | Rewritten for new system |
+| `web/src/__tests__/lib/categories-cognitive.test.ts` | Enabled Miller's Law test |
+| `web/src/__tests__/lib/distractors.test.ts` | Updated mock category |
+
+### Key Design Decisions
+
+**Decision 1: Soft migration via application layer**
+Used `CATEGORY_MIGRATION_MAP` instead of immediate database migration. Old category values continue to work, allowing gradual transition.
+
+**Decision 2: Snake_case keys for new categories**
+Used `food_dining` and `daily_life` for URL-safety and consistency across the codebase.
+
+**Decision 3: Category stored as text, not enum**
+Database schema uses plain text for category field, so no Drizzle migration needed - just SQL UPDATE.
+
+### Next Action: Database Migration
+
+Run this SQL in Supabase to migrate existing data:
+```sql
+UPDATE words SET category = 'food_dining' WHERE category IN ('food', 'restaurant');
+UPDATE words SET category = 'work' WHERE category = 'bureaucracy';
+UPDATE words SET category = 'daily_life' WHERE category IN ('home', 'time');
+UPDATE words SET category = 'social' WHERE category = 'greetings';
+UPDATE words SET category = 'health' WHERE category = 'emergency';
+UPDATE words SET category = 'other' WHERE category = 'weather';
+```
+
+---
+
 ## 2026-01-18 (Session 11) - Epic 6: Guided Onboarding Implementation
 
 **Session Focus**: Implement guided onboarding flow for new users - language selection, word capture, and first sentence generation.

@@ -277,25 +277,19 @@ async function assignCategory(
 ): Promise<{ category: string; confidence: number }> {
   const openai = getOpenAI();
   const categoryPrompt = `Categorize this word/phrase into exactly ONE category from this list:
-- food
-- restaurant
-- shopping
-- work
-- home
-- transport
-- health
-- social
-- bureaucracy
-- emergency
-- weather
-- time
-- greetings
-- other
+- food_dining (food, restaurants, eating, cooking, meals)
+- work (professional, office, bureaucracy, paperwork)
+- daily_life (home, household, time, routines)
+- social (interactions, greetings, conversations)
+- shopping (retail, purchases, stores)
+- transport (travel, vehicles, directions)
+- health (medical, wellness, emergencies, safety)
+- other (anything else)
 
 Word/Phrase: "${text}"
 ${context ? `Context: "${context}"` : ''}
 
-Respond with ONLY the category name in lowercase, nothing else.`;
+Respond with ONLY the category name in lowercase (e.g. "food_dining" or "work"), nothing else.`;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini', // Use mini for cost efficiency
@@ -311,21 +305,15 @@ Respond with ONLY the category name in lowercase, nothing else.`;
   const category =
     response.choices[0].message.content?.trim().toLowerCase() || 'other';
 
-  // Validate category
+  // Validate category (8 consolidated categories following Miller's Law)
   const validCategories = [
-    'food',
-    'restaurant',
-    'shopping',
+    'food_dining',
     'work',
-    'home',
+    'daily_life',
+    'social',
+    'shopping',
     'transport',
     'health',
-    'social',
-    'bureaucracy',
-    'emergency',
-    'weather',
-    'time',
-    'greetings',
     'other',
   ];
 

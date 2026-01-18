@@ -22,7 +22,7 @@ export const words = pgTable('words', {
   audioUrl: text('audio_url'), // Supabase Storage URL for TTS audio
 
   // Categorization
-  category: text('category').notNull().default('other'), // food, work, home, transport, health, social, bureaucracy, greetings, other
+  category: text('category').notNull().default('other'), // 8 categories: food_dining, work, daily_life, social, shopping, transport, health, other
   categoryConfidence: real('category_confidence').notNull().default(0.5), // LLM confidence score (0-1)
 
   // FSRS Parameters (Free Spaced Repetition Scheduler)

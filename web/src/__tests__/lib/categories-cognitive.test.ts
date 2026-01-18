@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CATEGORY_CONFIG, VALID_CATEGORIES } from '@/lib/config/categories'
+import { CATEGORY_CONFIG, VALID_CATEGORIES, CATEGORY_MIGRATION_MAP } from '@/lib/config/categories'
 
 /**
  * Category Cognitive Load Tests
@@ -13,6 +13,8 @@ import { CATEGORY_CONFIG, VALID_CATEGORIES } from '@/lib/config/categories'
  * - Miller, G.A. (1956). "The Magical Number Seven, Plus or Minus Two"
  * - Laws of UX: https://lawsofux.com/millers-law/
  * - Nielsen Norman Group research on menu design
+ *
+ * Categories have been consolidated from 14 to 8 to comply with Miller's Law.
  */
 
 // Cognitive load thresholds based on research
@@ -26,9 +28,7 @@ const COGNITIVE_LIMITS = {
 
 describe('Category Cognitive Load', () => {
   describe('Category Count Compliance', () => {
-    // TODO: Enable this test after category consolidation
-    // Currently skipped because we have 14 categories (exceeds limit)
-    it.skip('should have categories within Miller\'s Law range (5-9)', () => {
+    it('should have categories within Miller\'s Law range (5-9)', () => {
       const count = VALID_CATEGORIES.length
       expect(count).toBeGreaterThanOrEqual(COGNITIVE_LIMITS.MILLER_MIN)
       expect(count).toBeLessThanOrEqual(COGNITIVE_LIMITS.MILLER_MAX)
@@ -36,75 +36,68 @@ describe('Category Cognitive Load', () => {
 
     it('should ideally have categories within modern UX range (3-7)', () => {
       const count = VALID_CATEGORIES.length
-      // This is a warning test - we want to flag if we exceed 7
-      if (count > COGNITIVE_LIMITS.MODERN_UX_MAX) {
-        console.warn(
-          `⚠️ WARNING: ${count} categories exceeds modern UX recommendation of ${COGNITIVE_LIMITS.MODERN_UX_MAX}`
-        )
-      }
-      // For now, just document - we'll enforce after migration
+      // 8 is slightly above the modern UX max of 7, but within Miller's Law
+      // This is an acceptable trade-off for semantic coverage
       expect(count).toBeGreaterThanOrEqual(COGNITIVE_LIMITS.MODERN_UX_MIN)
+      expect(count).toBeLessThanOrEqual(COGNITIVE_LIMITS.MILLER_MAX)
     })
 
-    it('should document current category count for tracking', () => {
-      // This test documents the current state and fails if categories change unexpectedly
-      expect(VALID_CATEGORIES.length).toBe(14) // CURRENT: Too high!
-      // TODO: After category consolidation, update to:
-      // expect(VALID_CATEGORIES.length).toBe(8) // TARGET: Within cognitive limit
+    it('should have exactly 8 categories (consolidated from 14)', () => {
+      expect(VALID_CATEGORIES.length).toBe(8)
     })
   })
 
-  describe('Category Overlap Detection', () => {
-    // Categories that semantically overlap and should potentially be merged
-    const OVERLAPPING_PAIRS = [
-      { a: 'food', b: 'restaurant', reason: 'Both relate to eating/dining' },
-      { a: 'social', b: 'greetings', reason: 'Greetings are social interactions' },
-      { a: 'work', b: 'bureaucracy', reason: 'Bureaucracy often work-related' },
-      { a: 'health', b: 'emergency', reason: 'Emergencies often health-related' },
-    ]
+  describe('Category Consolidation Verification', () => {
+    it('should have consolidated food and restaurant into food_dining', () => {
+      expect(VALID_CATEGORIES).toContain('food_dining')
+      expect(VALID_CATEGORIES).not.toContain('food')
+      expect(VALID_CATEGORIES).not.toContain('restaurant')
+    })
 
-    it('should document overlapping category pairs for future consolidation', () => {
-      // This test documents pairs that could be merged
-      OVERLAPPING_PAIRS.forEach(({ a, b, reason }) => {
-        const aExists = VALID_CATEGORIES.includes(a)
-        const bExists = VALID_CATEGORIES.includes(b)
+    it('should have consolidated work and bureaucracy into work', () => {
+      expect(VALID_CATEGORIES).toContain('work')
+      expect(VALID_CATEGORIES).not.toContain('bureaucracy')
+    })
 
-        if (aExists && bExists) {
-          console.warn(`⚠️ OVERLAP: "${a}" and "${b}" - ${reason}`)
-        }
-      })
+    it('should have consolidated home and time into daily_life', () => {
+      expect(VALID_CATEGORIES).toContain('daily_life')
+      expect(VALID_CATEGORIES).not.toContain('home')
+      expect(VALID_CATEGORIES).not.toContain('time')
+    })
 
-      // Currently all overlapping pairs exist - this will change after consolidation
-      expect(OVERLAPPING_PAIRS.every(
-        p => VALID_CATEGORIES.includes(p.a) && VALID_CATEGORIES.includes(p.b)
-      )).toBe(true)
+    it('should have consolidated social and greetings into social', () => {
+      expect(VALID_CATEGORIES).toContain('social')
+      expect(VALID_CATEGORIES).not.toContain('greetings')
+    })
+
+    it('should have consolidated health and emergency into health', () => {
+      expect(VALID_CATEGORIES).toContain('health')
+      expect(VALID_CATEGORIES).not.toContain('emergency')
+    })
+
+    it('should have consolidated weather into other', () => {
+      expect(VALID_CATEGORIES).toContain('other')
+      expect(VALID_CATEGORIES).not.toContain('weather')
     })
   })
 
-  describe('Category Semantic Grouping', () => {
-    // Proposed category consolidation for cognitive load reduction
-    const PROPOSED_GROUPS = {
-      'food_and_dining': ['food', 'restaurant'],
-      'work_and_admin': ['work', 'bureaucracy'],
-      'social_and_greetings': ['social', 'greetings'],
-      'health_and_safety': ['health', 'emergency'],
-      'daily_life': ['home', 'time', 'weather'],
-      'standalone': ['shopping', 'transport'],
-      'fallback': ['other'],
-    }
+  describe('Backward Compatibility via Migration Map', () => {
+    it('migration map should cover all 14 legacy categories', () => {
+      const legacyCategories = [
+        'food', 'restaurant', 'shopping', 'work', 'home',
+        'transport', 'health', 'social', 'bureaucracy',
+        'emergency', 'weather', 'time', 'greetings', 'other'
+      ]
 
-    it('should cover all existing categories in proposed groups', () => {
-      const allGroupedCategories = Object.values(PROPOSED_GROUPS).flat()
-
-      VALID_CATEGORIES.forEach(cat => {
-        expect(allGroupedCategories).toContain(cat)
+      legacyCategories.forEach(legacy => {
+        expect(CATEGORY_MIGRATION_MAP[legacy]).toBeDefined()
       })
     })
 
-    it('proposed consolidation would reduce to acceptable count', () => {
-      const proposedCount = Object.keys(PROPOSED_GROUPS).length
-      expect(proposedCount).toBeLessThanOrEqual(COGNITIVE_LIMITS.MILLER_MAX)
-      expect(proposedCount).toBeLessThanOrEqual(COGNITIVE_LIMITS.MODERN_UX_MAX)
+    it('all migration targets should be valid current categories', () => {
+      Object.values(CATEGORY_MIGRATION_MAP).forEach(target => {
+        expect(VALID_CATEGORIES).toContain(target)
+      })
     })
   })
 
@@ -150,5 +143,16 @@ describe('Category Usability Metrics', () => {
     const unknownResult = getCategoryConfig('unknown_category_xyz')
     expect(unknownResult.key).toBe('other')
     expect(unknownResult.label).toBe('Other')
+  })
+
+  it('getCategoryConfig should handle legacy categories', async () => {
+    const { getCategoryConfig } = await import('@/lib/config/categories')
+
+    // Legacy categories should map to their consolidated equivalents
+    expect(getCategoryConfig('food').key).toBe('food_dining')
+    expect(getCategoryConfig('restaurant').key).toBe('food_dining')
+    expect(getCategoryConfig('bureaucracy').key).toBe('work')
+    expect(getCategoryConfig('greetings').key).toBe('social')
+    expect(getCategoryConfig('emergency').key).toBe('health')
   })
 })
