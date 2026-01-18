@@ -12,11 +12,20 @@ import {
 import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
+import { useOnboardingStatus } from "@/lib/hooks";
 
 export default function HomePage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
   const { words, isLoading: wordsLoading, fetchWords } = useWordsStore();
+  const { needsOnboarding, isLoading: onboardingLoading } = useOnboardingStatus();
+
+  // Redirect to onboarding if user hasn't completed it
+  useEffect(() => {
+    if (!authLoading && !onboardingLoading && user && needsOnboarding) {
+      router.push("/onboarding");
+    }
+  }, [user, authLoading, onboardingLoading, needsOnboarding, router]);
 
   // Fetch words when user is authenticated
   useEffect(() => {
@@ -80,8 +89,8 @@ export default function HomePage() {
     }));
   }, [stats.capturedToday]);
 
-  // Show loading state
-  if (authLoading) {
+  // Show loading state while checking auth or onboarding status
+  if (authLoading || (user && onboardingLoading)) {
     return (
       <div className="min-h-screen notebook-bg flex items-center justify-center">
         <div className="text-center">
@@ -90,6 +99,21 @@ export default function HomePage() {
             style={{ color: "var(--accent-nav)" }}
           />
           <p style={{ color: "var(--text-muted)" }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render while redirecting to onboarding
+  if (user && needsOnboarding) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center">
+        <div className="text-center">
+          <Loader2
+            className="h-8 w-8 animate-spin mx-auto mb-3"
+            style={{ color: "var(--accent-nav)" }}
+          />
+          <p style={{ color: "var(--text-muted)" }}>Setting up your notebook...</p>
         </div>
       </div>
     );

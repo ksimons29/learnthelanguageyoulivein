@@ -4,6 +4,103 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-18 (Session 11) - Epic 6: Guided Onboarding Implementation
+
+**Session Focus**: Implement guided onboarding flow for new users - language selection, word capture, and first sentence generation.
+
+### What Was Done
+
+#### 1. Testing Infrastructure (Added earlier in session)
+- Set up Vitest with React Testing Library and jsdom
+- Created 33 tests covering exercise-type, categories, distractors, and cognitive load
+- Fixed bugs discovered during testing (date handling, duplicate "Other" categories)
+
+#### 2. Word Card Enhancement
+- Added relative date display ("today", "2d ago", "1w ago") to notebook word cards
+- Created `formatRelativeDate()` utility function
+
+#### 3. Onboarding API Endpoints
+- **GET /api/onboarding/status**: Checks if user needs onboarding (no profile OR `onboardingCompleted: false`)
+- **POST /api/onboarding/language**: Saves target + native language preferences to `user_profiles`
+- **POST /api/onboarding/complete**: Marks onboarding done, optionally records first sentence ID
+
+#### 4. Onboarding Pages (4-step flow)
+- **/onboarding**: Entry point, redirects to `/onboarding/languages`
+- **/onboarding/languages**: 2-step language selection (target first, then native) with flag emojis
+- **/onboarding/capture**: Guided word capture with minimum 3 words, category hints for better sentences
+- **/onboarding/complete**: Celebration page showing first AI-generated sentence with audio
+
+#### 5. Routing & Redirect Logic
+- Created `useOnboardingStatus` hook for client-side onboarding checks
+- Home page checks onboarding status and redirects new users to `/onboarding`
+- Navigation components (BottomNav, FAB) hide on `/onboarding` and `/auth` paths
+- Onboarding layout ensures auth protection
+
+### Files Created
+
+```
+web/src/lib/hooks/use-onboarding-status.ts       # Onboarding status hook
+web/src/app/api/onboarding/status/route.ts       # Status check API
+web/src/app/api/onboarding/language/route.ts     # Language save API
+web/src/app/api/onboarding/complete/route.ts     # Completion API
+web/src/app/onboarding/page.tsx                  # Entry redirect
+web/src/app/onboarding/layout.tsx                # Auth protection
+web/src/app/onboarding/languages/page.tsx        # Language selection
+web/src/app/onboarding/capture/page.tsx          # Word capture
+web/src/app/onboarding/complete/page.tsx         # Celebration
+web/vitest.config.ts                             # Test configuration
+web/src/__tests__/setup.tsx                      # Test setup
+web/src/__tests__/lib/*.test.ts                  # Unit tests
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/lib/hooks/index.ts` | Export useOnboardingStatus |
+| `web/src/app/page.tsx` | Added onboarding redirect check |
+| `web/src/components/navigation/bottom-nav.tsx` | Hide on onboarding/auth paths |
+| `web/src/components/navigation/fab.tsx` | Hide on onboarding/auth paths |
+| `web/src/components/notebook/word-card.tsx` | Added relative date display |
+| `web/src/app/api/words/categories/route.ts` | Fixed date handling bug |
+
+### Key Design Decisions
+
+**Decision 1: Client-side onboarding check via hook (not middleware)**
+- Rationale: Middleware runs on every request and would require server-side session validation. The hook pattern gracefully integrates with the existing Zustand auth flow and only fires when the user is authenticated.
+- Trade-off: Brief loading state while checking status vs. server-side redirect complexity.
+
+**Decision 2: 2-step language selection (target first, then native)**
+- Rationale: Reduces cognitive load by focusing on one decision at a time. Target language is the primary choice ("what am I learning?"), native language is secondary context.
+- UX benefit: Users see their target language highlighted before moving on, creating a sense of progress.
+
+**Decision 3: Minimum 3 words with category hints**
+- Rationale: 3 words is the minimum for meaningful sentence generation. Category hints ("Try adding another food word") encourage same-category words which produce better sentences.
+- Trade-off: Slightly more friction vs. better first-sentence quality.
+
+**Decision 4: Navigation hidden via path checks (not CSS override)**
+- Rationale: Cleaner than CSS hacks. Nav components already had path-based visibility logic for review sessions. Adding `/onboarding` and `/auth` to the list maintains consistency.
+- Benefit: No style conflicts, easier to maintain.
+
+**Decision 5: Local variable for sentence ID (not React state)**
+- Bug fix: `setSentence()` is async, so `sentence?.id` would be undefined when calling the complete API. Capturing the ID in a local variable before calling the API prevents this race condition.
+- This is a common React pitfall with async state updates.
+
+### Technical Notes
+
+- Uses existing `user_profiles` schema (targetLanguage, nativeLanguage, onboardingCompleted fields)
+- Language codes follow ISO format: pt-PT (Portugal), pt-BR (Brazil), sv (Swedish), etc.
+- Sentence generation may fail silently if not enough same-category words - graceful degradation
+
+### Next Actions
+
+- [ ] Manual QA testing of full onboarding flow
+- [ ] Verify redirect logic works for brand-new users
+- [ ] Test edge cases: skip button, back navigation, auth timeout
+- [ ] Close Epic 6 GitHub issue (#19) after verification
+
+---
+
 ## 2026-01-17 (Session 10) - Epic 4: Word Organization Implementation
 
 **Session Focus**: Connect the notebook to real data from the 903 imported Anki words, add category browsing, and create word detail view.

@@ -30,8 +30,8 @@ export function BottomNav() {
     setMounted(true);
   }, []);
 
-  // Don't show bottom nav on review session (full-screen experience)
-  const hideOnPaths = ["/review/session"];
+  // Don't show bottom nav on certain full-screen experiences
+  const hideOnPaths = ["/review/session", "/onboarding", "/auth"];
   if (hideOnPaths.some((path) => pathname.startsWith(path))) {
     return null;
   }

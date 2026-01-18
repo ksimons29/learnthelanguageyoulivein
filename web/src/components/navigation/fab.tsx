@@ -12,8 +12,8 @@ interface FloatingActionButtonProps {
 export function FloatingActionButton({ className }: FloatingActionButtonProps) {
   const pathname = usePathname();
 
-  // Hide FAB on certain pages (review session, capture page itself)
-  const hideOnPaths = ["/review/session", "/capture"];
+  // Hide FAB on certain pages (review session, capture page, onboarding, auth)
+  const hideOnPaths = ["/review/session", "/capture", "/onboarding", "/auth"];
   if (hideOnPaths.some((path) => pathname.startsWith(path))) {
     return null;
   }
