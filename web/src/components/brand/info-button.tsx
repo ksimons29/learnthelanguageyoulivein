@@ -102,28 +102,31 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
             </p>
           </div>
 
-          {/* Feature list */}
-          <div className="space-y-3 mb-6">
-            <FeatureItem
-              icon={<BookOpen className="h-4 w-4" style={{ color: "var(--accent-nav)" }} />}
-              title="Capture Phrases"
-              description="From conversations, signs, and messages"
-            />
-            <FeatureItem
-              icon={<Volume2 className="h-4 w-4" style={{ color: "var(--accent-ribbon)" }} />}
-              title="Native Audio"
-              description="Hear how native speakers pronounce each phrase"
-            />
-            <FeatureItem
-              icon={<Brain className="h-4 w-4" style={{ color: "var(--accent-nav)" }} />}
-              title="Smart Reviews"
-              description="FSRS algorithm schedules reviews optimally"
-            />
-            <FeatureItem
-              icon={<Sparkles className="h-4 w-4" style={{ color: "var(--state-good)" }} />}
-              title="Real Context"
-              description="Learn from your actual daily life"
-            />
+          {/* Feature list - using grid for guaranteed alignment */}
+          <div className="grid gap-4 mb-6 max-w-sm mx-auto">
+            {[
+              { icon: BookOpen, color: "var(--accent-nav)", title: "Capture Phrases", desc: "From conversations, signs, and messages" },
+              { icon: Volume2, color: "var(--accent-ribbon)", title: "Native Audio", desc: "Hear how native speakers pronounce each phrase" },
+              { icon: Brain, color: "var(--accent-nav)", title: "Smart Reviews", desc: "FSRS algorithm schedules reviews optimally" },
+              { icon: Sparkles, color: "var(--state-good)", title: "Real Context", desc: "Learn from your actual daily life" },
+            ].map((item, i) => (
+              <div key={i} className="grid grid-cols-[36px_1fr] gap-3 items-center">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: "var(--surface-page-aged)" }}
+                >
+                  <item.icon className="h-4 w-4" style={{ color: item.color }} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-heading)" }}>
+                    {item.title}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Footer */}
@@ -141,44 +144,6 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
         </SheetContent>
       </Sheet>
     </>
-  );
-}
-
-/**
- * Feature item for the info sheet
- */
-function FeatureItem({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <div
-        className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: "var(--surface-page-aged)" }}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium"
-          style={{ color: "var(--text-heading)" }}
-        >
-          {title}
-        </p>
-        <p
-          className="text-xs"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {description}
-        </p>
-      </div>
-    </div>
   );
 }
 
