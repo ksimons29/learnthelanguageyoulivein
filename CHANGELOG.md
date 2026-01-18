@@ -61,9 +61,9 @@ Used `food_dining` and `daily_life` for URL-safety and consistency across the co
 **Decision 3: Category stored as text, not enum**
 Database schema uses plain text for category field, so no Drizzle migration needed - just SQL UPDATE.
 
-### Next Action: Database Migration
+### Database Migration (Completed)
 
-Run this SQL in Supabase to migrate existing data:
+Ran SQL migration to consolidate existing words:
 ```sql
 UPDATE words SET category = 'food_dining' WHERE category IN ('food', 'restaurant');
 UPDATE words SET category = 'work' WHERE category = 'bureaucracy';
@@ -71,7 +71,17 @@ UPDATE words SET category = 'daily_life' WHERE category IN ('home', 'time');
 UPDATE words SET category = 'social' WHERE category = 'greetings';
 UPDATE words SET category = 'health' WHERE category = 'emergency';
 UPDATE words SET category = 'other' WHERE category = 'weather';
+UPDATE words SET category = 'health' WHERE category = 'fitness';  -- Added: fitness is health/wellness
 ```
+
+**Final category distribution:**
+| Category | Count |
+|----------|-------|
+| other | 500 |
+| work | 166 |
+| daily_life | 116 |
+| health | 61 |
+| social | 60 |
 
 ---
 
