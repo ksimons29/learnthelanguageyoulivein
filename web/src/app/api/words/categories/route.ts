@@ -30,6 +30,8 @@ export async function GET() {
     }
 
     const now = new Date();
+    // Convert dates to ISO strings for postgres driver compatibility
+    const nowISO = now.toISOString();
 
     // 2. Query category statistics with total and due counts
     // Using a single query with conditional aggregation for efficiency
@@ -40,7 +42,7 @@ export async function GET() {
         dueCount: sql<number>`
           count(*) filter (
             where ${words.retrievability} < 0.9
-            or ${words.nextReviewDate} <= ${now}
+            or ${words.nextReviewDate} <= ${nowISO}::timestamp
           )::int
         `,
       })
@@ -52,6 +54,7 @@ export async function GET() {
     // 3. Count words without a category (inbox)
     // For MVP, we consider words created in the last 24 hours without review as "inbox"
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const twentyFourHoursAgoISO = twentyFourHoursAgo.toISOString();
     const [inboxResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(words)
@@ -59,7 +62,7 @@ export async function GET() {
         and(
           eq(words.userId, user.id),
           eq(words.reviewCount, 0),
-          sql`${words.createdAt} >= ${twentyFourHoursAgo}`
+          sql`${words.createdAt} >= ${twentyFourHoursAgoISO}::timestamp`
         )
       );
 
