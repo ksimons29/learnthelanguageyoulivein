@@ -49,6 +49,7 @@ export const CATEGORY_MIGRATION_MAP: Record<string, string> = {
   greetings: "social",
   health: "health",
   emergency: "health",
+  fitness: "health",
   weather: "other",
   other: "other",
   // New category keys (map to themselves)
