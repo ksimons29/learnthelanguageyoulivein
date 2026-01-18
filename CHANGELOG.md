@@ -83,6 +83,30 @@ UPDATE words SET category = 'health' WHERE category = 'fitness';  -- Added: fitn
 | health | 61 |
 | social | 60 |
 
+### QA Testing Consolidation
+
+Expanded Issue #18 (Manual QA Testing) to be comprehensive test checklist:
+
+#### Added Test Sections
+- **Section 6**: Category Consolidation Testing - 8 categories, legacy URLs, new captures
+- **Section 7**: Onboarding Flow Testing (from Issue #19) - language selection, word capture, completion
+- **Section 8**: Additional Coverage - auth flow, home/progress pages, InfoButton, mobile responsiveness, error states
+
+#### Testing Coverage Summary
+| Area | Status |
+|------|--------|
+| Sentence Generation API | ✅ |
+| Review Flow (3 exercise types) | ✅ |
+| Word Capture | ✅ |
+| Notebook/Vocabulary | ✅ |
+| Category Consolidation | ✅ |
+| Onboarding Flow | ✅ |
+| Auth/Home/Progress | ✅ |
+| Mobile/Error Handling | ✅ |
+
+### Next Actions
+- [ ] Complete manual QA testing (Issue #18) - Reminder set for 19 Jan
+
 ---
 
 ## 2026-01-18 (Session 11) - Epic 6: Guided Onboarding Implementation
