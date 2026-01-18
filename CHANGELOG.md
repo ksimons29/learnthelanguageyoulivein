@@ -4,6 +4,116 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-18 (Session 6) - MVP Assessment & GitHub Issue Creation
+
+**Session Focus**: Assess current MVP readiness, identify missing critical features, and create comprehensive GitHub issue for core learning loop implementation
+
+### What Was Done
+
+#### 1. Comprehensive MVP Assessment
+Conducted full analysis of current application state:
+- **Working Features** (65% complete):
+  - ✅ Authentication flow (Supabase)
+  - ✅ Phrase capture with auto-translation (OpenAI GPT-4o-mini)
+  - ✅ Auto-categorization (14 categories)
+  - ✅ TTS audio generation (OpenAI TTS)
+  - ✅ Home page with real data and audio playback
+  - ✅ Beautiful Moleskine-themed UI with dark mode
+
+- **Missing Features** (35% - MVP blockers):
+  - ❌ Dynamic sentence generation (Epic 2)
+  - ❌ FSRS spaced repetition algorithm (Epic 3)
+  - ❌ Review session management
+  - ❌ Mastery tracking (3-correct-recall logic)
+  - ❌ Session completion screen
+
+**Key Finding**: Currently have 1/4 of the core value proposition implemented. Cannot validate the core hypothesis (87% retention vs 64% industry average) without the review system.
+
+#### 2. Created Comprehensive GitHub Issue Template
+Created detailed issue template at `.github/ISSUE_TEMPLATE/mvp-missing-features.md` containing:
+
+**User Stories Documentation:**
+- User Story 2: Dynamic Sentence Review (P0, ~38 hours)
+- User Story 3: FSRS-Based Spaced Repetition (P0, ~52 hours)
+
+**Technical Implementation Details:**
+- Epic 2: Dynamic Sentence Generation
+  - Task 2.1: Word-Matching Algorithm (16h) - Group by category, cluster by due date
+  - Task 2.2: Sentence Generation via LLM (12h) - GPT-4 with validation
+  - Task 2.3: Batch Pre-Generation System (10h) - Background job, 7-day lookahead
+
+- Epic 3: FSRS Review System
+  - Task 3.1: FSRS Integration (16h) - ts-fsrs library, 4-point rating scale
+  - Task 3.2: Session Management (8h) - 2-hour session boundaries
+  - Task 3.3: Mastery Tracking (8h) - consecutiveCorrectSessions logic
+  - Task 3.4: Review UI Integration (20h) - Connect components to API
+
+**API Endpoint Specifications:**
+- `GET /api/reviews/due` - Fetch due words and start session
+- `POST /api/reviews/complete` - Submit review with FSRS calculation
+- `POST /api/reviews/end` - End session and return stats
+- `POST /api/sentences/generate` - Batch pre-generate sentences
+- `GET /api/sentences/next` - Get next sentence for review
+
+**Code Examples Included:**
+- FSRS integration using ts-fsrs library
+- Session boundary logic
+- Mastery tracking algorithm
+- Word-matching algorithm for sentence generation
+
+**Success Criteria:**
+- 30+ checklist items across Epic 2 and Epic 3
+- Quality gates for error handling, validation, mobile UX
+- Testing checklist for end-to-end flow validation
+
+**Estimation**: 90 hours total (~2-3 weeks full-time)
+
+#### 3. Deployment Readiness Analysis
+**Current Status**: Can deploy now for Stage 1 feedback (capture testing only)
+
+**Deployment Options Identified:**
+- **Option A**: Deploy now with "Review system launching soon" banner
+  - Test capture UX, audio quality, Moleskine aesthetic
+  - Share with 5-10 trusted users
+  - Risk: Users won't understand full value prop
+
+- **Option B**: Complete Epic 2 & 3 first (Recommended)
+  - Full learning loop functional
+  - Can measure retention metrics
+  - Validates core hypothesis
+
+**What's Needed Before Public Launch:**
+- ✅ Database schema (already complete)
+- ✅ UI components (already built)
+- ❌ 4 API endpoints (reviews + sentences)
+- ❌ FSRS algorithm integration
+- ❌ Zustand store methods
+
+### Files Created
+- `.github/ISSUE_TEMPLATE/mvp-missing-features.md` - Comprehensive 636-line GitHub issue template
+
+### Key Decisions
+1. **Database schema is complete**: All FSRS fields, session tracking, and sentence tables already exist
+2. **UI components are ready**: Just need API integration, no component work needed
+3. **Core work is backend-focused**: 4 API endpoints + FSRS algorithm + store methods
+4. **No schema migrations needed**: Can start implementation immediately
+
+### References
+- Product Vision: `/docs/product/vision.md` (lines 28-42 - four integrated innovations)
+- Implementation Plan: `/docs/engineering/implementation_plan.md` (lines 584-774 - User Stories & Epics)
+- Database Schema: `/web/db/schema.ts` (all FSRS and session fields present)
+- FSRS Library: ts-fsrs (already in package.json)
+
+### Next Actions
+1. Create GitHub issue from template at `.github/ISSUE_TEMPLATE/mvp-missing-features.md`
+2. Decide on deployment strategy (Stage 1 now vs wait for Epic 2/3)
+3. If proceeding with implementation:
+   - Start with Epic 2 Task 2.1 (Word-Matching Algorithm)
+   - Then Epic 3 Task 3.1 (FSRS Integration)
+   - Connect UI to real data last
+
+---
+
 ## 2026-01-16 (Session 5) - Dark Mode Polish & App-Wide Consistency
 
 **Session Focus**: Apply dark mode styling consistently across all pages and fix remaining dark mode issues
