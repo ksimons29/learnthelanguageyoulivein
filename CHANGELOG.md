@@ -19,18 +19,23 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 - Added relative date display ("today", "2d ago", "1w ago") to notebook word cards
 - Created `formatRelativeDate()` utility function
 
-#### 3. Onboarding API Endpoints
+#### 3. InfoButton Alignment Fix
+- Fixed misaligned feature list in InfoButton sheet (used on 6 pages)
+- Replaced flex layout with CSS Grid (`grid-cols-[36px_1fr]`) for guaranteed column alignment
+- Added `max-w-sm mx-auto` container for centered, constrained width
+
+#### 4. Onboarding API Endpoints
 - **GET /api/onboarding/status**: Checks if user needs onboarding (no profile OR `onboardingCompleted: false`)
 - **POST /api/onboarding/language**: Saves target + native language preferences to `user_profiles`
 - **POST /api/onboarding/complete**: Marks onboarding done, optionally records first sentence ID
 
-#### 4. Onboarding Pages (4-step flow)
+#### 5. Onboarding Pages (4-step flow)
 - **/onboarding**: Entry point, redirects to `/onboarding/languages`
 - **/onboarding/languages**: 2-step language selection (target first, then native) with flag emojis
 - **/onboarding/capture**: Guided word capture with minimum 3 words, category hints for better sentences
 - **/onboarding/complete**: Celebration page showing first AI-generated sentence with audio
 
-#### 5. Routing & Redirect Logic
+#### 6. Routing & Redirect Logic
 - Created `useOnboardingStatus` hook for client-side onboarding checks
 - Home page checks onboarding status and redirects new users to `/onboarding`
 - Navigation components (BottomNav, FAB) hide on `/onboarding` and `/auth` paths
