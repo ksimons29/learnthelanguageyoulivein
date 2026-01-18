@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
+import { VALID_CATEGORIES } from '@/lib/config/categories';
 
 /**
  * GET /api/words/categories
@@ -35,7 +36,7 @@ export async function GET() {
 
     // 2. Query category statistics with total and due counts
     // Using a single query with conditional aggregation for efficiency
-    const categoryStats = await db
+    const rawCategoryStats = await db
       .select({
         category: words.category,
         totalWords: sql<number>`count(*)::int`,
@@ -50,6 +51,38 @@ export async function GET() {
       .where(eq(words.userId, user.id))
       .groupBy(words.category)
       .orderBy(sql`count(*) desc`);
+
+    // Normalize unknown categories to "other" and merge duplicates
+    // This prevents multiple "Other" rows from appearing in the UI
+    const categoryMap = new Map<string, { totalWords: number; dueCount: number }>();
+
+    for (const stat of rawCategoryStats) {
+      // Normalize: if category isn't in VALID_CATEGORIES, map to "other"
+      const normalizedCategory = VALID_CATEGORIES.includes(stat.category)
+        ? stat.category
+        : 'other';
+
+      const existing = categoryMap.get(normalizedCategory);
+      if (existing) {
+        // Merge counts for duplicate categories
+        existing.totalWords += stat.totalWords;
+        existing.dueCount += stat.dueCount;
+      } else {
+        categoryMap.set(normalizedCategory, {
+          totalWords: stat.totalWords,
+          dueCount: stat.dueCount,
+        });
+      }
+    }
+
+    // Convert back to array and sort by total words descending
+    const categoryStats = Array.from(categoryMap.entries())
+      .map(([category, counts]) => ({
+        category,
+        totalWords: counts.totalWords,
+        dueCount: counts.dueCount,
+      }))
+      .sort((a, b) => b.totalWords - a.totalWords);
 
     // 3. Count words without a category (inbox)
     // For MVP, we consider words created in the last 24 hours without review as "inbox"
