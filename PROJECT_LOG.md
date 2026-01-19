@@ -11,11 +11,11 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 - [x] **Auth Bug Fix + Starter Words** - Email confirmation UI, improved sign-in errors, 10 starter words per language (Session 28)
 - [x] **User Research Synthesis** - Analyzed 24 survey responses, created product guide (Session 27)
 - [x] **Language Filtering Fix** - Fixed #43 BLOCKER via shared helper function (Session 26)
 - [x] **Multi-Language Support** - Schema, API, and validation for en→pt-PT, nl→pt-PT, nl→en, en→sv (Session 24)
-- [x] **Gamification MVP** - Daily goals, streaks, bingo board, boss round (Session 22)
 
 ### In Progress
 - [ ] **Sentence generation** - Pre-gen works, review integration WIP
@@ -28,6 +28,7 @@ npm run build             # Production build
 ## Key Files
 | File | Purpose |
 |------|---------|
+| `README.md` | Project overview, tech stack, quick start guide |
 | `docs/product/product_guide.md` | Comprehensive product explanation, onboarding, gamification |
 | `docs/design/user_research_synthesis.md` | Survey analysis (24 respondents), personas, gap analysis |
 | `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
@@ -54,16 +55,59 @@ npm run build             # Production build
 ## Open Feature Issues
 | Issue | Feature | Priority |
 |-------|---------|----------|
-| #46 | Yearly goal tracking (1000 words/year) | Post-MVP |
-| #47 | iOS Home Screen widget | v2.0 |
-| #48 | Social accountability features | v2.0+ |
-| #35 | Story Run Frame | Post-MVP |
-| #36 | Category Hunt | Post-MVP |
-| #37 | Real Life Mission Check-in | Post-MVP |
+| #50 | E2E User Flow Verification on Vercel | P0-critical |
+| #44 | Progress API 500 error | P1-high |
+| #23 | iOS App Store submission | P1-high |
+| #49 | PWA Install Banner | P2-normal |
+| #42 | German → Portuguese support | P2-normal |
+| #20 | Default Categories | P2-normal |
+| #46 | Yearly goal tracking (1000 words/year) | P3-low/post-mvp |
+| #47 | iOS Home Screen widget | P3-low/post-mvp |
+| #48 | Social accountability features | P3-low/post-mvp |
+| #35 | Story Run Frame | post-mvp |
+| #36 | Category Hunt | post-mvp |
+| #37 | Real Life Mission Check-in | post-mvp |
+| #41 | More language pairs | P3-low/post-mvp |
 
 ---
 
 ## Session Log
+
+### Session 29 - 2026-01-19 - Project Documentation + Onboarding Flow Fix
+**Focus**: Create comprehensive README, organize GitHub issues, restore capture step in onboarding
+
+**Documentation Created**
+| File | Purpose |
+|------|---------|
+| `README.md` | Full project README with tech stack, structure, quick start guide |
+
+**GitHub Issues Organization**
+| Action | Details |
+|--------|---------|
+| Created priority labels | P0-critical, P1-high, P2-normal, P3-low, post-mvp |
+| Created #50 | E2E Test: Full User Flow Verification on Vercel (P0-critical) |
+| Prioritized all open issues | Applied labels to 12 open issues |
+
+**Onboarding Flow Fixed**
+| Before | After |
+|--------|-------|
+| Languages → Skip capture → Complete | Languages → Capture 3+ words → Complete |
+| Users only got starter words | Users get 10 starter words + add their own |
+
+**Key Change**: `languages/page.tsx` line 65 - route changed from `/onboarding/complete` to `/onboarding/capture`
+
+**Files Modified**
+| File | Type | Notes |
+|------|------|-------|
+| `README.md` | Created | Complete project documentation |
+| `web/src/app/onboarding/languages/page.tsx` | Modified | Restore capture step route |
+
+**Reminders Created**
+- Apple Reminder: "Test LLYLI user flow on Vercel production" in Daily 5 (tomorrow 9am)
+
+**Build**: ✅ Passed
+
+---
 
 ### Session 28 - 2026-01-19 - Auth Bug Fix + Improved Onboarding
 **Focus**: Fix email confirmation auth bug; improve onboarding with starter words

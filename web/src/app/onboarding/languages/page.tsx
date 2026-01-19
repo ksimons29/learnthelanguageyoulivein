@@ -61,8 +61,8 @@ export default function LanguagesPage() {
         // Continue anyway - user can capture words manually
       });
 
-      // 3. Skip capture step - go directly to complete
-      router.push("/onboarding/complete");
+      // 3. Go to capture step - users add their own words after starter words injected
+      router.push("/onboarding/capture");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsSubmitting(false);
