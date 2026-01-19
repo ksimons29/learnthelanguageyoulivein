@@ -17,6 +17,8 @@ export default function CapturePage() {
     if (!phrase.trim()) return;
 
     try {
+      // Language direction is determined by user's profile settings
+      // (set during onboarding) - no need to pass explicit languages
       await captureWord(phrase.trim());
       showToast("Phrase captured successfully!", "success");
       setPhrase("");

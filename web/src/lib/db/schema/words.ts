@@ -21,6 +21,12 @@ export const words = pgTable('words', {
   language: text('language', { enum: ['source', 'target'] }).notNull(), // Detected language
   audioUrl: text('audio_url'), // Supabase Storage URL for TTS audio
 
+  // Language Codes (ISO 639-1, e.g., 'en', 'pt-PT', 'nl', 'sv')
+  // Tracks which specific languages were used for this word
+  sourceLang: text('source_lang').notNull().default('en'), // Language of the original text
+  targetLang: text('target_lang').notNull().default('pt-PT'), // Language of the translation
+  translationProvider: text('translation_provider').default('openai-gpt4o-mini'), // AI model used
+
   // Categorization
   category: text('category').notNull().default('other'), // 8 categories: food_dining, work, daily_life, social, shopping, transport, health, other
   categoryConfidence: real('category_confidence').notNull().default(0.5), // LLM confidence score (0-1)

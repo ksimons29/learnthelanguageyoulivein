@@ -49,7 +49,10 @@ interface WordsState {
   // API Actions
   fetchWords: () => Promise<void>;
   fetchCategories: () => Promise<void>;
-  captureWord: (text: string, context?: string) => Promise<Word>;
+  captureWord: (
+    text: string,
+    options?: { context?: string; sourceLang?: string; targetLang?: string }
+  ) => Promise<Word>;
   deleteWord: (id: string) => Promise<void>;
 }
 
@@ -143,13 +146,21 @@ export const useWordsStore = create<WordsState>((set, get) => ({
     }
   },
 
-  captureWord: async (text: string, context?: string) => {
+  captureWord: async (
+    text: string,
+    options?: { context?: string; sourceLang?: string; targetLang?: string }
+  ) => {
     set({ isLoading: true, error: null });
     try {
       const response = await fetch('/api/words', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, context }),
+        body: JSON.stringify({
+          text,
+          context: options?.context,
+          sourceLang: options?.sourceLang,
+          targetLang: options?.targetLang,
+        }),
       });
 
       if (!response.ok) {

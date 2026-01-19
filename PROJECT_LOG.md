@@ -11,11 +11,11 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Multi-Language Support** - Schema, API, and validation for en→pt-PT, nl→pt-PT, nl→en, en→sv (Session 24)
 - [x] **Gamification MVP** - Daily goals, streaks, bingo board, boss round (Session 22)
 - [x] **Issue Cleanup** - Closed 6 resolved issues, improved review feedback UX (Session 21)
 - [x] **Test Account Setup** - Fixed Progress API 500 error (Session 20)
 - [x] **Bug Verification** - Auth icon redesign, QA updates (Session 19)
-- [x] **Bug Fixes** - Language selection redesign, Storage RLS, Progress API optimization (Session 18)
 
 ### In Progress
 - [ ] **Sentence generation** - Pre-gen works, review integration WIP
@@ -28,6 +28,8 @@ npm run build             # Production build
 ## Key Files
 | File | Purpose |
 |------|---------|
+| `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
+| `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
 | `web/src/lib/store/gamification-store.ts` | Gamification state management |
 | `web/src/lib/db/schema/gamification.ts` | Daily progress, streaks, bingo tables |
 | `web/src/app/api/gamification/` | Gamification API endpoints |
@@ -55,6 +57,45 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 24 - 2026-01-19 - Multi-Language Support
+**Focus**: Implement multi-language support infrastructure for app launch
+
+**Done**
+- Added `sourceLang`, `targetLang`, `translationProvider` columns to words schema
+- Created `SUPPORTED_DIRECTIONS` config: en→pt-PT, nl→pt-PT, nl→en, en→sv
+- Updated translation API to fetch user prefs from database
+- Added direction validation and pt-PT regional variant enforcement
+- Created LanguageSelector component (currently hidden, for future use)
+- Created comprehensive test suite (`scripts/test-comprehensive.ts`)
+- Fixed user profile with unsupported de→pt-PT direction
+- Updated TESTING.md with Test Case 15: Multi-Language Support
+- Created Multi_Language_Implementation.md documentation
+- Created GitHub issues #40, #41, #42 for future enhancements
+
+**Key Design Decisions**
+- User's learning direction (native→target) set during onboarding
+- Capture UI simplified to use profile settings (selector deferred as enhancement)
+- Translation bidirectional within supported learning pairs
+- pt-PT explicitly enforced with regional variant instructions
+
+**Files**
+| File | Type | Notes |
+|------|------|-------|
+| `web/src/lib/db/schema/words.ts` | Modified | Added language tracking columns |
+| `web/src/lib/config/languages.ts` | Modified | Added SUPPORTED_DIRECTIONS, validation |
+| `web/src/app/api/words/route.ts` | Modified | Fetch user prefs, validate direction |
+| `web/src/components/capture/language-selector.tsx` | Created | For future multi-direction UI |
+| `web/scripts/test-comprehensive.ts` | Created | Multi-language test suite |
+| `docs/engineering/Multi_Language_Implementation.md` | Created | Implementation docs |
+| `docs/engineering/TESTING.md` | Modified | Added Test Case 15 |
+
+**GitHub Issues Created**
+- #40: Add language direction selector to capture UI
+- #41: Add more supported language pairs
+- #42: Add German → Portuguese support
+
+---
 
 ### Session 23 - 2026-01-19 - PROJECT_LOG Unification
 **Focus**: Combine handoff and changelog into single PROJECT_LOG.md

@@ -94,6 +94,92 @@ export const DEFAULT_LANGUAGE_PREFERENCE: UserLanguagePreference = {
 };
 
 /**
+ * Supported Translation Directions
+ *
+ * Only these language pairs are supported for translation.
+ * Each direction represents: source (what user types) → target (translation output)
+ */
+export const SUPPORTED_DIRECTIONS = [
+  // Portuguese learners
+  { source: 'en', target: 'pt-PT', label: 'English → Portuguese (Portugal)' },
+  { source: 'nl', target: 'pt-PT', label: 'Dutch → Portuguese (Portugal)' },
+  // English learners
+  { source: 'nl', target: 'en', label: 'Dutch → English' },
+  // Swedish learners
+  { source: 'en', target: 'sv', label: 'English → Swedish' },
+] as const;
+
+export type SupportedDirection = (typeof SUPPORTED_DIRECTIONS)[number];
+
+/**
+ * Check if a learning direction is supported
+ * A learning direction is native → target (e.g., en → pt-PT means English speaker learning Portuguese)
+ */
+export function isDirectionSupported(native: string, target: string): boolean {
+  return SUPPORTED_DIRECTIONS.some(
+    (d) => d.source === native && d.target === target
+  );
+}
+
+/**
+ * Check if a language pair is supported for translation (bidirectional)
+ * For a supported learning pair, translation can go either way:
+ * - Capture target language → translate to native (comprehension)
+ * - Capture native language → translate to target (production)
+ */
+export function isLanguagePairSupported(lang1: string, lang2: string): boolean {
+  return SUPPORTED_DIRECTIONS.some(
+    (d) =>
+      (d.source === lang1 && d.target === lang2) ||
+      (d.source === lang2 && d.target === lang1)
+  );
+}
+
+/**
+ * Get valid source languages for a given target language
+ */
+export function getValidSourcesForTarget(target: string): string[] {
+  return SUPPORTED_DIRECTIONS.filter((d) => d.target === target).map(
+    (d) => d.source
+  );
+}
+
+/**
+ * Get valid target languages for a given source language
+ */
+export function getValidTargetsForSource(source: string): string[] {
+  return SUPPORTED_DIRECTIONS.filter((d) => d.source === source).map(
+    (d) => d.target
+  );
+}
+
+/**
+ * Get supported direction config for a pair, or undefined if not supported
+ */
+export function getSupportedDirection(
+  source: string,
+  target: string
+): SupportedDirection | undefined {
+  return SUPPORTED_DIRECTIONS.find(
+    (d) => d.source === source && d.target === target
+  );
+}
+
+/**
+ * Get all unique source language codes from supported directions
+ */
+export function getAllSourceLanguages(): string[] {
+  return [...new Set(SUPPORTED_DIRECTIONS.map((d) => d.source))];
+}
+
+/**
+ * Get all unique target language codes from supported directions
+ */
+export function getAllTargetLanguages(): string[] {
+  return [...new Set(SUPPORTED_DIRECTIONS.map((d) => d.target))];
+}
+
+/**
  * Get language config by code
  */
 export function getLanguageConfig(code: string): LanguageConfig | undefined {

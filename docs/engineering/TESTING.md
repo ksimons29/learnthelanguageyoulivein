@@ -9,6 +9,7 @@ This document describes how to test the LLYLI application to ensure it works cor
 3. [Manual QA Testing](#manual-qa-testing)
    - Test Cases 1-10: Core Features
    - Test Cases 11-14: Gamification (Session 22)
+   - Test Case 15: Multi-Language Support
 4. [Database Validation](#database-validation)
 5. [API Testing](#api-testing)
 6. [Troubleshooting](#troubleshooting)
@@ -312,6 +313,43 @@ LIMIT 5;
 SELECT current_streak, streak_freeze_count, last_freeze_used_date
 FROM streak_state WHERE user_id = 'YOUR_USER_ID';
 ```
+
+---
+
+### Test Case 15: Multi-Language Support
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 15.1 | Go to `/capture` | Language selector visible showing "en → pt-PT" |
+| 15.2 | Enter "hello" | - |
+| 15.3 | Click Save | Word captured with Portuguese translation |
+| 15.4 | Check database | `source_lang='en'`, `target_lang='pt-PT'` |
+| 15.5 | Change source to "Dutch" | Target auto-switches to "English" |
+| 15.6 | Enter "hallo" | - |
+| 15.7 | Click Save | Word captured with English translation |
+| 15.8 | Check database | `source_lang='nl'`, `target_lang='en'` |
+| 15.9 | Change source to "English", target to "Swedish" | - |
+| 15.10 | Enter "thank you" | - |
+| 15.11 | Click Save | Word captured with Swedish translation |
+| 15.12 | Check database | `source_lang='en'`, `target_lang='sv'` |
+
+**Verification Query:**
+```sql
+SELECT original_text, translation, source_lang, target_lang, translation_provider
+FROM words
+WHERE user_id = 'YOUR_USER_ID'
+ORDER BY created_at DESC
+LIMIT 5;
+```
+
+**Expected Results:**
+- en→pt-PT: "hello" → "olá" (European Portuguese spelling)
+- nl→en: "hallo" → "hello"
+- en→sv: "thank you" → "tack"
+
+**Regional Variant Check (pt-PT):**
+- Should NOT use Brazilian Portuguese (e.g., "ônibus" ❌, "autocarro" ✅)
+- Should use European spelling conventions
 
 ---
 
