@@ -4,6 +4,59 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 17) - Comprehensive QA Testing + Bug Fixes
+
+**Session Focus**: Automated QA testing with Playwright MCP, bug discovery, and critical fixes.
+
+### What Was Done
+
+#### QA Testing
+- Tested all core user flows using Playwright browser automation
+- 13 test scenarios across 4 phases: Core flows, Auth flows, Interactive flows, Error handling
+- **All tests passed**, but discovered **7 bugs**
+
+#### Bugs Discovered & Documented
+| Issue | Severity | Description |
+|-------|----------|-------------|
+| #24 | Critical | Onboarding completion infinite retry loop |
+| #25 | Critical | Storage RLS policy blocks audio uploads |
+| #26 | High | Duplicate sentence hash constraint violation |
+| #27 | Medium | Nested button hydration error |
+| #28 | Medium | Progress API slow (15s for 900+ words) |
+| #29 | Low | Turbopack config warning |
+| #30 | Low | Sentence validation false negatives |
+
+#### Critical Fixes Applied
+1. **Onboarding infinite loop** (#24):
+   - Added `MAX_RETRIES = 2` with exponential backoff
+   - Added `useRef` guards against React Strict Mode double-execution
+   - Added "Skip this step" button during loading
+   - Added error state UI with retry/continue options
+
+2. **Storage RLS policy** (#25):
+   - Created SQL migration for proper storage bucket policies
+   - Policies allow authenticated users to manage files in their folder
+
+### Files Created/Modified
+
+| File | Change |
+|------|--------|
+| `web/src/app/onboarding/complete/page.tsx` | Fixed infinite loop bug |
+| `supabase/migrations/20260119_fix_audio_storage_rls.sql` | Storage RLS migration |
+| `docs/qa/QA_REPORT_20260119.md` | Full QA test report |
+| `docs/engineering/TESTING.md` | Added QA reports section |
+
+### GitHub Issues Created
+- #24, #25, #26, #27, #28, #29, #30 (bugs)
+- #31 (handoff documentation)
+
+### Next Steps for Engineer
+1. **Apply storage RLS migration** (required for audio)
+2. Review and merge onboarding fix
+3. Address #26 (duplicate sentence hash) next
+
+---
+
 ## 2026-01-19 (Session 16) - Capacitor iOS Setup + Database Queries
 
 **Session Focus**: Implement Capacitor for iOS App Store distribution, add pre-commit hook for changelog enforcement, create database validation queries.

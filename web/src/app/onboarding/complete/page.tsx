@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Volume2, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, Volume2, Sparkles, ArrowRight, AlertCircle, RefreshCw } from "lucide-react";
 import { useAudioPlayer } from "@/lib/hooks";
 
 interface GeneratedSentence {
@@ -12,26 +12,38 @@ interface GeneratedSentence {
   words: { originalText: string; translation: string }[];
 }
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
+
 /**
  * Onboarding Complete Page
  *
  * Step 3 of onboarding - celebrate with the first generated sentence.
  * Shows the user's words combined into a real sentence with audio.
+ *
+ * Bug fix: Added retry limiting and skip option to prevent infinite loops
+ * that could exhaust database connection pool. See GitHub issue #24.
  */
 export default function CompletePage() {
   const router = useRouter();
   const [sentence, setSentence] = useState<GeneratedSentence | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { play, isPlaying, isLoading: audioLoading } = useAudioPlayer();
 
-  useEffect(() => {
-    generateFirstSentence();
-  }, []);
+  // Prevent double-execution in React Strict Mode
+  const hasStartedRef = useRef(false);
+  const isCompletedRef = useRef(false);
 
-  const generateFirstSentence = async () => {
+  const generateFirstSentence = useCallback(async (isRetry = false) => {
+    // Prevent multiple simultaneous calls
+    if (isCompletedRef.current) return;
+
     setIsLoading(true);
-    setError(null);
+    if (!isRetry) {
+      setError(null);
+    }
 
     try {
       // First, trigger sentence generation
@@ -75,12 +87,54 @@ export default function CompletePage() {
           firstSentenceId,
         }),
       });
+
+      isCompletedRef.current = true;
     } catch (err) {
       console.error("Error during completion:", err);
-      setError("We had trouble generating your first sentence, but you're all set!");
+
+      // Retry logic with limit
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => generateFirstSentence(true), RETRY_DELAY_MS);
+        return; // Don't set isLoading to false yet
+      }
+
+      setError("We couldn't generate your first sentence. You can skip this step or try again.");
     } finally {
-      setIsLoading(false);
+      // Only set loading to false if we're not going to retry
+      if (retryCount >= MAX_RETRIES || isCompletedRef.current) {
+        setIsLoading(false);
+      }
     }
+  }, [retryCount]);
+
+  useEffect(() => {
+    // Prevent double-execution in React Strict Mode
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
+    generateFirstSentence();
+  }, [generateFirstSentence]);
+
+  const handleRetry = () => {
+    setRetryCount(0);
+    setError(null);
+    isCompletedRef.current = false;
+    generateFirstSentence();
+  };
+
+  const handleSkip = async () => {
+    // Mark onboarding as complete even without sentence
+    try {
+      await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+    } catch {
+      // Ignore errors - just proceed to home
+    }
+    router.push("/");
   };
 
   const handlePlayAudio = () => {
@@ -106,6 +160,75 @@ export default function CompletePage() {
         <p style={{ color: "var(--text-muted)" }}>
           Creating your first sentence...
         </p>
+        {retryCount > 0 && (
+          <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>
+            Attempt {retryCount + 1} of {MAX_RETRIES + 1}
+          </p>
+        )}
+        {/* Skip button available even during loading */}
+        <button
+          onClick={handleSkip}
+          className="mt-6 text-sm underline transition-opacity hover:opacity-80"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Skip this step
+        </button>
+      </div>
+    );
+  }
+
+  // Error state with retry/skip options
+  if (error && !sentence) {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center px-6"
+        style={{ backgroundColor: "var(--surface-notebook)" }}
+      >
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
+          style={{ backgroundColor: "var(--accent-ribbon-light)" }}
+        >
+          <AlertCircle
+            className="h-8 w-8"
+            style={{ color: "var(--accent-ribbon)" }}
+          />
+        </div>
+        <h2
+          className="text-xl font-serif text-center mb-2"
+          style={{ color: "var(--text-heading)" }}
+        >
+          Almost there!
+        </h2>
+        <p
+          className="text-center text-sm mb-6 max-w-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {error}
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={handleRetry}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+            style={{
+              backgroundColor: "var(--surface-page)",
+              color: "var(--text-heading)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Try Again
+          </button>
+          <button
+            onClick={handleSkip}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+            style={{
+              backgroundColor: "var(--accent-ribbon)",
+              color: "var(--text-on-ribbon)",
+            }}
+          >
+            Continue <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     );
   }

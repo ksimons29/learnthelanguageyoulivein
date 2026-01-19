@@ -438,8 +438,19 @@ jobs:
 
 ---
 
+## QA Test Reports
+
+Automated QA test reports from Playwright browser testing:
+
+| Date | Report | Issues Found | Status |
+|------|--------|--------------|--------|
+| 2026-01-19 | [QA_REPORT_20260119](/docs/qa/QA_REPORT_20260119.md) | 7 bugs (#24-#30) | Critical bugs fixed |
+
+---
+
 ## Related Documentation
 
 - [Session Workflow](/docs/engineering/session-workflow.md) - Development workflow
 - [Implementation Plan](/docs/engineering/implementation_plan.md) - Architecture details
 - [Database Queries](/scripts/database-queries.sql) - Full query reference
+- [QA Reports](/docs/qa/) - Automated test reports
