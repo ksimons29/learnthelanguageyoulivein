@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Flame, Trophy, Target, Calendar, Loader2, CheckCircle2, PartyPopper } from "lucide-react";
 import { InfoButton } from "@/components/brand";
+import { BossRoundPrompt, BossRoundGame, BossRoundResults } from "@/components/gamification";
 import { useReviewStore } from "@/lib/store/review-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
+import type { Word } from "@/lib/db/schema";
 
 export default function ReviewCompletePage() {
   const router = useRouter();
@@ -16,6 +18,13 @@ export default function ReviewCompletePage() {
 
   const [isEnding, setIsEnding] = useState(false);
   const [tomorrowDue, setTomorrowDue] = useState(0);
+
+  // Boss round state
+  const [bossRoundState, setBossRoundState] = useState<'prompt' | 'playing' | 'results' | 'skipped'>('prompt');
+  const [bossRoundWords, setBossRoundWords] = useState<Word[]>([]);
+  const [bossRoundTimeLimit, setBossRoundTimeLimit] = useState(90);
+  const [bossRoundScore, setBossRoundScore] = useState(0);
+  const [bossRoundTimeUsed, setBossRoundTimeUsed] = useState(0);
 
   // Calculate accuracy
   const accuracy =
@@ -46,6 +55,16 @@ export default function ReviewCompletePage() {
           const { data } = await response.json();
           setTomorrowDue(data.totalDue || 0);
         }
+
+        // Fetch boss round words if daily goal is complete
+        const bossResponse = await fetch("/api/gamification/boss-round");
+        if (bossResponse.ok) {
+          const { data: bossData } = await bossResponse.json();
+          if (bossData.words && bossData.words.length > 0) {
+            setBossRoundWords(bossData.words);
+            setBossRoundTimeLimit(bossData.timeLimit || 90);
+          }
+        }
       } catch (err) {
         console.error("Failed to end session:", err);
       } finally {
@@ -64,6 +83,44 @@ export default function ReviewCompletePage() {
     router.push("/");
   };
 
+  // Boss round handlers
+  const handleStartBossRound = () => {
+    setBossRoundState('playing');
+  };
+
+  const handleSkipBossRound = () => {
+    setBossRoundState('skipped');
+  };
+
+  const handleBossRoundComplete = async (score: number, timeUsed: number) => {
+    setBossRoundScore(score);
+    setBossRoundTimeUsed(timeUsed);
+    setBossRoundState('results');
+
+    // Submit results to server
+    try {
+      await fetch("/api/gamification/boss-round", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          score,
+          totalWords: bossRoundWords.length,
+          timeUsed,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to submit boss round results:", err);
+    }
+  };
+
+  const handleBossRoundCancel = () => {
+    setBossRoundState('skipped');
+  };
+
+  const handleBossRoundResultsClose = () => {
+    setBossRoundState('skipped');
+  };
+
   // Loading state while ending session
   if (isEnding) {
     return (
@@ -76,6 +133,18 @@ export default function ReviewCompletePage() {
           <p style={{ color: "var(--text-muted)" }}>Saving your progress...</p>
         </div>
       </div>
+    );
+  }
+
+  // Boss round game (full screen)
+  if (bossRoundState === 'playing' && bossRoundWords.length > 0) {
+    return (
+      <BossRoundGame
+        words={bossRoundWords}
+        timeLimit={bossRoundTimeLimit}
+        onComplete={handleBossRoundComplete}
+        onCancel={handleBossRoundCancel}
+      />
     );
   }
 
@@ -282,6 +351,16 @@ export default function ReviewCompletePage() {
           </div>
         )}
 
+        {/* Boss Round Prompt - show when daily goal is complete and we have words */}
+        {isDailyGoalComplete && bossRoundWords.length > 0 && bossRoundState === 'prompt' && (
+          <div className="mb-6">
+            <BossRoundPrompt
+              onStart={handleStartBossRound}
+              onSkip={handleSkipBossRound}
+            />
+          </div>
+        )}
+
         {/* Tomorrow Preview */}
         <div
           className="mb-8 rounded-xl p-4 relative overflow-hidden"
@@ -359,6 +438,16 @@ export default function ReviewCompletePage() {
           </button>
         </div>
       </div>
+
+      {/* Boss Round Results Modal */}
+      {bossRoundState === 'results' && (
+        <BossRoundResults
+          score={bossRoundScore}
+          total={bossRoundWords.length}
+          timeUsed={bossRoundTimeUsed}
+          onClose={handleBossRoundResultsClose}
+        />
+      )}
     </div>
   );
 }
