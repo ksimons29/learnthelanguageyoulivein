@@ -10,6 +10,8 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 **GitHub Issues Created**: #32, #33, #34, #35, #36, #37
 
+**GitHub Issues Fixed**: #38, #39 (bugs found during testing)
+
 ### What Was Done
 
 #### GitHub Issues for Tracking
@@ -143,6 +145,17 @@ Created gamification store with:
 - ✅ TypeScript build passes (`npm run build`)
 - ✅ Playwright smoke test: Home page loads with "0/10 Daily Goal" progress ring
 - ✅ API endpoints return correct structure
+
+### Bugs Found & Fixed
+
+During testing, found and fixed 2 bugs:
+
+| Issue | Description | Root Cause | Fix |
+|-------|-------------|------------|-----|
+| #38 | finishSession bingo square marked on any session end | `handleSessionCompleted()` unconditionally called `updateBingoSquare('finishSession')` | Added check for `daily.completedAt !== null` |
+| #39 | Review complete page showed "0 words reviewed" | `endSession()` called `resetSession()` immediately, clearing stats before display | Removed `resetSession()` from `endSession()` (complete page calls it on "Done" click) |
+
+**Fix commit**: `a9672b3`
 
 ### Next Actions for New Engineer
 
