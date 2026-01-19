@@ -55,6 +55,8 @@ Created 3 new tables in `web/src/lib/db/schema/gamification.ts`:
 | #35 | Story Run Frame | Open (Post-MVP) |
 | #36 | Category Hunt | Open (Post-MVP) |
 | #37 | Real Life Mission | Open (Post-MVP) |
+| #38 | Bug: finishSession bingo square early | Fixed by commit `a9672b3` |
+| #39 | Bug: 0 words reviewed on complete page | Fixed by commit `a9672b3` |
 
 ---
 
@@ -233,21 +235,38 @@ The bingo board is now displayed on the home page:
 
 ---
 
+## Bugs Fixed
+
+### Bug #38: finishSession bingo square marked early ✅ FIXED
+The `finishSession` bingo square was being marked complete on any session end, not just when the daily goal was reached.
+
+**Root Cause**: `handleSessionCompleted()` in event/route.ts unconditionally called `updateBingoSquare(userId, today, 'finishSession')`.
+
+**Fix**: Added condition to check `daily.completedAt !== null` before marking the square.
+
+**Commit**: `a9672b3`
+
+### Bug #39: Review complete page shows 0 words reviewed ✅ FIXED
+After completing a review, the complete page showed "0 words reviewed" instead of the actual count.
+
+**Root Cause**: `endSession()` in review-store.ts called `resetSession()` immediately, clearing `wordsReviewed` and `correctCount` before the complete page could display them.
+
+**Fix**: Removed `resetSession()` from `endSession()`. The complete page's `handleDone()` already calls `resetSession()` when the user clicks "Done".
+
+**Commit**: `a9672b3`
+
+---
+
 ## Recommended Next Steps
 
-### High Priority (Complete Integration)
-1. **Connect review page to gamification events** - Add `emitItemAnswered()` call
-2. **Add boss round to complete page** - Show prompt when `daily.isComplete`
-3. **Add bingo board preview to home page** - Use compact variant
+### High Priority (Testing)
+1. **End-to-end gamification test** - Complete 10 reviews, verify full flow ✅ Tested
+2. **Streak freeze test** - Skip a day, verify freeze works
 
-### Medium Priority (Testing)
-4. **End-to-end gamification test** - Complete 10 reviews, verify full flow
-5. **Streak freeze test** - Skip a day, verify freeze works
-
-### Low Priority (Post-MVP)
-6. **Story Run Frame** - Issue #35
-7. **Category Hunt** - Issue #36
-8. **Real Life Mission** - Issue #37
+### Medium Priority (Post-MVP)
+3. **Story Run Frame** - Issue #35
+4. **Category Hunt** - Issue #36
+5. **Real Life Mission** - Issue #37
 
 ---
 
@@ -279,9 +298,14 @@ Unlike Duolingo's punitive model, users start with 1 free streak freeze that aut
 
 ```
 65fd6ba feat: implement gamification MVP with daily goals, streaks, bingo, and boss round
+a7578df feat: connect review page to gamification events
+e14e3c9 feat: add bingo board to home page
+db26341 feat: add boss round to review complete page
+a9672b3 fix: resolve gamification bugs found during testing
 ```
 
 Closes issues: #32, #33, #34
+Fixes issues: #38, #39
 
 ---
 
