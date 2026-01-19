@@ -61,173 +61,179 @@ export async function GET() {
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    // 2. Word counts by mastery status
-    const wordCounts = await db
-      .select({
-        masteryStatus: words.masteryStatus,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(words)
-      .where(eq(words.userId, user.id))
-      .groupBy(words.masteryStatus);
-
-    const totalWords = wordCounts.reduce((sum, row) => sum + row.count, 0);
-    const learningWords = wordCounts.find(r => r.masteryStatus === 'learning')?.count ?? 0;
-    const learnedWords = wordCounts.find(r => r.masteryStatus === 'learned')?.count ?? 0;
-    const masteredWords = wordCounts.find(r => r.masteryStatus === 'ready_to_use')?.count ?? 0;
-
-    // 2b. Anki-style time-based counts
     const oneWeekAgo = new Date(today);
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const oneMonthAgo = new Date(today);
     oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+    const ninetyDaysAgo = new Date(today);
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const sevenDaysFromNow = new Date(today);
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
-    const [weekCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(words)
-      .where(and(eq(words.userId, user.id), gte(words.createdAt, oneWeekAgo)));
+    // Run all independent queries in parallel for maximum performance
+    const [
+      aggregatedStats,
+      reviewStats,
+      streakData,
+      forecastData,
+      activityHeatmap,
+      readyToUseWords,
+      strugglingWordsList,
+      newCardsList,
+    ] = await Promise.all([
+      // 1. Combined aggregated stats in a single query
+      db
+        .select({
+          totalWords: sql<number>`count(*)::int`,
+          learningWords: sql<number>`count(*) filter (where ${words.masteryStatus} = 'learning')::int`,
+          learnedWords: sql<number>`count(*) filter (where ${words.masteryStatus} = 'learned')::int`,
+          masteredWords: sql<number>`count(*) filter (where ${words.masteryStatus} = 'ready_to_use')::int`,
+          wordsThisWeek: sql<number>`count(*) filter (where ${words.createdAt} >= ${oneWeekAgo})::int`,
+          wordsThisMonth: sql<number>`count(*) filter (where ${words.createdAt} >= ${oneMonthAgo})::int`,
+          categoryCount: sql<number>`count(distinct ${words.category})::int`,
+          needPractice: sql<number>`count(*) filter (where ${words.retrievability} < 0.9)::int`,
+          strugglingWords: sql<number>`count(*) filter (where ${words.lapseCount} >= 3)::int`,
+          newCardsCount: sql<number>`count(*) filter (where ${words.reviewCount} = 0)::int`,
+        })
+        .from(words)
+        .where(eq(words.userId, user.id)),
 
-    const [monthCount] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(words)
-      .where(and(eq(words.userId, user.id), gte(words.createdAt, oneMonthAgo)));
+      // 2. Review statistics
+      db
+        .select({
+          totalReviews: sql<number>`coalesce(sum(${reviewSessions.wordsReviewed}), 0)::int`,
+          correctReviews: sql<number>`coalesce(sum(${reviewSessions.correctCount}), 0)::int`,
+        })
+        .from(reviewSessions)
+        .where(eq(reviewSessions.userId, user.id)),
 
-    const wordsThisWeek = weekCount?.count ?? 0;
-    const wordsThisMonth = monthCount?.count ?? 0;
-
-    // 2c. Category count
-    const [categoryResult] = await db
-      .select({ count: sql<number>`count(distinct ${words.category})::int` })
-      .from(words)
-      .where(eq(words.userId, user.id));
-
-    const categoryCount = categoryResult?.count ?? 0;
-
-    // 2d. Learning indicators (Anki-style)
-    const [needPracticeResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, user.id),
-          sql`${words.retrievability} < 0.9`
+      // 3. Streak calculation data
+      db
+        .select({
+          date: sql<string>`date(${reviewSessions.endedAt})`,
+        })
+        .from(reviewSessions)
+        .where(
+          and(
+            eq(reviewSessions.userId, user.id),
+            sql`${reviewSessions.endedAt} is not null`
+          )
         )
-      );
+        .groupBy(sql`date(${reviewSessions.endedAt})`)
+        .orderBy(desc(sql`date(${reviewSessions.endedAt})`)),
 
-    const needPractice = needPracticeResult?.count ?? 0;
-
-    // 2e. Struggling words (3+ lapses, like Anki's "Words to Review")
-    const [strugglingResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, user.id),
-          gte(words.lapseCount, 3)
+      // 4. Forecast data in a single query with date grouping
+      db
+        .select({
+          date: sql<string>`date(${words.nextReviewDate})`,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(words)
+        .where(
+          and(
+            eq(words.userId, user.id),
+            lte(words.nextReviewDate, sevenDaysFromNow)
+          )
         )
-      );
+        .groupBy(sql`date(${words.nextReviewDate})`),
 
-    const strugglingWords = strugglingResult?.count ?? 0;
-
-    // 2f. Struggling words list (for display) - matches "Words to Review (3+ fails)"
-    const strugglingWordsList = await db
-      .select()
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, user.id),
-          gte(words.lapseCount, 1) // Show words with at least 1 lapse
+      // 5. Activity heatmap
+      db
+        .select({
+          date: sql<string>`date(${reviewSessions.endedAt})`,
+          count: sql<number>`sum(${reviewSessions.wordsReviewed})::int`,
+        })
+        .from(reviewSessions)
+        .where(
+          and(
+            eq(reviewSessions.userId, user.id),
+            gte(reviewSessions.endedAt, ninetyDaysAgo)
+          )
         )
-      )
-      .orderBy(desc(words.lapseCount))
-      .limit(10);
+        .groupBy(sql`date(${reviewSessions.endedAt})`)
+        .orderBy(sql`date(${reviewSessions.endedAt})`),
 
-    // 2g. New cards (not yet studied) - matches "New Cards (Not Yet Studied)"
-    const [newCardsResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, user.id),
-          eq(words.reviewCount, 0)
+      // 6. Ready to use words
+      db
+        .select()
+        .from(words)
+        .where(
+          and(
+            eq(words.userId, user.id),
+            eq(words.masteryStatus, 'ready_to_use')
+          )
         )
-      );
+        .orderBy(desc(words.updatedAt))
+        .limit(10),
 
-    const newCardsCount = newCardsResult?.count ?? 0;
-
-    // 2h. New cards list (for display)
-    const newCardsList = await db
-      .select()
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, user.id),
-          eq(words.reviewCount, 0)
+      // 7. Struggling words list
+      db
+        .select()
+        .from(words)
+        .where(
+          and(
+            eq(words.userId, user.id),
+            gte(words.lapseCount, 1)
+          )
         )
-      )
-      .orderBy(desc(words.createdAt))
-      .limit(10);
+        .orderBy(desc(words.lapseCount))
+        .limit(10),
 
-    // 2i. Words to focus on (due + need practice + struggling)
-    const wordsToFocusOn = Math.min(
-      needPractice + strugglingWords,
-      totalWords
-    );
+      // 8. New cards list
+      db
+        .select()
+        .from(words)
+        .where(
+          and(
+            eq(words.userId, user.id),
+            eq(words.reviewCount, 0)
+          )
+        )
+        .orderBy(desc(words.createdAt))
+        .limit(10),
+    ]);
 
-    // 3. Review statistics (retention rate)
-    const [reviewStats] = await db
-      .select({
-        totalReviews: sql<number>`coalesce(sum(${reviewSessions.wordsReviewed}), 0)::int`,
-        correctReviews: sql<number>`coalesce(sum(${reviewSessions.correctCount}), 0)::int`,
-      })
-      .from(reviewSessions)
-      .where(eq(reviewSessions.userId, user.id));
+    // Extract aggregated stats
+    const stats = aggregatedStats[0] ?? {
+      totalWords: 0,
+      learningWords: 0,
+      learnedWords: 0,
+      masteredWords: 0,
+      wordsThisWeek: 0,
+      wordsThisMonth: 0,
+      categoryCount: 0,
+      needPractice: 0,
+      strugglingWords: 0,
+      newCardsCount: 0,
+    };
 
-    const totalReviews = reviewStats?.totalReviews ?? 0;
-    const correctReviews = reviewStats?.correctReviews ?? 0;
+    const totalWords = stats.totalWords;
+    const learningWords = stats.learningWords;
+    const learnedWords = stats.learnedWords;
+    const masteredWords = stats.masteredWords;
+    const wordsThisWeek = stats.wordsThisWeek;
+    const wordsThisMonth = stats.wordsThisMonth;
+    const categoryCount = stats.categoryCount;
+    const needPractice = stats.needPractice;
+    const strugglingWords = stats.strugglingWords;
+    const newCardsCount = stats.newCardsCount;
+
+    // Calculate words to focus on
+    const wordsToFocusOn = Math.min(needPractice + strugglingWords, totalWords);
+
+    // Extract review stats
+    const totalReviews = reviewStats[0]?.totalReviews ?? 0;
+    const correctReviews = reviewStats[0]?.correctReviews ?? 0;
     const retentionRate = totalReviews > 0
       ? Math.round((correctReviews / totalReviews) * 100)
       : 0;
 
-    // 4. Calculate streak (consecutive days with completed sessions)
-    const { currentStreak, longestStreak } = await calculateStreak(user.id, today);
+    // Calculate streak from pre-fetched data
+    const { currentStreak, longestStreak } = calculateStreakFromDates(streakData, today);
 
-    // 5. Forecast: words due in next 7 days
-    const forecast = await calculateForecast(user.id, today);
+    // Build forecast from pre-fetched data
+    const forecast = buildForecast(forecastData, today);
     const dueToday = forecast[0]?.count ?? 0;
-
-    // 6. Activity heatmap (last 90 days of review activity)
-    const ninetyDaysAgo = new Date(today);
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-
-    const activityHeatmap = await db
-      .select({
-        date: sql<string>`date(${reviewSessions.endedAt})`,
-        count: sql<number>`sum(${reviewSessions.wordsReviewed})::int`,
-      })
-      .from(reviewSessions)
-      .where(
-        and(
-          eq(reviewSessions.userId, user.id),
-          gte(reviewSessions.endedAt, ninetyDaysAgo)
-        )
-      )
-      .groupBy(sql`date(${reviewSessions.endedAt})`)
-      .orderBy(sql`date(${reviewSessions.endedAt})`);
-
-    // 7. Ready to use words (mastered, limit 10)
-    const readyToUseWords = await db
-      .select()
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, user.id),
-          eq(words.masteryStatus, 'ready_to_use')
-        )
-      )
-      .orderBy(desc(words.updatedAt))
-      .limit(10);
 
     return NextResponse.json({
       data: {
@@ -288,29 +294,14 @@ export async function GET() {
 }
 
 /**
- * Calculate current and longest study streak
+ * Calculate current and longest study streak from pre-fetched date data
  *
  * A streak is the number of consecutive days with at least one completed review session.
  */
-async function calculateStreak(
-  userId: string,
+function calculateStreakFromDates(
+  sessionDates: { date: string }[],
   today: Date
-): Promise<{ currentStreak: number; longestStreak: number }> {
-  // Get all unique dates with completed sessions, ordered descending
-  const sessionDates = await db
-    .select({
-      date: sql<string>`date(${reviewSessions.endedAt})`,
-    })
-    .from(reviewSessions)
-    .where(
-      and(
-        eq(reviewSessions.userId, userId),
-        sql`${reviewSessions.endedAt} is not null`
-      )
-    )
-    .groupBy(sql`date(${reviewSessions.endedAt})`)
-    .orderBy(desc(sql`date(${reviewSessions.endedAt})`));
-
+): { currentStreak: number; longestStreak: number } {
   if (sessionDates.length === 0) {
     return { currentStreak: 0, longestStreak: 0 };
   }
@@ -368,46 +359,46 @@ async function calculateStreak(
 }
 
 /**
- * Calculate 7-day review forecast
+ * Build 7-day review forecast from pre-fetched date data
  *
  * Returns an array of { date, count } for the next 7 days,
  * showing how many words are scheduled for review each day.
  */
-async function calculateForecast(
-  userId: string,
+function buildForecast(
+  forecastData: { date: string; count: number }[],
   today: Date
-): Promise<{ date: string; count: number }[]> {
+): { date: string; count: number }[] {
   const forecast: { date: string; count: number }[] = [];
 
+  // Create a map from date string to count for quick lookup
+  const dateCountMap = new Map<string, number>();
+  let overdueCount = 0;
+
+  const todayStr = today.toISOString().split('T')[0];
+
+  for (const row of forecastData) {
+    if (row.date < todayStr) {
+      // Overdue words - add to today's count
+      overdueCount += row.count;
+    } else {
+      dateCountMap.set(row.date, row.count);
+    }
+  }
+
+  // Build the 7-day forecast
   for (let i = 0; i < 7; i++) {
     const targetDate = new Date(today);
     targetDate.setDate(targetDate.getDate() + i);
-    const nextDate = new Date(targetDate);
-    nextDate.setDate(nextDate.getDate() + 1);
+    const dateStr = targetDate.toISOString().split('T')[0];
 
-    const [result] = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(words)
-      .where(
-        and(
-          eq(words.userId, userId),
-          i === 0
-            ? // Today: include overdue (nextReviewDate <= end of today)
-              lte(words.nextReviewDate, nextDate)
-            : // Future: words due on that specific day
-              and(
-                gte(words.nextReviewDate, targetDate),
-                lte(words.nextReviewDate, nextDate)
-              )
-        )
-      );
+    let count = dateCountMap.get(dateStr) ?? 0;
 
-    forecast.push({
-      date: targetDate.toISOString().split('T')[0],
-      count: result?.count ?? 0,
-    });
+    // Add overdue words to today's count
+    if (i === 0) {
+      count += overdueCount;
+    }
+
+    forecast.push({ date: dateStr, count });
   }
 
   return forecast;

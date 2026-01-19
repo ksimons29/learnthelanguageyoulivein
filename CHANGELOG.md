@@ -32,6 +32,46 @@ Redesigned the onboarding language selection page to better match the Moleskine 
 | `web/src/app/onboarding/languages/page.tsx` | Updated layout and copy |
 | `web/src/components/ui/index.ts` | Export FlagStamp component |
 
+### Bug Fixes
+
+#### #27: Nested Button Hydration Error - FIXED
+- **Location**: `web/src/components/notebook/word-detail-sheet.tsx`
+- **Problem**: `AudioPlayButton` component (a `<button>`) was wrapped inside another `<button>`, causing React hydration errors
+- **Fix**: Replaced nested component with direct icon usage (`Volume2`, `Loader2`)
+
+#### #28: Progress API Slow Query - FIXED
+- **Location**: `web/src/app/api/progress/route.ts`
+- **Problem**: ~20 sequential database queries caused 15+ second response times
+- **Fix**: Optimized to 8 parallel queries using `Promise.all` and conditional aggregation
+  - Combined 10 count queries into 1 using `count(*) filter (where ...)`
+  - Replaced 7 sequential forecast queries with 1 grouped query
+  - Expected improvement: ~10x faster (15s → <2s)
+
+#### #29: Turbopack Config Warning - Acknowledged
+- Low priority - `@serwist/next` service worker plugin not fully Turbopack-compatible
+- Already disabled in development, no user impact
+
+#### #30: Sentence Validation False Negatives - FIXED
+- **Location**: `web/src/lib/sentences/generator.ts`
+- **Problem**: `\b` word boundaries fail with Unicode characters (ã, é, etc.)
+- **Fix**: Added 4-strategy validation:
+  1. Unicode-aware word boundaries with lookbehind/lookahead
+  2. Normalized text comparison (remove diacritics)
+  3. Simple includes check
+  4. Word stem matching (70% prefix match)
+
+### Bug Status Update
+
+| Bug | Status |
+|-----|--------|
+| #24 | ✅ FIXED (Session 17) |
+| #25 | ✅ FIXED (Session 18a) |
+| #26 | ✅ FIXED (Session 18a) |
+| #27 | ✅ FIXED (this session) |
+| #28 | ✅ FIXED (this session) |
+| #29 | ⚠️ Acknowledged (low priority) |
+| #30 | ✅ FIXED (this session) |
+
 ---
 
 ## 2026-01-19 (Session 18a) - Bug Fixes: Storage RLS & Sentence Generation

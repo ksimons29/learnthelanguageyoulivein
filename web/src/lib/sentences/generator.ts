@@ -125,33 +125,76 @@ OUTPUT FORMAT (JSON only, no markdown code blocks):
 /**
  * Validate that a sentence contains all target words
  *
- * Uses word boundary matching to ensure words appear in the sentence.
- * Handles punctuation adjacent to words.
+ * Uses multiple strategies to handle:
+ * - Unicode characters (accented letters like ã, é)
+ * - Word boundaries with punctuation
+ * - Minor conjugation variations (verb endings)
  */
 export function validateSentenceContainsWords(
   sentence: string,
   targetWords: string[]
 ): boolean {
   const sentenceLower = sentence.toLowerCase();
+  const sentenceNormalized = normalizeText(sentenceLower);
 
   for (const word of targetWords) {
     const wordLower = word.toLowerCase();
+    const wordNormalized = normalizeText(wordLower);
 
-    // Escape special regex characters in the word
+    // Strategy 1: Exact match with Unicode-aware boundaries
+    // Use lookbehind/lookahead for word boundaries that handle Unicode
     const escapedWord = escapeRegex(wordLower);
+    const unicodeBoundaryRegex = new RegExp(
+      `(?<=^|[\\s.,!?;:"'()\\[\\]])${escapedWord}(?=$|[\\s.,!?;:"'()\\[\\]])`,
+      'i'
+    );
 
-    // Try word boundary match first (works for most languages with spaces)
-    const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
-
-    if (!wordRegex.test(sentenceLower)) {
-      // Fallback: simple includes check for languages without clear word boundaries
-      if (!sentenceLower.includes(wordLower)) {
-        return false;
-      }
+    if (unicodeBoundaryRegex.test(sentenceLower)) {
+      continue; // Found exact match
     }
+
+    // Strategy 2: Check normalized text (without diacritics)
+    const escapedNormalized = escapeRegex(wordNormalized);
+    const normalizedRegex = new RegExp(
+      `(?<=^|[\\s.,!?;:"'()\\[\\]])${escapedNormalized}(?=$|[\\s.,!?;:"'()\\[\\]])`,
+      'i'
+    );
+
+    if (normalizedRegex.test(sentenceNormalized)) {
+      continue; // Found normalized match
+    }
+
+    // Strategy 3: Simple includes check (most lenient)
+    if (sentenceLower.includes(wordLower) || sentenceNormalized.includes(wordNormalized)) {
+      continue;
+    }
+
+    // Strategy 4: Check for word stem (at least 70% of characters match at start)
+    // This handles minor conjugation variations
+    const minStemLength = Math.max(3, Math.floor(wordLower.length * 0.7));
+    const wordStem = wordLower.slice(0, minStemLength);
+    const wordStemNormalized = wordNormalized.slice(0, minStemLength);
+
+    if (
+      sentenceLower.includes(wordStem) ||
+      sentenceNormalized.includes(wordStemNormalized)
+    ) {
+      continue; // Found stem match
+    }
+
+    // No match found
+    return false;
   }
 
   return true;
+}
+
+/**
+ * Normalize text by removing diacritics
+ * Converts "não" -> "nao", "está" -> "esta", etc.
+ */
+function normalizeText(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 /**

@@ -9,7 +9,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { AudioPlayButton } from "@/components/audio";
+import { Volume2, Loader2 as AudioLoader } from "lucide-react";
 import { MasteryBadge } from "./mastery-badge";
 import { useAudioPlayer } from "@/lib/hooks";
 import { useWordsStore } from "@/lib/store/words-store";
@@ -136,15 +136,13 @@ export function WordDetailSheet({
               color: "white",
               opacity: word.audioUrl ? 1 : 0.5,
             }}
+            aria-label={isThisPlaying ? "Stop audio" : "Play audio"}
           >
-            <AudioPlayButton
-              isPlaying={isThisPlaying}
-              isLoading={audioLoading && currentUrl === word.audioUrl}
-              hasAudio={!!word.audioUrl}
-              onClick={handlePlay}
-              size="md"
-              className="!bg-transparent !text-white"
-            />
+            {audioLoading && currentUrl === word.audioUrl ? (
+              <AudioLoader className="h-5 w-5 animate-spin" />
+            ) : (
+              <Volume2 className={`h-5 w-5 ${isThisPlaying ? "animate-pulse" : ""}`} />
+            )}
             <span>{isThisPlaying ? "Playing..." : "Play Audio"}</span>
           </button>
         </div>
