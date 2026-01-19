@@ -102,7 +102,21 @@ npm run build             # Production build
 | `web/src/app/onboarding/languages/page.tsx` | Modified | Call starter-words API, skip to complete |
 | `web/src/app/onboarding/complete/page.tsx` | Modified | Show starter words grid instead of sentences |
 
+**E2E Test Results**
+| Test | Result | Notes |
+|------|--------|-------|
+| Sign-up → Check Email UI | ✅ PASS | Email confirmation screen shows correctly |
+| Sign-in improved error | ✅ PASS | Hints at email confirmation |
+| Onboarding → Complete | ✅ PASS | Skips capture, shows starter words |
+| Notebook categories | ✅ PASS | 11 phrases across 3 categories |
+| Progress dashboard | ✅ PASS | Stats loading correctly |
+| Daily Bingo gamification | ✅ PASS | 9 squares, 4/9 completed |
+
+**Other Changes**
+- Removed InstallBanner PWA prompt → Deferred to GitHub issue #49
+
 **Build**: ✅ Passed
+**Commit**: `fbb2625` - fix: auth email confirmation + starter words onboarding
 
 ---
 
