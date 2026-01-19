@@ -20,9 +20,9 @@ Redesigned the onboarding language selection page to better match the Moleskine 
 - Teal highlight on selection state
 
 #### Copy Updates
-- Title changed from "What language are you learning?" to "Which language surrounds you?"
-- Subtitle changed to "The language of daily life where you live"
-- Better reflects the LLYLI (Learn the Language You Live In) concept
+- Step 1: "What language fills your days?" / "The one you hear on streets and in shops"
+- Step 2: "And your mother tongue?" / "For translations that feel like home"
+- Natural, emotionally resonant language that reflects the immigrant/expat experience
 
 #### Files Added/Modified
 | File | Changes |

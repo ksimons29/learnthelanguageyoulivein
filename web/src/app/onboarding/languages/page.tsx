@@ -133,16 +133,16 @@ export default function LanguagesPage() {
           }}
         >
           {step === "target"
-            ? "Which language surrounds you?"
-            : "What's your native language?"}
+            ? "What language fills your days?"
+            : "And your mother tongue?"}
         </h1>
         <p
           className="text-center mb-6 text-sm"
           style={{ color: "var(--text-muted)" }}
         >
           {step === "target"
-            ? "The language of daily life where you live"
-            : "We'll translate phrases for you"}
+            ? "The one you hear on streets and in shops"
+            : "For translations that feel like home"}
         </p>
 
         {/* Error message */}
