@@ -65,6 +65,10 @@ Tested with confirmed account through Playwright browser automation:
 2. **Multiple Choice exercises** (Test Case 4) - Requires same-category words
 3. **Offline Mode** (Test Case 9) - Requires production build (`npm run build && npm start`)
 
+### Handoff Document
+
+See `/docs/engineering/HANDOFF_20260119_SESSION20.md` for detailed testing instructions and next steps.
+
 ---
 
 ## 2026-01-19 (Session 19) - Bug Verification, Icon Redesign & QA Updates
