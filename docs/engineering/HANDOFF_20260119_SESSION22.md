@@ -213,8 +213,15 @@ The review page now emits `emitItemAnswered()` events after each word is graded:
 
 **Commit**: `a7578df`
 
-### 2. Boss Round Prompt on Complete Page
-The boss round prompt component exists but needs to be integrated into `/review/complete/page.tsx` conditionally when daily goal is complete.
+### 2. Boss Round Prompt on Complete Page ✅ CONNECTED
+The boss round is now integrated into the review complete page:
+- Fetches 5 hardest words from `/api/gamification/boss-round` on page load
+- Shows `BossRoundPrompt` when daily goal is complete
+- Full-screen `BossRoundGame` with 90-second timer
+- `BossRoundResults` modal showing score
+- Submits results to server on completion
+
+**Commit**: `db26341`
 
 ### 3. Bingo Board on Home Page ✅ CONNECTED
 The bingo board is now displayed on the home page:
