@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, PartyPopper, X } from "lucide-react";
 import {
@@ -9,6 +9,7 @@ import {
   CapturedTodayList,
   TodaysProgress,
 } from "@/components/home";
+import { BingoBoard, BingoBoardModal } from "@/components/gamification";
 import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
@@ -25,10 +26,14 @@ export default function HomePage() {
   const {
     daily,
     streak,
+    bingo,
     showDailyGoalCelebration,
     fetchState: fetchGamificationState,
     dismissDailyGoalCelebration,
   } = useGamificationStore();
+
+  // Bingo modal state
+  const [showBingoModal, setShowBingoModal] = useState(false);
 
   // Redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -201,7 +206,7 @@ export default function HomePage() {
         </section>
 
         {/* Today's Progress */}
-        <section className="pb-8">
+        <section className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <div
               className="w-1 h-6 rounded-full"
@@ -224,7 +229,37 @@ export default function HomePage() {
             />
           </div>
         </section>
+
+        {/* Daily Bingo */}
+        {bingo && (
+          <section className="pb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-1 h-6 rounded-full"
+                style={{ backgroundColor: "var(--accent-nav)" }}
+              />
+              <h2
+                className="text-xl font-semibold heading-serif ink-text"
+                style={{ color: "var(--text-heading)" }}
+              >
+                Daily Bingo
+              </h2>
+            </div>
+            <div className="page-stack-3d">
+              <BingoBoard
+                variant="compact"
+                onExpand={() => setShowBingoModal(true)}
+              />
+            </div>
+          </section>
+        )}
       </div>
+
+      {/* Bingo Modal */}
+      <BingoBoardModal
+        isOpen={showBingoModal}
+        onClose={() => setShowBingoModal(false)}
+      />
 
       {/* Daily Goal Celebration Modal */}
       {showDailyGoalCelebration && (
