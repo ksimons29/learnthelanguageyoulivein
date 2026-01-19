@@ -204,23 +204,14 @@ LIMIT 5;
 
 ---
 
-## Known Integration Points (Not Yet Connected)
+## Integration Status
 
-### 1. Review Page Event Emission
-The review page (`web/src/app/review/page.tsx`) should call `emitItemAnswered()` after each word is graded. This requires importing the gamification store and adding the call.
+### 1. Review Page Event Emission ✅ CONNECTED
+The review page now emits `emitItemAnswered()` events after each word is graded:
+- Word mode: Emits event with `exerciseType: "type_translation"`
+- Sentence mode: Emits events for all words in the sentence with the actual exercise type
 
-```typescript
-// In review page after grading
-const { emitItemAnswered } = useGamificationStore();
-
-// After submitReview() call:
-await emitItemAnswered({
-  wordId: currentWord.id,
-  isCorrect: grade >= 3, // Good or Easy
-  exerciseType: currentExerciseType,
-  category: currentWord.category,
-});
-```
+**Commit**: `a7578df`
 
 ### 2. Boss Round Prompt on Complete Page
 The boss round prompt component exists but needs to be integrated into `/review/complete/page.tsx` conditionally when daily goal is complete.
