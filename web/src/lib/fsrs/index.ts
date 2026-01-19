@@ -176,8 +176,13 @@ export function getNextReviewText(nextReviewDate: Date): string {
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays <= 0) return 'Review now';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays < 7) return `In ${diffDays} days`;
+
+  // For days within a week, show the actual day name
+  if (diffDays <= 7) {
+    const dayName = nextReviewDate.toLocaleDateString('en-US', { weekday: 'long' });
+    return dayName;
+  }
+
   if (diffDays < 14) return 'In about a week';
   if (diffDays < 30) return `In ${Math.floor(diffDays / 7)} weeks`;
   return `In about ${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''}`;

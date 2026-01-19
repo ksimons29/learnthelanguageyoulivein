@@ -4,6 +4,61 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 21) - Issue Cleanup & DX Improvements
+
+**Session Focus**: Close resolved issues, fix Turbopack warning, improve review feedback UX.
+
+### GitHub Issues Closed
+
+Closed 6 resolved issues from previous sessions:
+
+| Issue | Title | Resolution |
+|-------|-------|------------|
+| #27 | Nested button hydration errors | Fixed in Session 18 |
+| #28 | Progress API slow query | Fixed in Session 18 |
+| #30 | Sentence validation false negatives | Fixed in Session 18 |
+| #31 | QA Session Complete - Handoff | Documentation archived |
+| #18 | Manual QA of Sentence Generation | QA completed |
+| #29 | Turbopack config warning | Fixed this session |
+
+**Remaining open issues**: #23 (iOS App Store), #20 (Default Categories)
+
+### Turbopack Config Fix (#29)
+
+**Problem**: Next.js 16 defaults to Turbopack and warns when it sees webpack config without acknowledgment.
+
+**Fix**: Added empty `turbopack: {}` config to acknowledge intentional webpack usage for Serwist PWA plugin.
+
+```typescript
+const nextConfig: NextConfig = {
+  turbopack: {}, // Acknowledge webpack usage for Serwist
+};
+```
+
+### Review Feedback UX Improvement
+
+**Change**: Instead of "Tomorrow" or "In X days", now shows actual day names (Monday, Tuesday, etc.) for reviews within the next week.
+
+**Before**: "Tomorrow" | "In 3 days"
+**After**: "Monday" | "Thursday"
+
+This provides clearer scheduling context for users planning their study sessions.
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/next.config.ts` | Added turbopack config |
+| `web/src/lib/fsrs/index.ts` | Show day names in review feedback |
+
+### Tests Verified
+
+- ✅ All 65 unit tests pass
+- ✅ Playwright smoke tests: Home, Review, Notebook, Progress pages
+- ✅ Review feedback shows day names correctly
+
+---
+
 ## 2026-01-19 (Session 20) - Test Account Setup & Progress API Fix
 
 **Session Focus**: Fix test account email confirmation and resolve Progress API 500 error.
