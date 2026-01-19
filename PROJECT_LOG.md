@@ -56,6 +56,8 @@ npm run build             # Production build
 | Issue | Feature | Priority |
 |-------|---------|----------|
 | #50 | E2E User Flow Verification on Vercel | P0-critical |
+| #51 | Review page misleading for unauth users | P2-normal |
+| #52 | Protected pages auth redirect | P3-low |
 | #44 | Progress API 500 error | P1-high |
 | #23 | iOS App Store submission | P1-high |
 | #49 | PWA Install Banner | P2-normal |
@@ -105,7 +107,23 @@ npm run build             # Production build
 **Reminders Created**
 - Apple Reminder: "Test LLYLI user flow on Vercel production" in Daily 5 (tomorrow 9am)
 
+**E2E Test Results**
+| Test | Status | Notes |
+|------|--------|-------|
+| Sign-up flow | ✅ PASS | Email confirmation screen works |
+| Sign-in error message | ✅ PASS | Shows email confirmation hint |
+| Progress page (401) | ✅ PASS | Shows "sign in to view" prompt |
+| Review page (unauth) | ⚠️ BUG #51 | Shows "All caught up" instead of sign-in |
+| Protected pages | ⚠️ #52 | Load UI without auth redirect |
+
+**GitHub Issues Created**
+| Issue | Title | Priority |
+|-------|-------|----------|
+| #51 | Review page misleading for unauth users | P2-normal |
+| #52 | Protected pages should redirect to sign-in | P3-low |
+
 **Build**: ✅ Passed
+**Deployed**: ✅ Pushed to main (auto-deploy)
 
 ---
 
