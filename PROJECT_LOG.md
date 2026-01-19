@@ -115,8 +115,19 @@ npm run build             # Production build
 **Other Changes**
 - Removed InstallBanner PWA prompt → Deferred to GitHub issue #49
 
+**Deployment**
+| Step | Status | Notes |
+|------|--------|-------|
+| Local build | ✅ Pass | `npm run build` succeeds |
+| Git push | ✅ Pass | Pushed to origin/main |
+| Vercel auto-deploy | ❌ Fail | 3 consecutive failures (webhook issue) |
+| Vercel manual deploy | ✅ Pass | `vercel --prod` succeeded |
+| Production verified | ✅ Live | InstallBanner removed, all changes live |
+
 **Build**: ✅ Passed
-**Commit**: `fbb2625` - fix: auth email confirmation + starter words onboarding
+**Commits**:
+- `fbb2625` - fix: auth email confirmation + starter words onboarding
+- `6bf274a` - docs: add E2E test results to Session 28
 
 ---
 
