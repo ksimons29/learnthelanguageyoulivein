@@ -4,6 +4,49 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 18) - Bug Fixes: Storage RLS & Sentence Generation
+
+**Session Focus**: Apply pending migrations and fix high-priority bugs from QA report.
+
+### What Was Done
+
+#### Storage RLS Migration Applied (#25)
+- Applied `supabase/migrations/20260119_fix_audio_storage_rls.sql` via Node.js
+- Created 4 RLS policies for audio bucket:
+  - INSERT: Users can upload to their own folder
+  - UPDATE: Users can update their own files
+  - DELETE: Users can delete their own files
+  - SELECT: Public read access
+- Verified audio uploads now work (3 new files uploaded post-migration)
+- Confirmed public URL access returns HTTP 200
+
+#### Duplicate Sentence Hash Fix (#26)
+- **Problem**: Race condition caused unique constraint violations when concurrent requests tried to insert the same word combination
+- **Solution**: Added `onConflictDoNothing()` to sentence insert query
+- Uses `.returning()` to detect if insert actually happened vs was skipped
+- Database-level test confirmed duplicates are gracefully skipped
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/app/api/sentences/generate/route.ts` | Added `onConflictDoNothing()` for race condition handling |
+| `docs/qa/QA_REPORT_20260119.md` | Updated #25 and #26 status to FIXED |
+
+### Bug Status Update
+
+| Bug | Status |
+|-----|--------|
+| #24 | ✅ FIXED (Session 17) |
+| #25 | ✅ FIXED (this session) |
+| #26 | ✅ FIXED (this session) |
+| #27 | 🔴 Open |
+| #28 | 🔴 Open |
+| #29 | 🔴 Open |
+| #30 | 🔴 Open |
+
+---
+
 ## 2026-01-19 (Session 17) - Comprehensive QA Testing + Bug Fixes
 
 **Session Focus**: Automated QA testing with Playwright MCP, bug discovery, and critical fixes.

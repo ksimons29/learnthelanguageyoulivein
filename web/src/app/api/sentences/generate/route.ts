@@ -97,18 +97,28 @@ export async function POST(request: NextRequest) {
         // 5c. Determine exercise type based on word mastery
         const exerciseType = determineExerciseType(wordGroup);
 
-        // 5d. Store generated sentence
-        await db.insert(generatedSentences).values({
-          userId: user.id,
-          text: result.text,
-          audioUrl,
-          wordIds: wordGroup.map((w) => w.id),
-          wordIdsHash: generateWordIdsHash(wordGroup.map((w) => w.id)),
-          exerciseType,
-          usedAt: null, // Pre-generated, not yet shown
-        });
+        // 5d. Store generated sentence (use onConflictDoNothing to handle race conditions)
+        // Race condition: another request may have inserted the same wordIdsHash between
+        // our filterUsedCombinations check and this insert. Handle gracefully.
+        const wordIdsHash = generateWordIdsHash(wordGroup.map((w) => w.id));
+        const inserted = await db
+          .insert(generatedSentences)
+          .values({
+            userId: user.id,
+            text: result.text,
+            audioUrl,
+            wordIds: wordGroup.map((w) => w.id),
+            wordIdsHash,
+            exerciseType,
+            usedAt: null, // Pre-generated, not yet shown
+          })
+          .onConflictDoNothing({ target: generatedSentences.wordIdsHash })
+          .returning({ id: generatedSentences.id });
 
-        sentencesGenerated++;
+        // Only count if actually inserted (not skipped due to conflict)
+        if (inserted.length > 0) {
+          sentencesGenerated++;
+        }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         errors.push(`Error processing word group: ${errorMsg}`);
