@@ -10,6 +10,25 @@ npm run build             # Build for production
 npm run db:push           # Push schema changes (dev only)
 ```
 
+## Deployment
+
+- **Production URL:** https://web-eta-gold.vercel.app
+- **Hosting:** Vercel (auto-deploys on push to `main`)
+- **Database:** Supabase PostgreSQL (same instance for dev/prod)
+
+```bash
+# Deploy manually (auto-deploy preferred)
+cd web && vercel --prod
+
+# Add env vars (use printf to avoid newline issues)
+printf '%s' "value" | vercel env add VAR_NAME production
+
+# Check deployment logs
+vercel logs <deployment-url> --since 5m
+```
+
+**Important:** When adding secrets to Vercel, use `printf` instead of `echo` to avoid trailing newlines which cause auth failures.
+
 ## Tech Stack
 
 - **Frontend:** Next.js 16, React 19, TypeScript, Tailwind, shadcn/ui
@@ -43,6 +62,7 @@ npm run db:push           # Push schema changes (dev only)
 - Notebook browser with categories
 - User onboarding flow
 - Progress dashboard
+- Production deployment (Vercel)
 
 ### In Progress ⚠️
 - Sentence generation (pre-gen works, review integration WIP)
