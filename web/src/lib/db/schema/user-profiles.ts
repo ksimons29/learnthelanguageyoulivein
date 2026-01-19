@@ -57,49 +57,50 @@ export const userProfiles = pgTable('user_profiles', {
 
 /**
  * Learning reasons for categorization
+ * Icons reference Lucide icon names for consistent Moleskine aesthetic
  */
 export const LEARNING_REASONS = [
   {
     id: 'living_permanent',
     label: 'Living here permanently',
     description: 'Moved here and want to integrate',
-    icon: '🏠',
+    iconName: 'Home',
   },
   {
     id: 'working_temporary',
     label: 'Working here temporarily',
     description: 'Here for work, 1-3 years',
-    icon: '💼',
+    iconName: 'Briefcase',
   },
   {
     id: 'partner_family',
     label: 'Partner or family speaks it',
     description: 'Want to communicate with loved ones',
-    icon: '❤️',
+    iconName: 'Heart',
   },
   {
     id: 'planning_move',
     label: 'Planning to move here',
     description: 'Preparing before relocating',
-    icon: '✈️',
+    iconName: 'Plane',
   },
   {
     id: 'travel_culture',
     label: 'Travel & culture',
     description: 'Love the country and language',
-    icon: '🌍',
+    iconName: 'Globe',
   },
   {
     id: 'professional_growth',
     label: 'Career advancement',
     description: 'Need it for work opportunities',
-    icon: '📈',
+    iconName: 'TrendingUp',
   },
   {
     id: 'other',
     label: 'Other reason',
     description: 'Something else entirely',
-    icon: '✨',
+    iconName: 'Sparkles',
   },
 ] as const;
 

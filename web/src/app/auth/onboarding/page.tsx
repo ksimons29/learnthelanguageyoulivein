@@ -8,6 +8,27 @@ import {
   getSupportedLanguageCodes,
 } from '@/lib/config/languages';
 import { LEARNING_REASONS } from '@/lib/db/schema/user-profiles';
+import {
+  Home,
+  Briefcase,
+  Heart,
+  Plane,
+  Globe,
+  TrendingUp,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
+
+// Map icon names to Lucide components
+const REASON_ICONS: Record<string, LucideIcon> = {
+  Home,
+  Briefcase,
+  Heart,
+  Plane,
+  Globe,
+  TrendingUp,
+  Sparkles,
+};
 
 /**
  * Onboarding Page
@@ -321,42 +342,65 @@ export default function OnboardingPage() {
                 )}
 
                 <div className="space-y-2">
-                  {LEARNING_REASONS.map((reason) => (
-                    <button
-                      key={reason.id}
-                      onClick={() => setLearningReason(reason.id)}
-                      className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                        learningReason === reason.id
-                          ? 'border-[var(--accent-nav)] bg-[var(--accent-nav-light)]'
-                          : 'border-[var(--border)] hover:border-[var(--text-muted)]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{reason.icon}</span>
-                        <div className="flex-1">
-                          <span className="font-medium text-[var(--text-body)] block">
-                            {reason.label}
-                          </span>
-                          <span className="text-sm text-[var(--text-muted)]">
-                            {reason.description}
-                          </span>
-                        </div>
-                        {learningReason === reason.id && (
-                          <svg
-                            className="w-5 h-5 text-[var(--accent-nav)]"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                  {LEARNING_REASONS.map((reason) => {
+                    const IconComponent = REASON_ICONS[reason.iconName];
+                    return (
+                      <button
+                        key={reason.id}
+                        onClick={() => setLearningReason(reason.id)}
+                        className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                          learningReason === reason.id
+                            ? 'border-[var(--accent-nav)] bg-[var(--accent-nav-light)]'
+                            : 'border-[var(--border)] hover:border-[var(--text-muted)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Moleskine-styled icon container */}
+                          <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{
+                              backgroundColor: learningReason === reason.id
+                                ? 'var(--accent-nav)'
+                                : 'var(--surface-muted)',
+                            }}
                           >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                            {IconComponent && (
+                              <IconComponent
+                                className="w-5 h-5"
+                                style={{
+                                  color: learningReason === reason.id
+                                    ? 'white'
+                                    : 'var(--text-muted)',
+                                }}
+                                strokeWidth={1.5}
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-[var(--text-body)] block">
+                              {reason.label}
+                            </span>
+                            <span className="text-sm text-[var(--text-muted)]">
+                              {reason.description}
+                            </span>
+                          </div>
+                          {learningReason === reason.id && (
+                            <svg
+                              className="w-5 h-5 text-[var(--accent-nav)] flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="flex gap-3 mt-6">
