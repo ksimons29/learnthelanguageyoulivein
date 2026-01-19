@@ -213,12 +213,15 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
         method: 'POST',
       });
 
-      if (!response.ok) {
+      // 404 is OK - might happen if session already ended or never started
+      if (!response.ok && response.status !== 404) {
         throw new Error('Failed to end session');
       }
 
-      const { data } = await response.json();
-      get().resetSession();
+      const { data } = response.status === 404 ? {} : await response.json();
+      // Note: Don't reset session here - let the complete page handle it
+      // This preserves wordsReviewed and correctCount for display
+      set({ isLoading: false });
       return data;
     } catch (error) {
       set({

@@ -175,8 +175,10 @@ async function handleSessionCompleted(
     return NextResponse.json({ data: { processed: false } });
   }
 
-  // Update bingo square for finishing session
-  await updateBingoSquare(userId, today, 'finishSession');
+  // Update bingo square for finishing session - only if daily goal was completed
+  if (daily.completedAt !== null) {
+    await updateBingoSquare(userId, today, 'finishSession');
+  }
 
   return NextResponse.json({
     data: {
