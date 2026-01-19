@@ -11,11 +11,11 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Auth Bug Fix + Starter Words** - Email confirmation UI, improved sign-in errors, 10 starter words per language (Session 28)
 - [x] **User Research Synthesis** - Analyzed 24 survey responses, created product guide (Session 27)
 - [x] **Language Filtering Fix** - Fixed #43 BLOCKER via shared helper function (Session 26)
 - [x] **Multi-Language Support** - Schema, API, and validation for en→pt-PT, nl→pt-PT, nl→en, en→sv (Session 24)
 - [x] **Gamification MVP** - Daily goals, streaks, bingo board, boss round (Session 22)
-- [x] **Issue Cleanup** - Closed 6 resolved issues, improved review feedback UX (Session 21)
 
 ### In Progress
 - [ ] **Sentence generation** - Pre-gen works, review integration WIP
@@ -32,6 +32,8 @@ npm run build             # Production build
 | `docs/design/user_research_synthesis.md` | Survey analysis (24 respondents), personas, gap analysis |
 | `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
 | `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
+| `web/src/lib/data/starter-vocabulary.ts` | Curated starter words for 6 target languages |
+| `web/src/app/api/onboarding/starter-words/route.ts` | API to inject starter words during onboarding |
 | `web/src/lib/store/gamification-store.ts` | Gamification state management |
 | `web/src/lib/db/schema/gamification.ts` | Daily progress, streaks, bingo tables |
 | `web/src/app/api/gamification/` | Gamification API endpoints |
@@ -62,6 +64,47 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 28 - 2026-01-19 - Auth Bug Fix + Improved Onboarding
+**Focus**: Fix email confirmation auth bug; improve onboarding with starter words
+
+**Auth Bug Fix**
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| "Invalid login credentials" after signup | Email confirmation enabled in Supabase | Check `session` vs `user` in signup response |
+| Users redirected before email confirmed | No session check | Show "Check Your Email" UI if `!session && user` |
+| Unhelpful sign-in error | Generic Supabase message | Added hint about email confirmation |
+
+**Onboarding Improvements**
+| Change | Before | After |
+|--------|--------|-------|
+| Starter words | User captures 3+ manually | 10 curated words injected automatically |
+| Flow | Languages → Capture → Complete | Languages → Complete (skips manual capture) |
+| Empty state | User sees blank notebook | User sees 6 starter words immediately |
+
+**Starter Vocabulary**
+- 10 high-frequency phrases per target language
+- Covers social, food_dining, transport, shopping categories
+- Pre-translated to all supported native languages
+- TTS generated asynchronously (non-blocking)
+
+**Files Created**
+| File | Type | Notes |
+|------|------|-------|
+| `web/src/lib/data/starter-vocabulary.ts` | Created | 60 words (6 languages × 10 phrases) |
+| `web/src/app/api/onboarding/starter-words/route.ts` | Created | Idempotent injection API |
+
+**Files Modified**
+| File | Type | Notes |
+|------|------|-------|
+| `web/src/app/auth/sign-up/page.tsx` | Modified | Email confirmation UI, resend with cooldown |
+| `web/src/app/auth/sign-in/page.tsx` | Modified | Better error message for unconfirmed users |
+| `web/src/app/onboarding/languages/page.tsx` | Modified | Call starter-words API, skip to complete |
+| `web/src/app/onboarding/complete/page.tsx` | Modified | Show starter words grid instead of sentences |
+
+**Build**: ✅ Passed
+
+---
 
 ### Session 27 - 2026-01-19 - User Research Synthesis & Product Documentation
 **Focus**: Analyze survey data (24 respondents) and LinkedIn feedback; create comprehensive product documentation

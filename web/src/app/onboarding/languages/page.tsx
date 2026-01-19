@@ -37,7 +37,8 @@ export default function LanguagesPage() {
     setError(null);
 
     try {
-      const response = await fetch("/api/onboarding/language", {
+      // 1. Save language preferences
+      const langResponse = await fetch("/api/onboarding/language", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -46,13 +47,22 @@ export default function LanguagesPage() {
         }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
+      if (!langResponse.ok) {
+        const data = await langResponse.json();
         throw new Error(data.error || "Failed to save preferences");
       }
 
-      // Move to capture step
-      router.push("/onboarding/capture");
+      // 2. Inject starter words (fire-and-forget, don't block on errors)
+      fetch("/api/onboarding/starter-words", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).catch((err) => {
+        console.warn("Starter words injection failed:", err);
+        // Continue anyway - user can capture words manually
+      });
+
+      // 3. Skip capture step - go directly to complete
+      router.push("/onboarding/complete");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsSubmitting(false);
@@ -107,7 +117,7 @@ export default function LanguagesPage() {
               />
               {s === 1 && (
                 <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
-                  Language
+                  Learning
                 </span>
               )}
               {s === 2 && (
@@ -117,7 +127,7 @@ export default function LanguagesPage() {
               )}
               {s === 3 && (
                 <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
-                  Words
+                  Ready
                 </span>
               )}
             </div>
@@ -230,7 +240,7 @@ export default function LanguagesPage() {
 
       {/* Skip option - subtle, like a notebook margin note */}
       <button
-        onClick={() => router.push("/onboarding/capture?skip=true")}
+        onClick={() => router.push("/onboarding/complete")}
         className="mt-6 text-sm flex items-center gap-1 transition-colors hover:opacity-70"
         style={{
           color: "var(--text-muted)",

@@ -1,145 +1,69 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Volume2, Sparkles, ArrowRight, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Volume2, Sparkles, ArrowRight, BookOpen } from "lucide-react";
 import { useAudioPlayer } from "@/lib/hooks";
 
-interface GeneratedSentence {
+interface StarterWord {
   id: string;
-  text: string;
-  audioUrl?: string;
-  words: { originalText: string; translation: string }[];
+  originalText: string;
+  translation: string;
+  audioUrl?: string | null;
 }
-
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1000;
 
 /**
  * Onboarding Complete Page
  *
- * Step 3 of onboarding - celebrate with the first generated sentence.
- * Shows the user's words combined into a real sentence with audio.
- *
- * Bug fix: Added retry limiting and skip option to prevent infinite loops
- * that could exhaust database connection pool. See GitHub issue #24.
+ * Final step of onboarding - shows user their starter words.
+ * Fetches words that were injected during language selection.
+ * Marks onboarding as complete.
  */
 export default function CompletePage() {
   const router = useRouter();
-  const [sentence, setSentence] = useState<GeneratedSentence | null>(null);
+  const [starterWords, setStarterWords] = useState<StarterWord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const { play, isPlaying, isLoading: audioLoading } = useAudioPlayer();
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const { play, isPlaying } = useAudioPlayer();
 
   // Prevent double-execution in React Strict Mode
   const hasStartedRef = useRef(false);
-  const isCompletedRef = useRef(false);
-
-  const generateFirstSentence = useCallback(async (isRetry = false) => {
-    // Prevent multiple simultaneous calls
-    if (isCompletedRef.current) return;
-
-    setIsLoading(true);
-    if (!isRetry) {
-      setError(null);
-    }
-
-    try {
-      // First, trigger sentence generation
-      const generateResponse = await fetch("/api/sentences/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lookaheadDays: 1 }),
-      });
-
-      if (!generateResponse.ok) {
-        // Sentence generation might fail if not enough same-category words
-        // That's okay, we'll still complete onboarding
-        console.warn("Sentence generation warning:", await generateResponse.text());
-      }
-
-      // Try to get a sentence
-      let firstSentenceId: string | undefined;
-      const nextResponse = await fetch("/api/sentences/next?sessionId=onboarding");
-
-      if (nextResponse.ok) {
-        const { data } = await nextResponse.json();
-        if (data?.sentence) {
-          firstSentenceId = data.sentence.id;
-          setSentence({
-            id: data.sentence.id,
-            text: data.sentence.text,
-            audioUrl: data.sentence.audioUrl,
-            words: data.targetWords?.map((w: { originalText: string; translation: string }) => ({
-              originalText: w.originalText,
-              translation: w.translation,
-            })) || [],
-          });
-        }
-      }
-
-      // Mark onboarding as complete
-      await fetch("/api/onboarding/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstSentenceId,
-        }),
-      });
-
-      isCompletedRef.current = true;
-    } catch (err) {
-      console.error("Error during completion:", err);
-
-      // Retry logic with limit
-      if (retryCount < MAX_RETRIES) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => generateFirstSentence(true), RETRY_DELAY_MS);
-        return; // Don't set isLoading to false yet
-      }
-
-      setError("We couldn't generate your first sentence. You can skip this step or try again.");
-    } finally {
-      // Only set loading to false if we're not going to retry
-      if (retryCount >= MAX_RETRIES || isCompletedRef.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [retryCount]);
 
   useEffect(() => {
-    // Prevent double-execution in React Strict Mode
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
 
-    generateFirstSentence();
-  }, [generateFirstSentence]);
+    async function loadAndComplete() {
+      try {
+        // 1. Fetch user's words (starter words should already be there)
+        const wordsResponse = await fetch("/api/words?limit=10");
+        if (wordsResponse.ok) {
+          const { data } = await wordsResponse.json();
+          if (data?.words) {
+            setStarterWords(data.words.slice(0, 6)); // Show up to 6
+          }
+        }
 
-  const handleRetry = () => {
-    setRetryCount(0);
-    setError(null);
-    isCompletedRef.current = false;
-    generateFirstSentence();
-  };
-
-  const handleSkip = async () => {
-    // Mark onboarding as complete even without sentence
-    try {
-      await fetch("/api/onboarding/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-    } catch {
-      // Ignore errors - just proceed to home
+        // 2. Mark onboarding as complete
+        await fetch("/api/onboarding/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+      } catch (err) {
+        console.error("Error during completion:", err);
+      } finally {
+        setIsLoading(false);
+      }
     }
-    router.push("/");
-  };
 
-  const handlePlayAudio = () => {
-    if (sentence?.audioUrl) {
-      play(sentence.audioUrl);
+    loadAndComplete();
+  }, []);
+
+  const handlePlayAudio = (word: StarterWord) => {
+    if (word.audioUrl) {
+      setPlayingId(word.id);
+      play(word.audioUrl);
     }
   };
 
@@ -158,77 +82,8 @@ export default function CompletePage() {
           style={{ color: "var(--accent-nav)" }}
         />
         <p style={{ color: "var(--text-muted)" }}>
-          Creating your first sentence...
+          Preparing your notebook...
         </p>
-        {retryCount > 0 && (
-          <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>
-            Attempt {retryCount + 1} of {MAX_RETRIES + 1}
-          </p>
-        )}
-        {/* Skip button available even during loading */}
-        <button
-          onClick={handleSkip}
-          className="mt-6 text-sm underline transition-opacity hover:opacity-80"
-          style={{ color: "var(--text-muted)" }}
-        >
-          Skip this step
-        </button>
-      </div>
-    );
-  }
-
-  // Error state with retry/skip options
-  if (error && !sentence) {
-    return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-6"
-        style={{ backgroundColor: "var(--surface-notebook)" }}
-      >
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
-          style={{ backgroundColor: "var(--accent-ribbon-light)" }}
-        >
-          <AlertCircle
-            className="h-8 w-8"
-            style={{ color: "var(--accent-ribbon)" }}
-          />
-        </div>
-        <h2
-          className="text-xl font-serif text-center mb-2"
-          style={{ color: "var(--text-heading)" }}
-        >
-          Almost there!
-        </h2>
-        <p
-          className="text-center text-sm mb-6 max-w-xs"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {error}
-        </p>
-        <div className="flex gap-3">
-          <button
-            onClick={handleRetry}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
-            style={{
-              backgroundColor: "var(--surface-page)",
-              color: "var(--text-heading)",
-              border: "1px solid var(--border-subtle)",
-            }}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Try Again
-          </button>
-          <button
-            onClick={handleSkip}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
-            style={{
-              backgroundColor: "var(--accent-ribbon)",
-              color: "var(--text-on-ribbon)",
-            }}
-          >
-            Continue <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
       </div>
     );
   }
@@ -278,106 +133,100 @@ export default function CompletePage() {
           className="text-2xl font-serif text-center mb-2"
           style={{ color: "var(--text-heading)" }}
         >
-          {sentence ? "Your first sentence!" : "You're all set!"}
+          Your notebook is ready!
         </h1>
 
-        {error && (
-          <p
-            className="text-center text-sm mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {error}
-          </p>
-        )}
+        <p
+          className="text-center text-sm mb-6"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {starterWords.length > 0
+            ? "We've added some essential phrases to get you started."
+            : "Start capturing phrases you hear in your daily life!"}
+        </p>
 
-        {sentence ? (
-          <>
-            {/* Sentence display */}
-            <div
-              className="p-6 rounded-lg mb-6"
-              style={{ backgroundColor: "var(--surface-page-aged)" }}
-            >
-              <p
-                className="text-xl font-serif text-center mb-4"
-                style={{ color: "var(--text-heading)" }}
+        {/* Starter Words Grid */}
+        {starterWords.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {starterWords.map((word) => (
+              <button
+                key={word.id}
+                onClick={() => handlePlayAudio(word)}
+                className="p-3 rounded-lg text-left transition-all duration-200 hover:scale-[1.02]"
+                style={{
+                  backgroundColor: "var(--surface-page-aged)",
+                  border: "1px solid var(--border-subtle)",
+                }}
               >
-                "{sentence.text}"
-              </p>
-
-              {/* Audio button */}
-              {sentence.audioUrl && (
-                <div className="flex justify-center">
-                  <button
-                    onClick={handlePlayAudio}
-                    disabled={audioLoading}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200"
-                    style={{
-                      backgroundColor: isPlaying
-                        ? "var(--accent-nav)"
-                        : "var(--accent-nav-light)",
-                      color: isPlaying
-                        ? "var(--text-on-binding)"
-                        : "var(--accent-nav)",
-                    }}
-                  >
-                    {audioLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Volume2 className="h-4 w-4" />
-                    )}
-                    <span className="text-sm font-medium">
-                      {isPlaying ? "Playing..." : "Listen"}
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Words used */}
-            {sentence.words.length > 0 && (
-              <div className="mb-6">
-                <p
-                  className="text-xs text-center mb-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Made from your words:
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {sentence.words.map((word, i) => (
-                    <span
-                      key={i}
-                      className="text-sm px-3 py-1 rounded-full"
-                      style={{
-                        backgroundColor: "var(--accent-ribbon-light)",
-                        color: "var(--accent-ribbon)",
-                      }}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="font-medium text-sm truncate"
+                      style={{ color: "var(--text-heading)" }}
                     >
                       {word.originalText}
-                    </span>
-                  ))}
+                    </p>
+                    <p
+                      className="text-xs truncate mt-0.5"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {word.translation}
+                    </p>
+                  </div>
+                  {word.audioUrl && (
+                    <Volume2
+                      className={`h-4 w-4 flex-shrink-0 ${
+                        isPlaying && playingId === word.id ? "animate-pulse" : ""
+                      }`}
+                      style={{
+                        color:
+                          isPlaying && playingId === word.id
+                            ? "var(--accent-ribbon)"
+                            : "var(--text-muted)",
+                      }}
+                    />
+                  )}
                 </div>
-              </div>
-            )}
+              </button>
+            ))}
+          </div>
+        )}
 
-            {/* Explanation */}
+        {/* No words state */}
+        {starterWords.length === 0 && (
+          <div
+            className="p-6 rounded-lg mb-6 flex flex-col items-center"
+            style={{ backgroundColor: "var(--surface-page-aged)" }}
+          >
+            <BookOpen
+              className="h-12 w-12 mb-3"
+              style={{ color: "var(--text-muted)" }}
+            />
             <p
-              className="text-center text-sm mb-6"
+              className="text-center text-sm"
               style={{ color: "var(--text-muted)" }}
             >
-              Every review session will show you fresh sentences made from{" "}
-              <strong>your words</strong>. This is how you'll truly remember
-              them.
+              Your notebook is empty. Capture your first phrase by tapping the +
+              button on the home screen!
             </p>
-          </>
-        ) : (
-          <p
-            className="text-center mb-6"
-            style={{ color: "var(--text-muted)" }}
-          >
-            We'll generate sentences from your words during review sessions.
-            The more words you add, the better your sentences will be!
-          </p>
+          </div>
         )}
+
+        {/* Explanation */}
+        <p
+          className="text-center text-sm mb-6"
+          style={{ color: "var(--text-muted)" }}
+        >
+          {starterWords.length > 0 ? (
+            <>
+              Tap any phrase to hear it spoken. During reviews, we&apos;ll create
+              sentences using <strong>your words</strong> to help you remember
+              them.
+            </>
+          ) : (
+            "The more phrases you add, the better your review sessions will be!"
+          )}
+        </p>
 
         {/* Continue button */}
         <button

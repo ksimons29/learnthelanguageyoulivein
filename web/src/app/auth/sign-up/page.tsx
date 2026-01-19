@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { Mail, RefreshCw, CheckCircle } from 'lucide-react';
 
 /**
  * Parse Supabase rate limit error to extract wait time
@@ -22,6 +23,9 @@ function parseRateLimitSeconds(message: string): number | null {
  * 1. Create account (this page)
  * 2. Onboarding (languages + reason)
  *
+ * Handles email confirmation flow when Supabase has it enabled.
+ * If session is null but user exists, shows "check email" UI.
+ *
  * Design: Moleskine notebook aesthetic
  * - Paper texture background
  * - Card with stitched binding edge
@@ -35,6 +39,10 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
+
+  // Email confirmation state
+  const [emailSent, setEmailSent] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
 
   // Countdown timer for rate limit
   useEffect(() => {
@@ -52,6 +60,17 @@ export default function SignUpPage() {
 
     return () => clearInterval(timer);
   }, [rateLimitCountdown]);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +96,7 @@ export default function SignUpPage() {
 
     try {
       const supabase = createClient();
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -97,7 +116,15 @@ export default function SignUpPage() {
         return;
       }
 
-      // Redirect to onboarding after successful signup
+      // Check if email confirmation is required
+      // If session is null but user exists, email confirmation is pending
+      if (data.user && !data.session) {
+        setEmailSent(true);
+        setResendCountdown(60);
+        return;
+      }
+
+      // Session exists - auto-confirm is enabled, proceed to onboarding
       router.push('/auth/onboarding');
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -105,6 +132,172 @@ export default function SignUpPage() {
       setIsLoading(false);
     }
   };
+
+  const handleResendEmail = async () => {
+    if (resendCountdown > 0) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        const rateLimitSeconds = parseRateLimitSeconds(error.message);
+        if (rateLimitSeconds) {
+          setResendCountdown(rateLimitSeconds);
+          setError(`Please wait ${rateLimitSeconds} seconds before requesting another email.`);
+        } else {
+          setError(error.message);
+        }
+        return;
+      }
+
+      setResendCountdown(60);
+    } catch {
+      setError('Failed to resend email. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Email confirmation sent - show check email UI
+  if (emailSent) {
+    return (
+      <div className="min-h-screen notebook-bg flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="relative">
+            {/* Binding edge */}
+            <div className="absolute left-0 top-0 bottom-0 w-4 bg-[var(--accent-nav)] rounded-l-lg" />
+
+            {/* Stitching marks */}
+            <div className="absolute left-3 top-0 bottom-0 w-px flex flex-col justify-around py-8">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-2 h-px bg-[var(--notebook-stitch)]"
+                  style={{ marginLeft: '-4px' }}
+                />
+              ))}
+            </div>
+
+            {/* Card content */}
+            <div className="bg-[var(--surface-page)] rounded-r-xl rounded-l-none shadow-lg ml-4 p-8">
+              {/* Success icon */}
+              <div className="flex justify-center mb-6">
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--accent-nav-light)' }}
+                >
+                  <Mail
+                    className="w-10 h-10"
+                    style={{ color: 'var(--accent-nav)' }}
+                  />
+                </div>
+              </div>
+
+              {/* Header */}
+              <div className="text-center mb-6">
+                <h1
+                  className="text-[28px] leading-tight mb-3 heading-serif"
+                  style={{ fontWeight: 700, color: '#000000' }}
+                >
+                  Check Your Email
+                </h1>
+                <p
+                  className="text-[15px] leading-relaxed"
+                  style={{ color: '#5A6268' }}
+                >
+                  We sent a confirmation link to
+                </p>
+                <p
+                  className="text-[15px] font-medium mt-1"
+                  style={{ color: 'var(--accent-nav)' }}
+                >
+                  {email}
+                </p>
+              </div>
+
+              {/* Instructions */}
+              <div
+                className="p-4 rounded-lg mb-6"
+                style={{ backgroundColor: 'var(--surface-page-aged)' }}
+              >
+                <p className="text-sm text-center" style={{ color: '#5A6268' }}>
+                  Click the link in the email to verify your account and start
+                  your language learning journey.
+                </p>
+              </div>
+
+              {/* Error message */}
+              {error && (
+                <div
+                  className="p-3 border rounded-lg text-sm mb-4"
+                  style={{
+                    backgroundColor: 'var(--state-hard-bg)',
+                    borderColor: 'var(--state-hard)',
+                    color: 'var(--state-hard)',
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              {/* Resend button */}
+              <button
+                onClick={handleResendEmail}
+                disabled={isLoading || resendCountdown > 0}
+                className="w-full py-3 px-4 border rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-body)',
+                  backgroundColor: 'var(--surface-page)',
+                }}
+              >
+                {isLoading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                {resendCountdown > 0
+                  ? `Resend in ${resendCountdown}s`
+                  : 'Resend email'}
+              </button>
+
+              {/* Back to sign up */}
+              <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
+                Wrong email?{' '}
+                <button
+                  onClick={() => setEmailSent(false)}
+                  className="text-[var(--accent-nav)] hover:underline font-medium"
+                >
+                  Go back
+                </button>
+              </p>
+
+              {/* Sign in link */}
+              <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
+                Already confirmed?{' '}
+                <Link
+                  href="/auth/sign-in"
+                  className="text-[var(--accent-nav)] hover:underline font-medium"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen notebook-bg flex items-center justify-center p-4">

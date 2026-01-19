@@ -7,7 +7,7 @@ export { NotebookPage } from "./notebook-page";
 
 // PWA Components
 export { OfflineIndicator } from "./offline-indicator";
-export { InstallBanner } from "./install-banner";
+// InstallBanner deferred - see GitHub issue #49
 export {
   NotebookCard,
   NotebookCardHeader,
