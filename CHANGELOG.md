@@ -4,6 +4,69 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 20) - Test Account Setup & Progress API Fix
+
+**Session Focus**: Fix test account email confirmation and resolve Progress API 500 error.
+
+### Test Account Confirmed
+
+Created and confirmed test account for QA testing:
+- **Email**: `claudetest20260119@gmail.com`
+- **Password**: `testpass123`
+- **Status**: ✅ Email confirmed via Supabase Admin API
+
+### Progress API Bug Fixed
+
+**Problem**: Progress API returned 500 error with message:
+```
+TypeError: The "string" argument must be of type string or an instance of Buffer or ArrayBuffer. Received an instance of Date
+```
+
+**Root Cause**: JavaScript Date objects were being passed directly to raw SQL template literals (`sql\`\``), but postgres-js requires string parameters for these contexts.
+
+**Fix**: Convert Date objects to ISO strings for raw SQL usage:
+```typescript
+// Before (broken)
+sql`count(*) filter (where ${words.createdAt} >= ${oneWeekAgo})::int`
+
+// After (fixed)
+const oneWeekAgoStr = oneWeekAgo.toISOString();
+sql`count(*) filter (where ${words.createdAt} >= ${oneWeekAgoStr})::int`
+```
+
+**Note**: Drizzle's typed operators (`gte()`, `lte()`) handle Date objects correctly - only raw SQL templates need string conversion.
+
+### QA Testing Verified
+
+Tested with confirmed account through Playwright browser automation:
+
+| Test Case | Status | Notes |
+|-----------|--------|-------|
+| 1. Authentication | ✅ Passed | Sign-in, redirect to onboarding |
+| 2. Word Capture | ✅ Passed | Translation, TTS, categorization |
+| 3. Fill-in-Blank | ⏳ Not tested | Needs manual QA |
+| 4. Multiple Choice | ⏳ Not tested | Needs manual QA |
+| 5. Type Translation | ✅ Passed | Reveal flow works |
+| 6. FSRS Algorithm | ✅ Passed | Rating updates scheduling |
+| 7. Notebook | ✅ Passed | Categories load correctly |
+| 8. Onboarding | ✅ Passed | Full flow completed |
+| 9. Offline Mode | ⏳ Not tested | Needs production build |
+| 10. Progress Dashboard | ✅ Passed | Bug fixed, data loads |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `web/src/app/api/progress/route.ts` | Fixed Date handling for raw SQL templates |
+
+### Remaining Tests Needed
+
+1. **Fill-in-Blank exercises** (Test Case 3) - Requires words at specific mastery level
+2. **Multiple Choice exercises** (Test Case 4) - Requires same-category words
+3. **Offline Mode** (Test Case 9) - Requires production build (`npm run build && npm start`)
+
+---
+
 ## 2026-01-19 (Session 19) - Bug Verification, Icon Redesign & QA Updates
 
 **Session Focus**: Verify bug fixes, redesign auth onboarding icons, update QA documentation.

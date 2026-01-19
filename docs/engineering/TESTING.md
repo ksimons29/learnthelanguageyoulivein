@@ -94,10 +94,12 @@ describe('myFunction', () => {
 2. Test account logged in
 3. Database has words (import from Anki or capture manually)
 
-### Test Account
+### Test Accounts
 
-- **Email**: koossimons91@gmail.com
-- **User ID**: `0146698d-0d6a-49f9-924f-ebe50c154511`
+| Account | Email | User ID | Notes |
+|---------|-------|---------|-------|
+| Primary | koossimons91@gmail.com | `0146698d-0d6a-49f9-924f-ebe50c154511` | Main account with 900+ words |
+| Claude Test | claudetest20260119@gmail.com | `c3f710bd-676a-439a-bd94-e32584183254` | Password: `testpass123` - Fresh account |
 
 ---
 
