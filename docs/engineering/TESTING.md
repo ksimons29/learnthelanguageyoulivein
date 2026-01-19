@@ -7,6 +7,8 @@ This document describes how to test the LLYLI application to ensure it works cor
 1. [Quick Start](#quick-start)
 2. [Unit Tests](#unit-tests)
 3. [Manual QA Testing](#manual-qa-testing)
+   - Test Cases 1-10: Core Features
+   - Test Cases 11-14: Gamification (Session 22)
 4. [Database Validation](#database-validation)
 5. [API Testing](#api-testing)
 6. [Troubleshooting](#troubleshooting)
@@ -228,6 +230,88 @@ describe('myFunction', () => {
 | 10.2 | Check "Words Due" card | Matches Query 2.4 count |
 | 10.3 | Check mastery breakdown | Matches Query 2.3 |
 | 10.4 | Check streak display | Current streak shown |
+
+---
+
+### Test Case 11: Gamification - Daily Goal (Added Session 22)
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 11.1 | Go to home page `/` | Daily Goal shows "0/10" |
+| 11.2 | Complete 5 reviews | Daily Goal shows "5/10" |
+| 11.3 | Complete 5 more reviews | Daily Goal shows "10/10 Goal Complete!" |
+| 11.4 | Check streak | Incremented by 1 |
+| 11.5 | Navigate to home (during review) | Celebration modal appears |
+
+**Database Verification:**
+```sql
+SELECT completed_reviews, target_reviews, completed_at
+FROM daily_progress
+WHERE user_id = 'YOUR_USER_ID' AND date = CURRENT_DATE;
+```
+
+---
+
+### Test Case 12: Gamification - Bingo Board (Added Session 22)
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 12.1 | Go to home page `/` | Bingo shows "0/9 completed" |
+| 12.2 | Complete 5 reviews | "Review 5 words" square checks |
+| 12.3 | Get 3 correct in a row | "3 correct in a row" square checks |
+| 12.4 | Complete daily goal | "Finish daily session" square checks |
+| 12.5 | Click bingo preview | Full board modal opens |
+
+**Bingo Squares:**
+- `review5` - Review 5 words
+- `streak3` - 3 correct in a row
+- `fillBlank` - Complete a fill-blank
+- `multipleChoice` - Complete a multiple choice
+- `typeTranslation` - Type a translation
+- `workWord` - Review a work word
+- `socialWord` - Review a social word
+- `masterWord` - Master a word
+- `finishSession` - Complete daily goal
+
+---
+
+### Test Case 13: Gamification - Boss Round (Added Session 22)
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 13.1 | Complete daily goal (10 reviews) | - |
+| 13.2 | Go to review complete page | "Boss Round Challenge" prompt appears |
+| 13.3 | Click "Let's go!" | 90-second timer starts |
+| 13.4 | See 5 flashcards | Words with highest lapse_count |
+| 13.5 | Reveal answer | Translation shown |
+| 13.6 | Grade yourself | "Got it!" or "Didn't know" |
+| 13.7 | Complete all 5 | Results modal shows score |
+| 13.8 | Perfect score (5/5) | "Perfect!" celebration |
+
+**Word Selection Query:**
+```sql
+SELECT original_text, translation, lapse_count
+FROM words WHERE user_id = 'YOUR_USER_ID'
+ORDER BY lapse_count DESC, retrievability ASC
+LIMIT 5;
+```
+
+---
+
+### Test Case 14: Gamification - Streak Freeze (Edge Case)
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 14.1 | Complete daily goal today | Streak = N |
+| 14.2 | Skip tomorrow (don't complete goal) | - |
+| 14.3 | Complete goal day after | Streak = N+1 (freeze auto-applied) |
+| 14.4 | Check streak_freeze_count | Decremented by 1 |
+
+**Verification Query:**
+```sql
+SELECT current_streak, streak_freeze_count, last_freeze_used_date
+FROM streak_state WHERE user_id = 'YOUR_USER_ID';
+```
 
 ---
 

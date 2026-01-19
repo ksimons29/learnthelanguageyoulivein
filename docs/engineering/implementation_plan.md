@@ -124,6 +124,12 @@ Client Request → Check Service Worker Cache →
     │              │
     1              M
 [ReviewSession]────┘
+    │
+    │ ─ ─ ─ ─ ─ Gamification (Added Session 22) ─ ─ ─ ─ ─
+    │
+    1─────────1 [DailyProgress] (per user + date)
+    1─────────1 [StreakState] (per user)
+    1─────────M [BingoState] (per user + date)
 ```
 
 #### Core Entities
@@ -191,6 +197,46 @@ Client Request → Check Service Worker Cache →
   - Relationships: belongs_to Word
   - Indexes: wordId
 
+#### Gamification Entities (Added Session 22)
+
+- **DailyProgress** (tracks daily review completion)
+  - Fields:
+    - id (uuid)
+    - userId (uuid, FK)
+    - date (string, YYYY-MM-DD)
+    - targetReviews (int, default 10) - daily goal
+    - completedReviews (int, default 0)
+    - completedAt (timestamp, nullable) - when goal was reached
+    - createdAt (timestamp), updatedAt (timestamp)
+  - Indexes: userId + date (unique composite)
+  - Notes: Resets each day; completedAt marks goal achievement
+
+- **StreakState** (tracks consecutive daily completions)
+  - Fields:
+    - id (uuid)
+    - userId (uuid, FK, unique)
+    - currentStreak (int, default 0)
+    - longestStreak (int, default 0)
+    - lastCompletedDate (string, nullable) - YYYY-MM-DD
+    - streakFreezeCount (int, default 1) - auto-applied on miss
+    - lastFreezeUsedDate (string, nullable)
+    - createdAt (timestamp), updatedAt (timestamp)
+  - Indexes: userId (unique)
+  - Notes: Streak increments when daily goal completed on consecutive days
+
+- **BingoState** (tracks 3x3 bingo board completion)
+  - Fields:
+    - id (uuid)
+    - userId (uuid, FK)
+    - date (string, YYYY-MM-DD)
+    - squareDefinitions (json) - 9 square definitions with id, label, target
+    - squaresCompleted (json array) - array of completed square IDs
+    - bingoAchieved (boolean, default false)
+    - bingoAchievedAt (timestamp, nullable)
+    - createdAt (timestamp), updatedAt (timestamp)
+  - Indexes: userId + date (unique composite)
+  - Notes: Board resets daily; bingo = 3 in a row (8 winning lines)
+
 ### API Routes / Endpoints
 
 #### Authentication Routes (Supabase Auth)
@@ -252,6 +298,25 @@ Client Request → Check Service Worker Cache →
 - `GET /api/sessions/history` - Get past review sessions
   - Query params: `limit, offset`
   - Response: `{ data: { sessions: ReviewSession[] } }`
+
+#### Gamification Routes (Added Session 22)
+
+- `GET /api/gamification/state` - Get user's gamification state
+  - Response: `{ data: { daily: DailyProgress, streak: StreakState, bingo: BingoState } }`
+  - Notes: Creates default records if none exist for today
+
+- `POST /api/gamification/event` - Process gamification event
+  - Body: `{ event: { type: 'item_answered' | 'session_completed' | 'word_mastered', data: {...} } }`
+  - Process: Updates daily progress, checks bingo squares, updates streak on goal completion
+  - Response: `{ data: { completedReviews, dailyGoalComplete, bingoUpdates } }`
+
+- `GET /api/gamification/boss-round` - Get boss round challenge words
+  - Response: `{ data: { words: Word[], timeLimit: 90 } }`
+  - Notes: Returns 5 words with highest lapse_count (struggling words); only available after daily goal completion
+
+- `POST /api/gamification/boss-round` - Submit boss round results
+  - Body: `{ score: number, totalWords: number, timeUsed: number }`
+  - Response: `{ data: { success: true } }`
 
 ### Dynamic SRS Word-Matching Algorithm
 
