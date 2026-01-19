@@ -17,6 +17,8 @@ import {
 import { useReviewStore } from "@/lib/store/review-store";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useAudioPlayer } from "@/lib/hooks";
+import { preloadSessionAudio } from "@/lib/audio/preload";
+import { setupAutoSync } from "@/lib/offline";
 import {
   determineExerciseType,
   selectWordToBlank,
@@ -98,6 +100,11 @@ export default function ReviewPage() {
     }
   }, []);
 
+  // Setup offline auto-sync on mount
+  useEffect(() => {
+    setupAutoSync();
+  }, []);
+
   // Initialize session on mount
   useEffect(() => {
     if (!authLoading && !user) {
@@ -108,6 +115,14 @@ export default function ReviewPage() {
     if (user && !sessionId && !isLoading) {
       startSession()
         .then(async () => {
+          // Preload audio for offline access
+          const store = useReviewStore.getState();
+          if (store.dueWords.length > 0) {
+            preloadSessionAudio(store.dueWords).catch((err) => {
+              console.warn("Failed to preload audio:", err);
+            });
+          }
+
           // Try sentence mode first after session starts
           const hasSentence = await fetchNextSentence();
           if (hasSentence) {

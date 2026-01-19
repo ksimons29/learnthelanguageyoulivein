@@ -3,6 +3,7 @@ import { Inter, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
 import { BottomNav, FloatingActionButton } from "@/components/navigation";
 import { AuthProvider, ThemeProvider } from "@/components/providers";
+import { OfflineIndicator, InstallBanner } from "@/components/ui";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,8 +59,14 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
+            {/* PWA: Offline status indicator */}
+            <OfflineIndicator />
+
             {/* Main content with bottom padding for nav */}
             <main className="min-h-screen pb-20">{children}</main>
+
+            {/* PWA: Install banner (above bottom nav) */}
+            <InstallBanner />
 
             {/* Navigation */}
             <FloatingActionButton />

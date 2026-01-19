@@ -4,6 +4,10 @@
 
 // Layout Components
 export { NotebookPage } from "./notebook-page";
+
+// PWA Components
+export { OfflineIndicator } from "./offline-indicator";
+export { InstallBanner } from "./install-banner";
 export {
   NotebookCard,
   NotebookCardHeader,

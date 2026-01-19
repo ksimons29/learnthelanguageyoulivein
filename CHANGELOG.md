@@ -4,6 +4,98 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 15) - Epic 7: PWA Implementation
+
+**Session Focus**: Implement Progressive Web App capabilities for offline support, install prompt, and background sync.
+
+**GitHub Issue**: #22 (Epic 7: PWA Implementation)
+
+### What Was Done
+
+#### PWA Foundation
+- Added Serwist (modern next-pwa fork) for service worker generation
+- Created `manifest.json` with app name, icons, theme colors
+- Updated `next.config.ts` with Serwist wrapper
+- Added `--webpack` flag to build script (Serwist requires webpack)
+
+#### Service Worker Caching Strategies
+| Content | Strategy | TTL |
+|---------|----------|-----|
+| Audio (mp3 from Supabase) | Cache-first | 1 year |
+| Static assets (images, fonts) | Cache-first | 30 days |
+| API /words, /reviews | Network-first | 1 day fallback |
+| Categories/progress | Stale-while-revalidate | 1 day |
+
+#### Offline Experience
+- Created `/~offline` fallback page (Moleskine styled)
+- Added `useNetworkStatus` hook for online/offline detection
+- Created `OfflineIndicator` component showing status banner
+- Banner shows "Offline mode" when disconnected, "Back online! Syncing..." on reconnect
+
+#### Offline Review Queue
+- Created IndexedDB store for pending reviews (`idb` library)
+- `queueOfflineReview()` stores reviews when offline
+- `syncPendingReviews()` POSTs queued reviews when back online
+- Auto-sync triggered on browser `online` event
+- Modified `review-store.ts` for offline-aware submission
+
+#### Install Prompt
+- Created `useInstallPrompt` hook capturing `beforeinstallprompt` event
+- Created `InstallBanner` component above bottom nav
+- Shows "Install LLYLI - Add to home screen for offline access"
+- Respects localStorage dismissal
+
+#### Audio Preloading
+- Created `preloadSessionAudio()` using Cache API
+- Preloads audio for due words at session start
+- Ensures audio available offline before user starts reviewing
+
+### Files Created (10)
+
+| File | Purpose |
+|------|---------|
+| `web/public/manifest.json` | PWA manifest |
+| `web/src/app/sw.ts` | Service worker source |
+| `web/src/app/~offline/page.tsx` | Offline fallback page |
+| `web/src/lib/hooks/use-network-status.ts` | Network detection hook |
+| `web/src/lib/hooks/use-install-prompt.ts` | Install prompt hook |
+| `web/src/lib/offline/review-queue.ts` | IndexedDB queue |
+| `web/src/lib/offline/sync-service.ts` | Auto-sync service |
+| `web/src/lib/offline/index.ts` | Barrel export |
+| `web/src/lib/audio/preload.ts` | Audio preloader |
+| `web/src/components/ui/offline-indicator.tsx` | Status banner |
+| `web/src/components/ui/install-banner.tsx` | Install prompt UI |
+
+### Files Modified (6)
+
+| File | Changes |
+|------|---------|
+| `web/next.config.ts` | Added Serwist wrapper |
+| `web/package.json` | Added `--webpack` flag, new dependencies |
+| `web/src/app/layout.tsx` | Added OfflineIndicator, InstallBanner |
+| `web/src/app/review/page.tsx` | Audio preloading, auto-sync setup |
+| `web/src/lib/store/review-store.ts` | Offline-aware review submission |
+| `web/src/lib/hooks/index.ts` | Export new hooks |
+| `web/src/components/ui/index.ts` | Export new components |
+
+### Testing Instructions
+
+See GitHub Issue #18 Section 9 for detailed verification steps:
+1. Build: `npm run build` then `npm start`
+2. DevTools → Application → Manifest/Service Workers
+3. Test offline mode with Network → Offline checkbox
+4. Verify install banner on mobile Chrome
+
+### Key Technical Decisions
+
+**Serwist over manual SW**: Serwist handles cache invalidation complexity with simple config. Built on Google's Workbox.
+
+**IndexedDB over localStorage**: IndexedDB stores complex objects and handles larger data than localStorage's 5MB string-only limit.
+
+**Optimistic updates when offline**: Local state updates immediately, syncs in background when online. Better UX than blocking on network.
+
+---
+
 ## 2026-01-19 (Session 14) - CLAUDE.md Optimization & Session Workflow
 
 **Session Focus**: Review Vibecodelisboa transcripts, compare to LLYLI implementation, optimize CLAUDE.md

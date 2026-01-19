@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Word, GeneratedSentence } from '@/lib/db/schema';
 import type { ExerciseType } from '@/lib/sentences/exercise-type';
+import { queueOfflineReview } from '@/lib/offline';
 
 /**
  * Review Store
@@ -138,6 +139,41 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   submitReview: async (wordId: string, rating: 1 | 2 | 3 | 4) => {
     const { sessionId } = get();
     set({ isLoading: true, error: null });
+
+    // Map numeric rating to string
+    const ratingMap: Record<number, Rating> = {
+      1: 'again',
+      2: 'hard',
+      3: 'good',
+      4: 'easy',
+    };
+
+    // Check if offline - queue for later sync
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      try {
+        await queueOfflineReview(wordId, rating, sessionId);
+
+        // Optimistic update - update local state immediately
+        set((state) => ({
+          lastRating: ratingMap[rating],
+          lastNextReviewText: 'Syncing when online...',
+          lastMasteryAchieved: false,
+          wordsReviewed: state.wordsReviewed + 1,
+          correctCount: rating >= 3 ? state.correctCount + 1 : state.correctCount,
+          isLoading: false,
+        }));
+
+        return { offline: true };
+      } catch (error) {
+        set({
+          error: 'Failed to queue offline review',
+          isLoading: false,
+        });
+        throw error;
+      }
+    }
+
+    // Online - normal API flow
     try {
       const response = await fetch('/api/reviews', {
         method: 'POST',
@@ -150,14 +186,6 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
       }
 
       const { data } = await response.json();
-
-      // Map numeric rating to string
-      const ratingMap: Record<number, Rating> = {
-        1: 'again',
-        2: 'hard',
-        3: 'good',
-        4: 'easy',
-      };
 
       set((state) => ({
         lastRating: ratingMap[rating],
