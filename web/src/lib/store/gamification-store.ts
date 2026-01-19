@@ -49,7 +49,7 @@ interface GamificationStoreState {
   emitItemAnswered: (data: {
     wordId: string;
     rating: 1 | 2 | 3 | 4;
-    exerciseType: 'fill-blank' | 'multiple-choice' | 'type-translation';
+    exerciseType: 'fill_blank' | 'multiple_choice' | 'type_translation';
     category?: string;
   }) => Promise<void>;
   emitSessionCompleted: (data: { wordsReviewed: number; correctCount: number }) => Promise<void>;

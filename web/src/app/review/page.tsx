@@ -16,6 +16,7 @@ import {
 } from "@/components/review";
 import { useReviewStore } from "@/lib/store/review-store";
 import { useAuthStore } from "@/lib/store/auth-store";
+import { useGamificationStore } from "@/lib/store/gamification-store";
 import { useAudioPlayer } from "@/lib/hooks";
 import { preloadSessionAudio } from "@/lib/audio/preload";
 import { setupAutoSync } from "@/lib/offline";
@@ -34,6 +35,7 @@ type Rating = "hard" | "good" | "easy";
 export default function ReviewPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
+  const { emitItemAnswered } = useGamificationStore();
   const {
     sessionId,
     dueWords,
@@ -199,9 +201,19 @@ export default function ReviewPage() {
       easy: 4,
     };
 
+    const numericRating = ratingMap[rating];
+
     try {
-      await submitReview(currentWord.id, ratingMap[rating]);
+      await submitReview(currentWord.id, numericRating);
       setReviewState("feedback");
+
+      // Emit gamification event
+      await emitItemAnswered({
+        wordId: currentWord.id,
+        rating: numericRating,
+        exerciseType: "type_translation",
+        category: currentWord.category,
+      });
 
       if (lastMasteryAchieved) {
         setMasteredPhrase(currentWord.originalText);
@@ -222,9 +234,21 @@ export default function ReviewPage() {
       easy: 4,
     };
 
+    const numericRating = ratingMap[rating];
+
     try {
-      await submitSentenceReview(ratingMap[rating]);
+      await submitSentenceReview(numericRating);
       setReviewState("feedback");
+
+      // Emit gamification events for all words in the sentence
+      for (const word of sentenceTargetWords) {
+        await emitItemAnswered({
+          wordId: word.id,
+          rating: numericRating,
+          exerciseType,
+          category: word.category,
+        });
+      }
     } catch (err) {
       console.error("Failed to submit sentence review:", err);
     }
