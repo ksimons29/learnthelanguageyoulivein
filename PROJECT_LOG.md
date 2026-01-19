@@ -11,11 +11,11 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **User Research Synthesis** - Analyzed 24 survey responses, created product guide (Session 27)
 - [x] **Language Filtering Fix** - Fixed #43 BLOCKER via shared helper function (Session 26)
 - [x] **Multi-Language Support** - Schema, API, and validation for en→pt-PT, nl→pt-PT, nl→en, en→sv (Session 24)
 - [x] **Gamification MVP** - Daily goals, streaks, bingo board, boss round (Session 22)
 - [x] **Issue Cleanup** - Closed 6 resolved issues, improved review feedback UX (Session 21)
-- [x] **Test Account Setup** - Fixed Progress API 500 error (Session 20)
 
 ### In Progress
 - [ ] **Sentence generation** - Pre-gen works, review integration WIP
@@ -28,6 +28,8 @@ npm run build             # Production build
 ## Key Files
 | File | Purpose |
 |------|---------|
+| `docs/product/product_guide.md` | Comprehensive product explanation, onboarding, gamification |
+| `docs/design/user_research_synthesis.md` | Survey analysis (24 respondents), personas, gap analysis |
 | `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
 | `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
 | `web/src/lib/store/gamification-store.ts` | Gamification state management |
@@ -50,6 +52,9 @@ npm run build             # Production build
 ## Open Feature Issues
 | Issue | Feature | Priority |
 |-------|---------|----------|
+| #46 | Yearly goal tracking (1000 words/year) | Post-MVP |
+| #47 | iOS Home Screen widget | v2.0 |
+| #48 | Social accountability features | v2.0+ |
 | #35 | Story Run Frame | Post-MVP |
 | #36 | Category Hunt | Post-MVP |
 | #37 | Real Life Mission Check-in | Post-MVP |
@@ -57,6 +62,55 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 27 - 2026-01-19 - User Research Synthesis & Product Documentation
+**Focus**: Analyze survey data (24 respondents) and LinkedIn feedback; create comprehensive product documentation
+
+**User Research Key Findings**
+| Finding | Frequency | Impact |
+|---------|-----------|--------|
+| "I think I'll remember it but don't write it down" | 75% | Validates frictionless capture |
+| "I save them somewhere but never review" | 25% | Validates automatic FSRS scheduling |
+| Staying motivated and consistent | 25% | Validates gamification MVP |
+| Wrong Portuguese variant (Brazilian vs EU) | 15% | Validates pt-PT support as differentiator |
+
+**LinkedIn Feedback (Ralf Fleuren - Swedish learner)**
+> "But without a motivating structure to learn, repeat and apply them it is not doable."
+- Validates gamification features
+- Suggests yearly goal tracking (1000 words/year)
+
+**Gap Analysis**
+| Gap | Survey Evidence | LLYLI Solution | Status |
+|-----|----------------|----------------|--------|
+| EU Portuguese | "Duolingo doesn't offer EU Portuguese" | pt-PT explicit support | Solved |
+| No review system | "I save but never review" | FSRS automatic scheduling | Solved |
+| Motivation structure | "it is not doable" | Daily goals, streaks, bingo | Solved |
+| Yearly goal tracking | "1000 words per year" | Daily goal exists | Enhancement opportunity |
+| Widget for quick access | "widget on home screen" | PWA only | Future feature |
+
+**Files Created**
+| File | Type | Notes |
+|------|------|-------|
+| `docs/product/product_guide.md` | Created | Comprehensive product explanation |
+| `docs/design/user_research_synthesis.md` | Created | Survey analysis with personas |
+
+**Product Guide Contents**
+- Problem statement with research evidence
+- The Three-Step Loop (Capture → Review → Master)
+- Onboarding flow (2 questions)
+- Gamification features explained (daily goal, streaks, bingo, boss round)
+- Scientific basis (FSRS, dynamic sentences, 3-recall rule)
+- Exercise types and progression
+- User persona (Sofia)
+
+**GitHub Issues Created**
+| Issue | Feature | Evidence |
+|-------|---------|----------|
+| #46 | Yearly goal tracking (1000 words/year) | "connected to a bigger challenge" |
+| #47 | iOS Home Screen widget | "widget on my home screen" |
+| #48 | Social accountability | "someone involved in the process" |
+
+---
 
 ### Session 26 - 2026-01-19 - Go-Live Critical Bug Fixes
 **Focus**: Fix BLOCKER #43 - words mixing between languages
