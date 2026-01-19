@@ -4,7 +4,37 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
-## 2026-01-19 (Session 18) - Bug Fixes: Storage RLS & Sentence Generation
+## 2026-01-19 (Session 18) - Bug Fixes & Language Selection Redesign
+
+**Session Focus**: Apply pending migrations, fix high-priority bugs, and redesign language selection UI.
+
+### Language Selection Redesign
+
+Redesigned the onboarding language selection page to better match the Moleskine aesthetic:
+
+#### Visual Changes
+- Created new `FlagStamp` component with clean, premium vinyl sticker appearance
+- Removed gimmicky effects (tape, worn edges, country code labels)
+- Subtle box-shadows for depth against notebook paper background
+- Clean 3-column grid layout
+- Teal highlight on selection state
+
+#### Copy Updates
+- Title changed from "What language are you learning?" to "Which language surrounds you?"
+- Subtitle changed to "The language of daily life where you live"
+- Better reflects the LLYLI (Learn the Language You Live In) concept
+
+#### Files Added/Modified
+| File | Changes |
+|------|---------|
+| `web/src/components/ui/flag-stamp.tsx` | New component with CSS-rendered flags |
+| `web/src/app/globals.css` | Added `.flag-sticker` CSS classes |
+| `web/src/app/onboarding/languages/page.tsx` | Updated layout and copy |
+| `web/src/components/ui/index.ts` | Export FlagStamp component |
+
+---
+
+## 2026-01-19 (Session 18a) - Bug Fixes: Storage RLS & Sentence Generation
 
 **Session Focus**: Apply pending migrations and fix high-priority bugs from QA report.
 

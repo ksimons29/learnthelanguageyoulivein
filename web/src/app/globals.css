@@ -901,4 +901,68 @@
   .text-danger { color: var(--danger); }
   .bg-danger { background-color: var(--danger); }
   .bg-danger-light { background-color: var(--danger-light); }
+
+  /* ========================================
+     FLAG STICKER - Premium Moleskine Style
+     Clean, sophisticated flag display
+     ======================================== */
+
+  .flag-sticker {
+    position: relative;
+    transition: transform 0.15s ease;
+  }
+
+  .flag-sticker:hover {
+    transform: scale(1.02);
+  }
+
+  /* Clean container - premium vinyl sticker look */
+  .flag-sticker__container {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.12),
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.15s ease;
+  }
+
+  .flag-sticker:hover .flag-sticker__container {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      0 1px 3px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Selected state - teal highlight */
+  .flag-sticker--selected .flag-sticker__container {
+    box-shadow:
+      0 0 0 2px var(--accent-nav),
+      0 2px 8px rgba(12, 107, 112, 0.25),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Dark mode adjustments */
+  .dark .flag-sticker__container {
+    box-shadow:
+      0 1px 4px rgba(0, 0, 0, 0.3),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .flag-sticker:hover .flag-sticker__container {
+    box-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.4),
+      0 1px 4px rgba(0, 0, 0, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .flag-sticker--selected .flag-sticker__container {
+    box-shadow:
+      0 0 0 2px var(--accent-nav),
+      0 2px 10px rgba(12, 107, 112, 0.35),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
 }

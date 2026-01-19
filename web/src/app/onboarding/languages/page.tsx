@@ -2,47 +2,36 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, ChevronLeft } from "lucide-react";
 import { SUPPORTED_LANGUAGES } from "@/lib/config/languages";
-
-// Language flags mapping
-const FLAGS: Record<string, string> = {
-  "pt-PT": "🇵🇹",
-  "pt-BR": "🇧🇷",
-  "en": "🇬🇧",
-  "sv": "🇸🇪",
-  "es": "🇪🇸",
-  "fr": "🇫🇷",
-  "de": "🇩🇪",
-  "nl": "🇳🇱",
-};
+import { FlagStamp, type FlagCode } from "@/components/ui/flag-stamp";
 
 // Target languages (what users can learn)
-const TARGET_LANGUAGES = ["pt-PT", "sv", "es", "fr", "de", "nl"];
+const TARGET_LANGUAGES: FlagCode[] = ["pt-PT", "sv", "es", "fr", "de", "nl"];
 
 // Native languages (what users might speak)
-const NATIVE_LANGUAGES = ["en", "nl", "pt-BR", "de", "fr", "es"];
+const NATIVE_LANGUAGES: FlagCode[] = ["en", "nl", "pt-BR", "de", "fr", "es"];
 
 /**
  * Language Selection Page
  *
  * Step 1 of onboarding - users select their target and native languages.
- * Uses a two-step selection: target first, then native.
+ * Features vintage postage stamp-styled flags fitting the Moleskine aesthetic.
  */
 export default function LanguagesPage() {
   const router = useRouter();
   const [step, setStep] = useState<"target" | "native">("target");
-  const [targetLanguage, setTargetLanguage] = useState<string | null>(null);
-  const [nativeLanguage, setNativeLanguage] = useState<string | null>(null);
+  const [targetLanguage, setTargetLanguage] = useState<FlagCode | null>(null);
+  const [nativeLanguage, setNativeLanguage] = useState<FlagCode | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleTargetSelect = (code: string) => {
+  const handleTargetSelect = (code: FlagCode) => {
     setTargetLanguage(code);
     setStep("native");
   };
 
-  const handleNativeSelect = async (code: string) => {
+  const handleNativeSelect = async (code: FlagCode) => {
     setNativeLanguage(code);
     setIsSubmitting(true);
     setError(null);
@@ -74,63 +63,86 @@ export default function LanguagesPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
-      style={{ backgroundColor: "var(--surface-notebook)" }}
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-8 notebook-bg"
     >
       {/* Logo */}
-      <div className="mb-8">
+      <div className="mb-6">
         <img
-          src="/llyli-logo.svg"
+          src="/images/llyli-icon.png"
           alt="LLYLI"
-          className="h-16 w-auto"
+          className="h-16 w-16 rounded-xl shadow-md"
         />
       </div>
 
-      {/* Card */}
+      {/* Card - Moleskine page style */}
       <div
-        className="w-full max-w-md rounded-lg p-8"
+        className="w-full max-w-sm rounded-r-lg p-6 page-surface relative"
         style={{
-          backgroundColor: "var(--surface-page)",
           boxShadow: "var(--shadow-page)",
         }}
       >
-        {/* Step indicator */}
-        <div className="flex justify-center gap-2 mb-8">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{
-              backgroundColor: "var(--accent-ribbon)",
-            }}
-          />
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{
-              backgroundColor:
-                step === "native" ? "var(--accent-ribbon)" : "var(--notebook-stitch)",
-            }}
-          />
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: "var(--notebook-stitch)" }}
-          />
+        {/* Binding edge effect */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-3 rounded-l-sm"
+          style={{
+            background: "linear-gradient(90deg, var(--accent-nav) 0%, var(--accent-nav) 60%, rgba(12, 107, 112, 0.3) 100%)",
+          }}
+        />
+
+        {/* Step indicator - like notebook page tabs */}
+        <div className="flex justify-center gap-3 mb-6">
+          {[1, 2, 3].map((s) => (
+            <div
+              key={s}
+              className="relative"
+            >
+              <div
+                className="w-8 h-1.5 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor:
+                    s === 1 || (s === 2 && step === "native")
+                      ? "var(--accent-ribbon)"
+                      : "var(--notebook-stitch)",
+                }}
+              />
+              {s === 1 && (
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                  Language
+                </span>
+              )}
+              {s === 2 && (
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                  Native
+                </span>
+              )}
+              {s === 3 && (
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                  Words
+                </span>
+              )}
+            </div>
+          ))}
         </div>
 
-        {/* Title */}
+        {/* Title - Serif for Moleskine feel */}
         <h1
-          className="text-2xl font-serif text-center mb-2"
-          style={{ color: "var(--text-heading)" }}
+          className="text-xl font-serif text-center mb-1 mt-6"
+          style={{
+            color: "var(--text-heading)",
+            fontFamily: "var(--font-heading)",
+          }}
         >
           {step === "target"
-            ? "What language are you learning?"
+            ? "Which language surrounds you?"
             : "What's your native language?"}
         </h1>
         <p
-          className="text-center mb-8"
+          className="text-center mb-6 text-sm"
           style={{ color: "var(--text-muted)" }}
         >
           {step === "target"
-            ? "Select the language you're immersed in"
-            : "So we know how to translate for you"}
+            ? "The language of daily life where you live"
+            : "We'll translate phrases for you"}
         </p>
 
         {/* Error message */}
@@ -146,8 +158,8 @@ export default function LanguagesPage() {
           </div>
         )}
 
-        {/* Language grid */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        {/* Language grid - Clean layout */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
           {currentLanguages.map((code) => {
             const lang = SUPPORTED_LANGUAGES[code];
             const isSelected =
@@ -164,31 +176,27 @@ export default function LanguagesPage() {
                     : handleNativeSelect(code)
                 }
                 disabled={isSubmitting}
-                className="flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 hover:scale-[1.02] disabled:opacity-50"
+                className="flex flex-col items-center gap-2 p-2 rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: isSelected
                     ? "var(--accent-nav-light)"
-                    : "var(--surface-page-aged)",
-                  borderColor: isSelected
-                    ? "var(--accent-nav)"
                     : "transparent",
                 }}
               >
-                <span className="text-2xl">{FLAGS[code] || "🌍"}</span>
-                <div className="text-left">
-                  <p
-                    className="font-medium text-sm"
-                    style={{ color: "var(--text-heading)" }}
-                  >
-                    {lang?.name || code}
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {lang?.nativeName || ""}
-                  </p>
-                </div>
+                {/* Flag */}
+                <FlagStamp
+                  code={code}
+                  size="lg"
+                  selected={isSelected}
+                />
+
+                {/* Language name */}
+                <span
+                  className="text-xs font-medium text-center leading-tight"
+                  style={{ color: "var(--text-heading)" }}
+                >
+                  {lang?.name || code}
+                </span>
               </button>
             );
           })}
@@ -198,29 +206,36 @@ export default function LanguagesPage() {
         {step === "native" && (
           <button
             onClick={() => setStep("target")}
-            className="w-full text-center text-sm py-2"
-            style={{ color: "var(--text-muted)" }}
+            className="w-full flex items-center justify-center gap-1 text-sm py-2 transition-colors hover:opacity-80"
+            style={{ color: "var(--accent-nav)" }}
           >
-            ← Back to language selection
+            <ChevronLeft className="h-4 w-4" />
+            Back to language selection
           </button>
         )}
 
         {/* Loading state */}
         {isSubmitting && (
-          <div className="flex justify-center mt-4">
+          <div className="flex flex-col items-center gap-2 mt-4">
             <Loader2
               className="h-6 w-6 animate-spin"
               style={{ color: "var(--accent-nav)" }}
             />
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Saving your preferences...
+            </span>
           </div>
         )}
       </div>
 
-      {/* Skip option */}
+      {/* Skip option - subtle, like a notebook margin note */}
       <button
         onClick={() => router.push("/onboarding/capture?skip=true")}
-        className="mt-6 text-sm flex items-center gap-1"
-        style={{ color: "var(--text-muted)" }}
+        className="mt-6 text-sm flex items-center gap-1 transition-colors hover:opacity-70"
+        style={{
+          color: "var(--text-muted)",
+          fontStyle: "italic",
+        }}
       >
         Skip for now <ArrowRight className="h-3 w-3" />
       </button>

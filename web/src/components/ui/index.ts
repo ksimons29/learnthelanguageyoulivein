@@ -25,6 +25,10 @@ export { ThemeToggle } from "./theme-toggle";
 // Typography Components
 export { PageHeading } from "./page-heading";
 
+// Flag Components
+export { FlagStamp } from "./flag-stamp";
+export type { FlagCode } from "./flag-stamp";
+
 // ======================
 // SHADCN/UI COMPONENTS
 // ======================
