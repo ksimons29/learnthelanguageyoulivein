@@ -80,11 +80,31 @@ See `/docs/design/design-system.md` for full reference.
 
 ## Session Workflow
 
-**Start:** `/clear` → read handoff doc → use plan mode for complex work
+**Start:** `/clear` → read PROJECT_LOG.md → use plan mode for complex work
 
-**End:** Commit with `fixes #N` → update CHANGELOG.md → create handoff doc if needed
+**End:** Update PROJECT_LOG.md → Commit with `fixes #N`
 
 **Debug:** Copy server logs → paste to Claude with page context
+
+### PROJECT_LOG.md Updates (MANDATORY)
+
+After EVERY session or commit with >2 file changes:
+
+1. **Update Dashboard**:
+   - Move completed items to "Recently Completed"
+   - Add/update "In Progress" items
+   - Update "Open Bugs" if issues found/fixed
+
+2. **Add Session Entry** at top of Session Log:
+   - Full entry: 3+ files, new features, architecture
+   - Minimal entry: bug fixes, 1-2 files
+   - Build entry: production deployments
+
+3. **Update Key Files** if significant files created
+
+When planning tasks, always include "Update PROJECT_LOG.md" as final todo.
+
+Archive when file exceeds 500 lines - move oldest sessions to PROJECT_LOG_ARCHIVE.md.
 
 See `/docs/engineering/session-workflow.md` for detailed workflow, MCP servers, and testing guidelines.
 

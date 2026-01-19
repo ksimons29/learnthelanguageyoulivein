@@ -6,7 +6,7 @@ Based on Vibecodelisboa best practices for efficient Claude Code sessions.
 
 1. Run `/clear` to free up context window
 2. Check `/context` to verify context is empty
-3. Read the handoff doc if one exists: `/docs/engineering/HANDOFF.md`
+3. Read the project log: `PROJECT_LOG.md` (dashboard section for quick context)
 4. Use **plan mode** (shift+tab) for multi-step or architectural work
 5. Let Claude formulate a plan before approving implementation
 
@@ -26,57 +26,57 @@ Based on Vibecodelisboa best practices for efficient Claude Code sessions.
 
 ## Ending a Session
 
-> **⚠️ MANDATORY: Update CHANGELOG.md before committing!**
-> This is enforced by a pre-commit hook. The changelog is the project's memory.
+> **⚠️ MANDATORY: Update PROJECT_LOG.md before committing!**
+> This is enforced by a pre-commit hook. The project log is the project's memory.
 
-1. **Update `CHANGELOG.md`** with session summary (files created/modified, key decisions)
+1. **Update `PROJECT_LOG.md`**:
+   - Update Dashboard section (Recently Completed, In Progress, Open Bugs)
+   - Add session entry at top of Session Log (files changed, decisions made)
+   - Update Key Files if significant files were created
 2. Commit changes with descriptive message
 3. If GitHub issue resolved, use convention: `fixes #N` in commit message
-4. If context remains, create/update handoff doc for next session
 
 ### Claude Code Reminder
-When planning tasks with TodoWrite, **always include "Update CHANGELOG.md" as the final todo item** for any session that creates or modifies files.
+When planning tasks with TodoWrite, **always include "Update PROJECT_LOG.md" as the final todo item** for any session that creates or modifies files.
 
 ### Git Hooks Setup
 After cloning the repo, install the pre-commit hook:
 ```bash
 ./scripts/install-hooks.sh
 ```
-This hook warns you if you try to commit >2 files without updating CHANGELOG.md.
+This hook warns you if you try to commit >2 files without updating PROJECT_LOG.md.
 
 ---
 
-## Handoff Documentation
+## PROJECT_LOG.md Structure
 
-When ending a session with remaining work, create `/docs/engineering/HANDOFF.md`:
+The project log consolidates all project documentation into a single file with three sections:
 
-```markdown
-# Handoff Document - [Date]
+### 1. Dashboard (Always Current)
+- **Quick Start**: Essential commands
+- **Recently Completed**: Last 5 completed items with session references
+- **In Progress**: Current work items
+- **Not Started**: Upcoming priorities
+- **Key Files**: Important files for current work
+- **Open Bugs/Issues**: Active issue tracking
 
-## Quick Start
-- `cd web && npm run dev` to start server
-- Visit `localhost:3000`
+### 2. Session Log (Last 10-15 Sessions)
+Each session entry includes:
+- **Focus**: One sentence summary
+- **Done**: What was accomplished
+- **Files**: Table of created/modified files
+- **Decisions**: Key architectural choices
+- **Issues**: Created/fixed issue numbers
+- **Testing**: What was verified
 
-## Current Status
-- [What's working]
-- [What's in progress]
-- [Known issues]
+### 3. Archive Reference
+Link to PROJECT_LOG_ARCHIVE.md for older sessions.
 
-## Remaining Tasks
-- [ ] Task 1
-- [ ] Task 2
-
-## Key Files for Next Session
-- `/path/to/important/file.ts` - Description
-
-## Technical Notes
-- [Any gotchas or important context]
-```
-
-**Why Handoff Docs Matter:**
-- Reduces token usage on next session (no re-analysis needed)
-- Preserves context that would be lost on `/clear`
-- Enables faster onboarding for next session
+**Why This Matters:**
+- Single source of truth (no hunting through multiple files)
+- Dashboard provides instant context for new sessions
+- Session history preserves institutional knowledge
+- Archive prevents file bloat (archive when >500 lines)
 
 ---
 
