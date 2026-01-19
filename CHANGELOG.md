@@ -4,6 +4,23 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 - Native Language Options Update
+
+Updated native language selection in onboarding to better reflect European expat demographics:
+
+| Removed | Added |
+|---------|-------|
+| Portuguese (Brazil) 🇧🇷 | Portuguese (Portugal) 🇵🇹 |
+| English 🇬🇧 | Swedish 🇸🇪 |
+
+**Final native languages**: Dutch, Portuguese (Portugal), German, French, Swedish, Spanish
+
+**Rationale**: Portugal and Sweden are popular expat destinations (Lisbon, Stockholm). English speakers typically don't need translations.
+
+**File modified**: `web/src/app/onboarding/languages/page.tsx`
+
+---
+
 ## 2026-01-19 (Session 18) - Bug Fixes & Language Selection Redesign
 
 **Session Focus**: Apply pending migrations, fix high-priority bugs, and redesign language selection UI.
