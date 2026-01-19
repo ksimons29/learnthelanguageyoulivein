@@ -70,6 +70,12 @@ export async function GET() {
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
+    // Convert dates to ISO strings for postgres-js raw SQL compatibility
+    // Note: Drizzle's gte()/lte() operators handle Date objects correctly,
+    // but raw sql`` template literals require string parameters
+    const oneWeekAgoStr = oneWeekAgo.toISOString();
+    const oneMonthAgoStr = oneMonthAgo.toISOString();
+
     // Run all independent queries in parallel for maximum performance
     const [
       aggregatedStats,
@@ -88,8 +94,8 @@ export async function GET() {
           learningWords: sql<number>`count(*) filter (where ${words.masteryStatus} = 'learning')::int`,
           learnedWords: sql<number>`count(*) filter (where ${words.masteryStatus} = 'learned')::int`,
           masteredWords: sql<number>`count(*) filter (where ${words.masteryStatus} = 'ready_to_use')::int`,
-          wordsThisWeek: sql<number>`count(*) filter (where ${words.createdAt} >= ${oneWeekAgo})::int`,
-          wordsThisMonth: sql<number>`count(*) filter (where ${words.createdAt} >= ${oneMonthAgo})::int`,
+          wordsThisWeek: sql<number>`count(*) filter (where ${words.createdAt} >= ${oneWeekAgoStr})::int`,
+          wordsThisMonth: sql<number>`count(*) filter (where ${words.createdAt} >= ${oneMonthAgoStr})::int`,
           categoryCount: sql<number>`count(distinct ${words.category})::int`,
           needPractice: sql<number>`count(*) filter (where ${words.retrievability} < 0.9)::int`,
           strugglingWords: sql<number>`count(*) filter (where ${words.lapseCount} >= 3)::int`,
