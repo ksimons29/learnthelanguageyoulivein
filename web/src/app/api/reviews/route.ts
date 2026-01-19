@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, reviewSessions } from '@/lib/db/schema';
 import { isDue, processReview, getNextReviewText } from '@/lib/fsrs';
@@ -35,18 +35,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Parse query parameters
+    // 2. Get user's language preference for filtering
+    const languagePreference = await getUserLanguagePreference(user.id);
+
+    // 3. Parse query parameters
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // 3. Get or create review session
+    // 4. Get or create review session
     const sessionId = await getOrCreateSession(user.id);
 
-    // 4. Get all user's words
+    // 5. Get user's words filtered by target language
     const userWords = await db
       .select()
       .from(words)
-      .where(eq(words.userId, user.id));
+      .where(
+        and(
+          eq(words.userId, user.id),
+          eq(words.targetLang, languagePreference.targetLanguage)
+        )
+      );
 
     // 5. Filter to due words using FSRS retrievability calculation
     const now = new Date();

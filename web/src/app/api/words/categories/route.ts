@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
@@ -30,12 +30,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // 2. Get user's language preference for filtering
+    const languagePreference = await getUserLanguagePreference(user.id);
+
     const now = new Date();
     // Convert dates to ISO strings for postgres driver compatibility
     const nowISO = now.toISOString();
 
-    // 2. Query category statistics with total and due counts
+    // 3. Query category statistics with total and due counts
     // Using a single query with conditional aggregation for efficiency
+    // ALWAYS filter by user's target language
     const rawCategoryStats = await db
       .select({
         category: words.category,
@@ -48,7 +52,12 @@ export async function GET() {
         `,
       })
       .from(words)
-      .where(eq(words.userId, user.id))
+      .where(
+        and(
+          eq(words.userId, user.id),
+          eq(words.targetLang, languagePreference.targetLanguage)
+        )
+      )
       .groupBy(words.category)
       .orderBy(sql`count(*) desc`);
 
@@ -84,8 +93,9 @@ export async function GET() {
       }))
       .sort((a, b) => b.totalWords - a.totalWords);
 
-    // 3. Count words without a category (inbox)
+    // 4. Count words without a category (inbox)
     // For MVP, we consider words created in the last 24 hours without review as "inbox"
+    // ALWAYS filter by user's target language
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const twentyFourHoursAgoISO = twentyFourHoursAgo.toISOString();
     const [inboxResult] = await db
@@ -94,6 +104,7 @@ export async function GET() {
       .where(
         and(
           eq(words.userId, user.id),
+          eq(words.targetLang, languagePreference.targetLanguage),
           eq(words.reviewCount, 0),
           sql`${words.createdAt} >= ${twentyFourHoursAgoISO}::timestamp`
         )

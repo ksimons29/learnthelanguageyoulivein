@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { generatedSentences, words } from '@/lib/db/schema';
 import { eq, and, isNull, inArray } from 'drizzle-orm';
@@ -23,11 +23,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Parse query parameters
+    // 2. Get user's language preference for filtering
+    const languagePreference = await getUserLanguagePreference(user.id);
+
+    // 3. Parse query parameters
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
-    // 3. Find unused sentences
+    // 4. Find unused sentences
     const now = new Date();
 
     const unusedSentences = await db
@@ -41,15 +44,16 @@ export async function GET(request: NextRequest) {
       )
       .limit(10); // Get a few to find one with all words due
 
-    // 4. For each sentence, check if all words are currently due
+    // 5. For each sentence, check if all words are currently due
     for (const sentence of unusedSentences) {
-      // Get the words for this sentence
+      // Get the words for this sentence (filtered by target language)
       const sentenceWords = await db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
+            eq(words.targetLang, languagePreference.targetLanguage),
             inArray(words.id, sentence.wordIds)
           )
         );

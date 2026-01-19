@@ -1,5 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { db } from '@/lib/db';
+import { userProfiles } from '@/lib/db/schema/user-profiles';
+import { eq } from 'drizzle-orm';
+import {
+  DEFAULT_LANGUAGE_PREFERENCE,
+  type UserLanguagePreference,
+} from '@/lib/config/languages';
 
 /**
  * Supabase Client (Server-Side)
@@ -52,4 +59,33 @@ export async function getCurrentUser() {
   }
 
   return user;
+}
+
+/**
+ * Get user's language preference from the database
+ * Falls back to DEFAULT_LANGUAGE_PREFERENCE if no profile exists
+ *
+ * This is the SINGLE SOURCE OF TRUTH for language preferences.
+ * All API routes should use this function for filtering words by language.
+ */
+export async function getUserLanguagePreference(
+  userId: string
+): Promise<UserLanguagePreference> {
+  const [profile] = await db
+    .select({
+      nativeLanguage: userProfiles.nativeLanguage,
+      targetLanguage: userProfiles.targetLanguage,
+    })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, userId))
+    .limit(1);
+
+  if (profile) {
+    return {
+      nativeLanguage: profile.nativeLanguage,
+      targetLanguage: profile.targetLanguage,
+    };
+  }
+
+  return DEFAULT_LANGUAGE_PREFERENCE;
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, reviewSessions } from '@/lib/db/schema';
 import { eq, sql, and, gte, lte, desc } from 'drizzle-orm';
@@ -59,6 +59,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // 2. Get user's language preference for filtering
+    const languagePreference = await getUserLanguagePreference(user.id);
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const oneWeekAgo = new Date(today);
@@ -88,6 +91,7 @@ export async function GET() {
       newCardsList,
     ] = await Promise.all([
       // 1. Combined aggregated stats in a single query
+      // ALWAYS filter by user's target language
       db
         .select({
           totalWords: sql<number>`count(*)::int`,
@@ -102,7 +106,12 @@ export async function GET() {
           newCardsCount: sql<number>`count(*) filter (where ${words.reviewCount} = 0)::int`,
         })
         .from(words)
-        .where(eq(words.userId, user.id)),
+        .where(
+          and(
+            eq(words.userId, user.id),
+            eq(words.targetLang, languagePreference.targetLanguage)
+          )
+        ),
 
       // 2. Review statistics
       db
@@ -129,6 +138,7 @@ export async function GET() {
         .orderBy(desc(sql`date(${reviewSessions.endedAt})`)),
 
       // 4. Forecast data in a single query with date grouping
+      // ALWAYS filter by user's target language
       db
         .select({
           date: sql<string>`date(${words.nextReviewDate})`,
@@ -138,6 +148,7 @@ export async function GET() {
         .where(
           and(
             eq(words.userId, user.id),
+            eq(words.targetLang, languagePreference.targetLanguage),
             lte(words.nextReviewDate, sevenDaysFromNow)
           )
         )
@@ -160,12 +171,14 @@ export async function GET() {
         .orderBy(sql`date(${reviewSessions.endedAt})`),
 
       // 6. Ready to use words
+      // ALWAYS filter by user's target language
       db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
+            eq(words.targetLang, languagePreference.targetLanguage),
             eq(words.masteryStatus, 'ready_to_use')
           )
         )
@@ -173,12 +186,14 @@ export async function GET() {
         .limit(10),
 
       // 7. Struggling words list
+      // ALWAYS filter by user's target language
       db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
+            eq(words.targetLang, languagePreference.targetLanguage),
             gte(words.lapseCount, 1)
           )
         )
@@ -186,12 +201,14 @@ export async function GET() {
         .limit(10),
 
       // 8. New cards list
+      // ALWAYS filter by user's target language
       db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
+            eq(words.targetLang, languagePreference.targetLanguage),
             eq(words.reviewCount, 0)
           )
         )
@@ -290,9 +307,14 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Progress retrieval error:', error);
+    // Include detailed error info for debugging
+    const errorDetails = error instanceof Error
+      ? { message: error.message, stack: error.stack?.split('\n').slice(0, 5) }
+      : { message: 'Unknown error', raw: String(error) };
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to retrieve progress',
+        debug: errorDetails,
       },
       { status: 500 }
     );

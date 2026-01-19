@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, generatedSentences } from '@/lib/db/schema';
 import { generateAudio } from '@/lib/audio/tts';
@@ -8,9 +8,7 @@ import {
   DEFAULT_LANGUAGE_PREFERENCE,
   getTranslationName,
   isDirectionSupported,
-  type UserLanguagePreference,
 } from '@/lib/config/languages';
-import { userProfiles } from '@/lib/db/schema/user-profiles';
 import {
   getUnusedWordCombinations,
   generateSentenceWithRetry,
@@ -29,32 +27,6 @@ function getOpenAI() {
   return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
-}
-
-/**
- * Fetch user language preferences from the database
- * Falls back to DEFAULT_LANGUAGE_PREFERENCE if no profile exists
- */
-async function getUserLanguagePreference(
-  userId: string
-): Promise<UserLanguagePreference> {
-  const [profile] = await db
-    .select({
-      nativeLanguage: userProfiles.nativeLanguage,
-      targetLanguage: userProfiles.targetLanguage,
-    })
-    .from(userProfiles)
-    .where(eq(userProfiles.userId, userId))
-    .limit(1);
-
-  if (profile) {
-    return {
-      nativeLanguage: profile.nativeLanguage,
-      targetLanguage: profile.targetLanguage,
-    };
-  }
-
-  return DEFAULT_LANGUAGE_PREFERENCE;
 }
 
 /**
@@ -206,7 +178,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Parse query parameters
+    // 2. Get user's language preference for filtering
+    const languagePreference = await getUserLanguagePreference(user.id);
+
+    // 3. Parse query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -215,8 +190,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const excludeId = searchParams.get('excludeId');
 
-    // 3. Build query with filters
-    const conditions = [eq(words.userId, user.id)];
+    // 4. Build query with filters - ALWAYS filter by user's target language
+    const conditions = [
+      eq(words.userId, user.id),
+      eq(words.targetLang, languagePreference.targetLanguage),
+    ];
 
     if (category) {
       conditions.push(eq(words.category, category));

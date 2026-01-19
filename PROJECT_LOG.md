@@ -11,11 +11,11 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Language Filtering Fix** - Fixed #43 BLOCKER via shared helper function (Session 26)
 - [x] **Multi-Language Support** - Schema, API, and validation for en→pt-PT, nl→pt-PT, nl→en, en→sv (Session 24)
 - [x] **Gamification MVP** - Daily goals, streaks, bingo board, boss round (Session 22)
 - [x] **Issue Cleanup** - Closed 6 resolved issues, improved review feedback UX (Session 21)
 - [x] **Test Account Setup** - Fixed Progress API 500 error (Session 20)
-- [x] **Bug Verification** - Auth icon redesign, QA updates (Session 19)
 
 ### In Progress
 - [ ] **Sentence generation** - Pre-gen works, review integration WIP
@@ -40,16 +40,16 @@ npm run build             # Production build
 ## Open Bugs
 | Issue | Status | Notes |
 |-------|--------|-------|
-| #29 | Open | Turbopack config warning - low priority, no impact |
+| #29 | Low | Turbopack config warning - no impact (closed) |
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
+
+### Closed This Session
+- ~~#43~~ **BLOCKER** - Fixed: Language filtering via shared helper in all word queries
 
 ## Open Feature Issues
 | Issue | Feature | Priority |
 |-------|---------|----------|
-| #32 | Daily Completion State & Streak Display | Pre-MVP |
-| #33 | Bingo Board | Pre-MVP |
-| #34 | Boss Round | Pre-MVP |
 | #35 | Story Run Frame | Post-MVP |
 | #36 | Category Hunt | Post-MVP |
 | #37 | Real Life Mission Check-in | Post-MVP |
@@ -57,6 +57,83 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 26 - 2026-01-19 - Go-Live Critical Bug Fixes
+**Focus**: Fix BLOCKER #43 - words mixing between languages
+
+**Bug Fixed**
+| Issue | Title | Fix |
+|-------|-------|-----|
+| #43 | **BLOCKER** Words not filtered by target_language | Created shared helper + filter in 5 routes |
+
+**Sustainable Solution**
+Created `getUserLanguagePreference()` in `lib/supabase/server.ts` as **single source of truth**. All 5 API routes now import and use this shared function - no more copy-paste.
+
+**Changes Made**
+- `lib/supabase/server.ts` - NEW: Shared `getUserLanguagePreference()` helper
+- `GET /api/words` - Imports shared helper, filters by `targetLang`
+- `GET /api/words/categories` - Imports shared helper, filters stats + inbox
+- `GET /api/reviews` - Imports shared helper, filters due words
+- `GET /api/progress` - Imports shared helper, filters all 5 word queries
+- `GET /api/sentences/next` - Imports shared helper, filters sentence words
+
+**E2E Testing**
+- ✅ Portuguese user sees only Portuguese words (11 words)
+- ✅ Swedish user sees only Swedish words (10 test words created)
+- ✅ Build passes, all routes compile
+
+**Files**
+| File | Type | Notes |
+|------|------|-------|
+| `web/src/lib/supabase/server.ts` | Modified | Added shared getUserLanguagePreference() |
+| `web/src/app/api/words/route.ts` | Modified | Uses shared helper, removed duplicate |
+| `web/src/app/api/words/categories/route.ts` | Modified | Language filter on stats |
+| `web/src/app/api/reviews/route.ts` | Modified | Language filter on due words |
+| `web/src/app/api/progress/route.ts` | Modified | Language filter on all queries |
+| `web/src/app/api/sentences/next/route.ts` | Modified | Language filter on sentence words |
+
+---
+
+### Session 25 - 2026-01-19 - Go-Live E2E Testing
+**Focus**: Comprehensive end-to-end testing before production launch
+
+**Test Results Summary**
+| Test Case | Status | Notes |
+|-----------|--------|-------|
+| TC1: Authentication | ✅ PASS | Sign-in, redirect, session working |
+| TC2: Word Capture | ✅ PASS | Translation, audio, category assignment |
+| TC3-5: Review Sessions | ✅ PASS | Fill-blank, multiple choice, type translation |
+| TC6: FSRS Algorithm | ✅ PASS | Scheduling, mastery progression, day names |
+| TC7: Notebook | ✅ PASS | Categories, word detail, search |
+| TC10: Progress Dashboard | ❌ FAIL | 500 error - API bug |
+| TC11: Daily Goal | ✅ PASS | 15/10 goal, completion state |
+| TC12: Bingo Board | ✅ PASS | 4/9 squares, modal working |
+| TC13: Boss Round | ✅ PASS | 5/5 perfect, timer, celebration |
+| TC15: Multi-Language | ⚠️ PARTIAL | sv→en works, en→sv detection fails |
+
+**Database Health**
+- words: 924, user_profiles: 2, review_sessions: 11
+- Mastery: learning (688), learned (34), ready_to_use (202)
+- FSRS: avg difficulty 0.08, stability 22.47, retrievability 0.88
+- Data integrity: No orphaned records, 528 duplicate words (expected from testing)
+
+**Critical Bugs Found**
+1. **BLOCKER**: Words not filtered by `target_language` - users see mixed Portuguese + Swedish
+2. **High**: Progress API returns 500 (possible query issue)
+3. **Medium**: English→Swedish translation detects English as Swedish
+
+**Product Decisions Confirmed**
+- User sets language at onboarding - fixed for account lifetime
+- No language toggle for MVP
+- One target language per user, no mixing
+
+**Files**
+| File | Type | Notes |
+|------|------|-------|
+| `scripts/update-lang-temp.mjs` | Created | Test script for language switching |
+| `~/.claude/skills/reflect/SKILL.md` | Modified | Added LLYLI test account learning |
+
+---
 
 ### Session 24 - 2026-01-19 - Multi-Language Support
 **Focus**: Implement multi-language support infrastructure for app launch
