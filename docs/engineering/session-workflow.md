@@ -26,10 +26,23 @@ Based on Vibecodelisboa best practices for efficient Claude Code sessions.
 
 ## Ending a Session
 
-1. Commit changes with descriptive message
-2. If GitHub issue resolved, use convention: `fixes #N` in commit message
-3. Update `CHANGELOG.md` with session summary
+> **⚠️ MANDATORY: Update CHANGELOG.md before committing!**
+> This is enforced by a pre-commit hook. The changelog is the project's memory.
+
+1. **Update `CHANGELOG.md`** with session summary (files created/modified, key decisions)
+2. Commit changes with descriptive message
+3. If GitHub issue resolved, use convention: `fixes #N` in commit message
 4. If context remains, create/update handoff doc for next session
+
+### Claude Code Reminder
+When planning tasks with TodoWrite, **always include "Update CHANGELOG.md" as the final todo item** for any session that creates or modifies files.
+
+### Git Hooks Setup
+After cloning the repo, install the pre-commit hook:
+```bash
+./scripts/install-hooks.sh
+```
+This hook warns you if you try to commit >2 files without updating CHANGELOG.md.
 
 ---
 

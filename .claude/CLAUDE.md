@@ -18,6 +18,7 @@ npm run db:push           # Push schema changes (dev only)
 - **Auth:** Supabase Auth (NOT NextAuth/Clerk)
 - **AI:** OpenAI GPT-4o-mini (translation), OpenAI TTS (audio)
 - **Algorithm:** ts-fsrs v5.2.3 (FSRS-4.5 spaced repetition)
+- **iOS:** Capacitor (hybrid app wrapping web in native shell)
 
 ## Key Documentation
 
@@ -26,6 +27,7 @@ npm run db:push           # Push schema changes (dev only)
 | `/docs/design/design-system.md` | **★ Moleskine design tokens** - Always for UI |
 | `/docs/engineering/implementation_plan.md` | Architecture, data model, API routes |
 | `/docs/engineering/session-workflow.md` | **Claude Code session best practices** |
+| `/docs/engineering/CAPACITOR_IOS_SETUP.md` | iOS app setup, native plugins |
 | `/docs/product/prd.md` | User stories, acceptance criteria |
 | `/docs/design/wireframes.md` | UI layouts, screen flows |
 
@@ -44,6 +46,7 @@ npm run db:push           # Push schema changes (dev only)
 ### In Progress ⚠️
 - Sentence generation (pre-gen works, review integration WIP)
 - PWA offline caching
+- iOS App Store submission (Capacitor setup complete)
 
 ### Not Started ❌
 - Stripe payments
@@ -87,15 +90,19 @@ See `/docs/engineering/session-workflow.md` for detailed workflow, MCP servers, 
 ## Key Files
 
 ```
-web/src/
-├── app/                    # Pages (capture, review, notebook, progress)
-├── components/             # UI components by feature
-└── lib/
-    ├── db/schema/          # Drizzle schemas (words, sessions, sentences)
-    ├── fsrs/               # FSRS algorithm implementation
-    ├── audio/              # TTS generation & storage
-    ├── store/              # Zustand stores
-    └── supabase/           # Auth helpers
+web/
+├── capacitor.config.ts     # iOS app configuration
+├── ios/                    # Xcode project (auto-generated)
+└── src/
+    ├── app/                # Pages (capture, review, notebook, progress)
+    ├── components/         # UI components by feature
+    └── lib/
+        ├── capacitor/      # Platform detection, native plugins
+        ├── db/schema/      # Drizzle schemas (words, sessions, sentences)
+        ├── fsrs/           # FSRS algorithm implementation
+        ├── audio/          # TTS generation & storage
+        ├── store/          # Zustand stores
+        └── supabase/       # Auth helpers
 ```
 
 ## Repository

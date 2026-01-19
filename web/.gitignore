@@ -42,3 +42,11 @@ next-env.d.ts
 
 # drizzle
 /drizzle
+
+# Capacitor iOS build artifacts
+ios/App/App/public
+ios/App/Pods
+ios/App/App.xcworkspace/xcuserdata
+ios/App/App.xcodeproj/xcuserdata
+ios/DerivedData
+*.xcuserstate

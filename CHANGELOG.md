@@ -4,6 +4,96 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 16) - Capacitor iOS Setup
+
+**Session Focus**: Implement Capacitor for iOS App Store distribution using hybrid architecture.
+
+### What Was Done
+
+#### Architecture Decision
+Chose **hybrid approach** where iOS app loads from deployed Vercel URL instead of bundled static files:
+- No code duplication between web and iOS
+- API routes stay secure server-side
+- Updates deploy instantly without App Store review
+- Native plugins enhance the WebView experience
+
+#### Capacitor Installation
+Installed core packages:
+- `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios` - Core runtime
+- `@capacitor/network` - Reliable network status detection
+- `@capacitor/push-notifications` - iOS push notifications (APNs)
+- `@capacitor-community/native-audio` - Native audio playback
+
+#### Platform Utilities Created
+| File | Purpose |
+|------|---------|
+| `web/src/lib/capacitor/platform.ts` | Platform detection (`isNative()`, `isIOS()`, etc.) |
+| `web/src/lib/capacitor/native-audio.ts` | Native audio playback wrapper |
+| `web/src/lib/capacitor/network.ts` | Enhanced network status service |
+| `web/src/lib/capacitor/push-notifications.ts` | Push notification service |
+| `web/src/lib/capacitor/index.ts` | Barrel exports |
+
+#### Audio Player Enhancement
+Updated `useAudioPlayer` hook with progressive enhancement:
+- Native iOS: Uses Capacitor native audio (no autoplay restrictions)
+- Web: Falls back to HTML5 Audio element
+- Same API surface for components
+
+#### iOS Project Initialized
+- Created `capacitor.config.ts` with hybrid server configuration
+- Generated `ios/` Xcode project via `npx cap add ios`
+- Added Capacitor scripts to package.json
+
+### Files Created (7)
+
+| File | Purpose |
+|------|---------|
+| `web/capacitor.config.ts` | iOS app configuration |
+| `web/ios/` | Xcode project (auto-generated) |
+| `web/src/lib/capacitor/platform.ts` | Platform detection |
+| `web/src/lib/capacitor/native-audio.ts` | Native audio wrapper |
+| `web/src/lib/capacitor/network.ts` | Network status service |
+| `web/src/lib/capacitor/push-notifications.ts` | Push notifications |
+| `web/src/lib/capacitor/index.ts` | Barrel exports |
+| `docs/engineering/CAPACITOR_IOS_SETUP.md` | Setup documentation |
+
+### Files Modified (4)
+
+| File | Changes |
+|------|---------|
+| `web/package.json` | Added Capacitor deps and scripts |
+| `web/src/lib/hooks/use-audio-player.ts` | Progressive enhancement for native audio |
+| `web/.gitignore` | iOS build artifact exclusions |
+| `.claude/CLAUDE.md` | Updated tech stack and docs reference |
+
+### npm Scripts Added
+
+```bash
+npm run cap:sync        # Sync web assets to iOS
+npm run cap:open:ios    # Open Xcode project
+npm run cap:build:ios   # Full iOS build
+```
+
+### Next Steps for App Store
+
+1. Update production URL in `capacitor.config.ts`
+2. Open Xcode: `npm run cap:open:ios`
+3. Add app icons to `ios/App/App/Assets.xcassets/`
+4. Configure signing with Apple Developer account
+5. Enable Push Notifications capability
+6. Test in simulator and on device
+7. Submit to TestFlight
+
+### Key Technical Decisions
+
+**Hybrid over Static Export**: App has API routes that need server. Hybrid approach loads from Vercel URL, keeping API routes functional.
+
+**Native Audio Plugin**: Bypasses iOS Safari autoplay restrictions. Audio plays immediately without user gesture requirement.
+
+**Platform Detection at Runtime**: `isNative()` check determines which audio backend to use. Components don't need to know platform.
+
+---
+
 ## 2026-01-19 (Session 15) - Epic 7: PWA Implementation
 
 **Session Focus**: Implement Progressive Web App capabilities for offline support, install prompt, and background sync.

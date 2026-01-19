@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  isNativeAudioAvailable,
+  playAudio as nativePlayAudio,
+  stopAudio as nativeStopAudio,
+  onAudioComplete,
+  getAssetIdForUrl,
+} from '@/lib/capacitor';
 
 interface UseAudioPlayerOptions {
   onEnded?: () => void;
@@ -19,7 +26,10 @@ interface UseAudioPlayerReturn {
 /**
  * useAudioPlayer Hook
  *
- * Manages audio playback state with a single Audio element.
+ * Manages audio playback with progressive enhancement:
+ * - Native iOS: Uses Capacitor native audio (no autoplay restrictions)
+ * - Web: Uses HTML5 Audio element
+ *
  * Prevents overlapping audio by stopping previous playback before starting new.
  *
  * Usage:
@@ -39,67 +49,104 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}): UseAudioPla
   const [error, setError] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
 
+  // Track whether we're using native audio
+  const useNativeAudio = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Create audio element on mount (client-side only)
+  // Initialize audio on mount
   useEffect(() => {
-    audioRef.current = new Audio();
+    // Check if native audio is available (iOS app)
+    useNativeAudio.current = isNativeAudioAvailable();
 
-    const audio = audioRef.current;
+    if (useNativeAudio.current) {
+      // Set up native audio completion listener
+      const cleanup = onAudioComplete((completedAssetId) => {
+        // Check if the completed audio matches our current URL
+        if (currentUrl) {
+          const ourAssetId = getAssetIdForUrl(currentUrl);
+          if (ourAssetId === completedAssetId) {
+            setIsPlaying(false);
+            setCurrentUrl(null);
+            onEnded?.();
+          }
+        }
+      });
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentUrl(null);
-      onEnded?.();
-    };
+      return cleanup;
+    } else {
+      // Web fallback: Create HTML5 Audio element
+      audioRef.current = new Audio();
+      const audio = audioRef.current;
 
-    const handleError = () => {
-      const errorMessage = audio.error?.message || 'Failed to play audio';
-      setError(errorMessage);
-      setIsPlaying(false);
-      setIsLoading(false);
-      onError?.(new Error(errorMessage));
-    };
+      const handleEnded = () => {
+        setIsPlaying(false);
+        setCurrentUrl(null);
+        onEnded?.();
+      };
 
-    const handleCanPlay = () => {
-      setIsLoading(false);
-    };
+      const handleError = () => {
+        const errorMessage = audio.error?.message || 'Failed to play audio';
+        setError(errorMessage);
+        setIsPlaying(false);
+        setIsLoading(false);
+        onError?.(new Error(errorMessage));
+      };
 
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('canplay', handleCanPlay);
+      const handleCanPlay = () => {
+        setIsLoading(false);
+      };
 
-    return () => {
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('canplay', handleCanPlay);
-      audio.pause();
-      audio.src = '';
-    };
-  }, [onEnded, onError]);
+      audio.addEventListener('ended', handleEnded);
+      audio.addEventListener('error', handleError);
+      audio.addEventListener('canplay', handleCanPlay);
+
+      return () => {
+        audio.removeEventListener('ended', handleEnded);
+        audio.removeEventListener('error', handleError);
+        audio.removeEventListener('canplay', handleCanPlay);
+        audio.pause();
+        audio.src = '';
+      };
+    }
+  }, [onEnded, onError, currentUrl]);
 
   const play = useCallback(async (url: string) => {
-    if (!audioRef.current) return;
-
-    const audio = audioRef.current;
-
     // If same URL is playing, toggle off
     if (currentUrl === url && isPlaying) {
-      audio.pause();
+      if (useNativeAudio.current) {
+        await nativeStopAudio(url);
+      } else if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
       return;
     }
 
     // Stop any current playback
-    audio.pause();
+    if (currentUrl && currentUrl !== url) {
+      if (useNativeAudio.current) {
+        await nativeStopAudio(currentUrl);
+      } else if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    }
+
     setError(null);
     setIsLoading(true);
     setCurrentUrl(url);
 
     try {
-      audio.src = url;
-      await audio.play();
-      setIsPlaying(true);
+      if (useNativeAudio.current) {
+        // Native iOS audio - no autoplay restrictions
+        await nativePlayAudio(url);
+        setIsPlaying(true);
+        setIsLoading(false);
+      } else if (audioRef.current) {
+        // Web fallback - HTML5 Audio
+        audioRef.current.src = url;
+        await audioRef.current.play();
+        setIsPlaying(true);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to play audio';
       setError(errorMessage);
@@ -110,14 +157,18 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}): UseAudioPla
     }
   }, [currentUrl, isPlaying, onError]);
 
-  const stop = useCallback(() => {
-    if (!audioRef.current) return;
-
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
+  const stop = useCallback(async () => {
+    if (currentUrl) {
+      if (useNativeAudio.current) {
+        await nativeStopAudio(currentUrl);
+      } else if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
     setIsPlaying(false);
     setCurrentUrl(null);
-  }, []);
+  }, [currentUrl]);
 
   return {
     isPlaying,
