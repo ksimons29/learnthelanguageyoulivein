@@ -27,6 +27,7 @@ npm run db:push           # Push schema changes (dev only)
 | `/docs/design/design-system.md` | **★ Moleskine design tokens** - Always for UI |
 | `/docs/engineering/implementation_plan.md` | Architecture, data model, API routes |
 | `/docs/engineering/session-workflow.md` | **Claude Code session best practices** |
+| `/docs/engineering/TESTING.md` | **QA test cases, database queries** |
 | `/docs/engineering/CAPACITOR_IOS_SETUP.md` | iOS app setup, native plugins |
 | `/docs/product/prd.md` | User stories, acceptance criteria |
 | `/docs/design/wireframes.md` | UI layouts, screen flows |

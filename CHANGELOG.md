@@ -108,6 +108,14 @@ Created `scripts/database-queries.sql` with 25+ queries organized into 7 section
 6. Data Integrity Checks (orphans, duplicates)
 7. Admin Queries (reset data, testing helpers)
 
+#### Comprehensive Testing Guide
+Created `docs/engineering/TESTING.md` with:
+- Unit test instructions (Vitest)
+- 10 manual QA test cases with step-by-step tables
+- Essential database queries with expected results
+- API testing curl commands
+- Troubleshooting guide
+
 ---
 
 ## 2026-01-19 (Session 15) - Epic 7: PWA Implementation
