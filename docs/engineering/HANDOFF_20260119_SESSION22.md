@@ -216,8 +216,13 @@ The review page now emits `emitItemAnswered()` events after each word is graded:
 ### 2. Boss Round Prompt on Complete Page
 The boss round prompt component exists but needs to be integrated into `/review/complete/page.tsx` conditionally when daily goal is complete.
 
-### 3. Bingo Board on Home Page
-The bingo board component exists but is not yet added to the home page. Can be added as a compact preview.
+### 3. Bingo Board on Home Page ✅ CONNECTED
+The bingo board is now displayed on the home page:
+- Compact preview in "Daily Bingo" section
+- Tap to expand full board in modal
+- Only renders when bingo state is loaded
+
+**Commit**: `e14e3c9`
 
 ---
 
