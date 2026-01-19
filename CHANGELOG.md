@@ -4,6 +4,64 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 13) - Engineering Docs Audit & Cleanup
+
+**Session Focus**: Audit engineering documentation, identify outdated docs, create accurate TODO and archive.
+
+### What Was Done
+
+#### Documentation Audit
+Verified all engineering docs against actual codebase implementation:
+- Discovered `Missing Features.MD` was completely outdated (all "missing" features are implemented)
+- Found 6 documents describing completed work, not future work
+
+#### New Documents Created
+
+| Document | Purpose |
+|----------|---------|
+| `docs/engineering/TODO.md` | Remaining work organized by P0/P1/P2 priority |
+| `docs/engineering/IMPLEMENTATION_ARCHIVE.md` | Complete record of implemented features |
+| `docs/engineering/archive/README.md` | Explains why each doc was archived |
+
+#### Documents Archived
+Moved 6 outdated/completed docs to `/docs/engineering/archive/`:
+
+| Document | Reason Archived |
+|----------|-----------------|
+| `Missing Features.MD` | All claimed "missing" features now implemented |
+| `NEXT_IMPLEMENTATION_PHASE.md` | Phase 1 complete |
+| `llyli_default_categories_and_packs.md` | Lists 12 categories (now 8) |
+| `FSRS_IMPLEMENTATION.md` | Algorithm implemented in code |
+| `dependency_graph.md` | All P0 epics complete |
+| `PLATFORM_STRATEGY_2026-01-15.md` | Web pivot executed |
+
+### Key Findings
+
+**MVP Status: ~85% complete**
+
+All core learning loop features are implemented:
+- Epic 0: Technical Foundation (Next.js, Supabase, Drizzle)
+- Epic 1: Word Capture with translation + TTS
+- Epic 2: Dynamic Sentence Generation
+- Epic 3: FSRS Review System
+- Epic 4: Notebook view (partial - no tags UI)
+- Epic 5: Progress Dashboard
+
+**Remaining P0 work:**
+- PWA implementation (manifest, service worker)
+- End-to-end testing
+
+### Files Created/Modified
+
+| File | Changes |
+|------|---------|
+| `docs/engineering/TODO.md` | NEW - 11 remaining items by priority |
+| `docs/engineering/IMPLEMENTATION_ARCHIVE.md` | NEW - Complete feature reference |
+| `docs/engineering/archive/README.md` | NEW - Archive index |
+| 6 docs moved to `archive/` | Reorganization |
+
+---
+
 ## 2026-01-18 (Session 12) - Issue #21: Category Consolidation (Miller's Law)
 
 **Session Focus**: Reduce categories from 14 to 8 following Miller's Law for optimal cognitive load.
