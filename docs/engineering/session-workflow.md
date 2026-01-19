@@ -135,15 +135,27 @@ Usage: "Test the capture flow in the browser and tell me what you see"
 
 ## Database Inspection
 
-**For PostgreSQL (Supabase):**
-- Use pgAdmin, TablePlus, or DBeaver to browse data
-- Connection string in `.env.local`: `DATABASE_URL`
+**Pre-built validation queries:** See [`/scripts/database-queries.sql`](/scripts/database-queries.sql)
+
+**How to run queries:**
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
+2. Select your LLYLI project
+3. Click **SQL Editor** in left sidebar
+4. Copy/paste query from `database-queries.sql`
+5. Click **Run**
+
+**Key queries to run regularly:**
+- Section 1.1: Quick health check (all table counts)
+- Section 2.4: Words due for review (verify matches app)
+- Section 3.1: FSRS parameter distribution (algorithm working?)
+- Section 6: Data integrity checks (should all return 0)
 
 **Drizzle commands:**
 ```bash
 npm run db:push      # Push schema changes (dev only)
 npm run db:generate  # Generate migrations
 npm run db:migrate   # Run migrations (production)
+npm run db:studio    # Open Drizzle Studio UI
 ```
 
 ---

@@ -4,9 +4,9 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
-## 2026-01-19 (Session 16) - Capacitor iOS Setup
+## 2026-01-19 (Session 16) - Capacitor iOS Setup + Database Queries
 
-**Session Focus**: Implement Capacitor for iOS App Store distribution using hybrid architecture.
+**Session Focus**: Implement Capacitor for iOS App Store distribution, add pre-commit hook for changelog enforcement, create database validation queries.
 
 ### What Was Done
 
@@ -91,6 +91,22 @@ npm run cap:build:ios   # Full iOS build
 **Native Audio Plugin**: Bypasses iOS Safari autoplay restrictions. Audio plays immediately without user gesture requirement.
 
 **Platform Detection at Runtime**: `isNative()` check determines which audio backend to use. Components don't need to know platform.
+
+#### Pre-commit Hook for Changelog
+Added git hook that warns when committing >2 files without updating CHANGELOG.md:
+- `scripts/pre-commit` - The hook script
+- `scripts/install-hooks.sh` - Installation for new clones
+- Updated `session-workflow.md` with setup instructions
+
+#### Database Validation Queries
+Created `scripts/database-queries.sql` with 25+ queries organized into 7 sections:
+1. Data Overview (health checks, user profiles)
+2. Word Data Validation (categories, mastery status)
+3. FSRS Algorithm Validation (parameter distribution, anomalies)
+4. Review Sessions (recent sessions, statistics)
+5. Sentence Generation (usage, exercise types)
+6. Data Integrity Checks (orphans, duplicates)
+7. Admin Queries (reset data, testing helpers)
 
 ---
 
