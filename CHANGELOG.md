@@ -4,6 +4,184 @@ This changelog tracks all Claude Code sessions and major changes to the LLYLI pr
 
 ---
 
+## 2026-01-19 (Session 22) - Gamification MVP Implementation
+
+**Session Focus**: Implement core gamification features for MVP launch - daily completion state, streak tracking, bingo board, and boss round challenge.
+
+**GitHub Issues Created**: #32, #33, #34, #35, #36, #37
+
+### What Was Done
+
+#### GitHub Issues for Tracking
+
+| Issue | Feature | Priority |
+|-------|---------|----------|
+| #32 | Gamification MVP: Daily Completion State & Streak Display | Pre-MVP |
+| #33 | Gamification MVP: Bingo Board | Pre-MVP |
+| #34 | Gamification MVP: Boss Round | Pre-MVP |
+| #35 | Post-MVP: Story Run Frame | Post-MVP |
+| #36 | Post-MVP: Category Hunt | Post-MVP |
+| #37 | Post-MVP: Real Life Mission Check-in | Post-MVP |
+
+#### Database Schema (`web/src/lib/db/schema/gamification.ts`)
+
+Created 3 new tables:
+
+```typescript
+// Daily progress tracking
+dailyProgress: {
+  userId, date, targetReviews (default 10), completedReviews, completedAt
+}
+
+// Streak state with freeze protection
+streakState: {
+  userId, currentStreak, longestStreak, lastCompletedDate, streakFreezeCount, lastFreezeUsedDate
+}
+
+// Bingo board state
+bingoState: {
+  userId, date, squaresCompleted (json), squareDefinitions (json), bingoAchieved
+}
+```
+
+Applied schema with `npx drizzle-kit push --force`.
+
+#### API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/gamification/state` | GET | Returns daily progress, streak, and bingo state |
+| `/api/gamification/event` | POST | Processes gamification events (item_answered, session_completed, word_mastered) |
+| `/api/gamification/boss-round` | GET | Returns 5 hardest words for boss challenge |
+| `/api/gamification/boss-round` | POST | Submits boss round results |
+
+#### Zustand Store (`web/src/lib/store/gamification-store.ts`)
+
+Created gamification store with:
+- `daily`, `streak`, `bingo` state
+- `consecutiveCorrect` tracking for bingo
+- `fetchState()` for initial load
+- `emitItemAnswered()` with optimistic updates
+- `emitSessionCompleted()` for session end
+- Celebration state management
+
+#### UI Components Created
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `BingoBoard` | `components/gamification/bingo-board.tsx` | 3x3 grid with compact/full variants |
+| `BingoBoardModal` | `components/gamification/bingo-board.tsx` | Modal overlay for expanded view |
+| `BossRoundPrompt` | `components/gamification/boss-round.tsx` | Challenge invitation after daily goal |
+| `BossRoundGame` | `components/gamification/boss-round.tsx` | 90-second timed challenge |
+| `BossRoundResults` | `components/gamification/boss-round.tsx` | Score display with perfect/passing states |
+| `ProgressRing` | `components/home/todays-progress.tsx` | SVG circular progress indicator |
+
+#### UI Updates
+
+**Home Page (`app/page.tsx`)**:
+- Integrated gamification store
+- Added "Done for today!" celebration modal
+- Updated TodaysProgress props with daily goal data
+
+**TodaysProgress Component**:
+- Added `dailyTarget` and `dailyComplete` props
+- Replaced "Reviewed" section with circular progress ring showing "X/10"
+
+**Review Complete Page (`app/review/complete/page.tsx`)**:
+- Added gamification store integration
+- Added daily goal status section with progress bar
+- Shows streak count when daily goal completed
+
+### Files Created (8)
+
+| File | Purpose |
+|------|---------|
+| `web/src/lib/db/schema/gamification.ts` | Database tables and constants |
+| `web/src/lib/store/gamification-store.ts` | Zustand state management |
+| `web/src/app/api/gamification/state/route.ts` | State fetch endpoint |
+| `web/src/app/api/gamification/event/route.ts` | Event processing endpoint |
+| `web/src/app/api/gamification/boss-round/route.ts` | Boss round endpoints |
+| `web/src/components/gamification/bingo-board.tsx` | Bingo board UI |
+| `web/src/components/gamification/boss-round.tsx` | Boss round UI components |
+| `web/src/components/gamification/index.ts` | Barrel exports |
+
+### Files Modified (6)
+
+| File | Changes |
+|------|---------|
+| `web/src/lib/db/schema/index.ts` | Export gamification tables |
+| `web/src/lib/store/index.ts` | Export gamification store |
+| `web/src/app/page.tsx` | Gamification integration, celebration modal |
+| `web/src/components/home/todays-progress.tsx` | Progress ring, daily goal props |
+| `web/src/app/review/complete/page.tsx` | Daily status section |
+
+### Design Decisions
+
+**1. Moleskine Aesthetic Consistency**
+- Bingo board uses notebook binding edge styling
+- Boss round cards have rounded-right, square-left corners
+- Celebration modal follows Ribbon Rule (single coral accent)
+
+**2. Forgiving Streak System**
+- Users start with 1 free streak freeze
+- Streak freeze auto-applies if user misses a day
+- Prevents punitive UX that damages retention
+
+**3. Bingo Square Selection**
+- 9 achievable squares mixing review counts, exercise types, and categories
+- Winning lines: 3 rows, 3 columns, 2 diagonals
+- Resets daily for fresh engagement
+
+**4. Boss Round Word Selection**
+- Prioritizes: High lapse count (struggling words)
+- Secondary: Low retrievability
+- Always 5 words, 90-second time limit
+- Only available after daily goal completion
+
+### Testing Verified
+
+- ✅ TypeScript build passes (`npm run build`)
+- ✅ Playwright smoke test: Home page loads with "0/10 Daily Goal" progress ring
+- ✅ API endpoints return correct structure
+
+### Next Actions for New Engineer
+
+1. **Integration Testing**:
+   - Complete 10 reviews and verify "Done for today!" celebration appears
+   - Test streak increment after completing daily goal
+   - Verify bingo squares auto-complete during review session
+
+2. **Boss Round Testing**:
+   - Complete daily goal, verify boss round prompt appears
+   - Test 90-second timer countdown
+   - Verify boss round uses hardest words (high lapse count)
+
+3. **Edge Cases**:
+   - Test streak freeze when skipping a day
+   - Verify bingo resets at midnight
+   - Test behavior with <5 words (boss round graceful degradation)
+
+4. **Post-MVP Features**:
+   - Story Run Frame (#35) - requires sentence generation integration
+   - Category Hunt (#36) - weekly quest system
+   - Real Life Mission (#37) - usage check-in prompts
+
+### Bingo Square Definitions
+
+| ID | Label | Target |
+|----|-------|--------|
+| `review5` | Review 5 words | 5 |
+| `streak3` | 3 correct in a row | 3 |
+| `fillBlank` | Complete a fill-blank | 1 |
+| `multipleChoice` | Complete a multiple choice | 1 |
+| `typeTranslation` | Type a translation | 1 |
+| `workWord` | Review a work word | 1 |
+| `socialWord` | Review a social word | 1 |
+| `masterWord` | Master a word | 1 |
+| `finishSession` | Finish daily session | 1 |
+
+---
+
 ## 2026-01-19 (Session 21) - Issue Cleanup & DX Improvements
 
 **Session Focus**: Close resolved issues, fix Turbopack warning, improve review feedback UX.

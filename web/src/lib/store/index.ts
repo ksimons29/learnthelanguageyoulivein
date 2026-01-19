@@ -9,3 +9,4 @@ export { useAuthStore } from './auth-store';
 export { useWordsStore } from './words-store';
 export { useReviewStore } from './review-store';
 export { useUIStore } from './ui-store';
+export { useGamificationStore } from './gamification-store';

@@ -1,18 +1,75 @@
 "use client";
 
-import { Flame, PenLine, BookCheck } from "lucide-react";
+import { Flame, PenLine, Target, CheckCircle2 } from "lucide-react";
 
 interface TodaysProgressProps {
   captured: number;
   reviewed: number;
   streak: number;
+  dailyTarget?: number;
+  dailyComplete?: boolean;
+}
+
+/**
+ * Progress Ring Component
+ *
+ * Circular progress indicator using SVG.
+ */
+function ProgressRing({
+  progress,
+  size = 44,
+  strokeWidth = 4,
+  color,
+  bgColor,
+}: {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+  color: string;
+  bgColor: string;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (Math.min(progress, 1) * circumference);
+
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      {/* Background circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={bgColor}
+        strokeWidth={strokeWidth}
+      />
+      {/* Progress circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        strokeLinecap="round"
+        className="transition-all duration-500 ease-out"
+      />
+    </svg>
+  );
 }
 
 export function TodaysProgress({
   captured,
   reviewed,
   streak,
+  dailyTarget = 10,
+  dailyComplete = false,
 }: TodaysProgressProps) {
+  const progress = dailyTarget > 0 ? reviewed / dailyTarget : 0;
+  const isComplete = dailyComplete || reviewed >= dailyTarget;
+
   return (
     <div
       className="relative rounded-r-xl rounded-l-none p-6 ml-5 dark:border dark:border-[rgba(200,195,184,0.08)]"
@@ -71,22 +128,36 @@ export function TodaysProgress({
           style={{ backgroundColor: "var(--border)" }}
         />
 
-        {/* Reviewed */}
+        {/* Daily Goal Progress Ring */}
         <div className="text-center">
-          <div
-            className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg"
-            style={{ backgroundColor: "var(--accent-nav-light)" }}
-          >
-            <BookCheck className="h-5 w-5" style={{ color: "var(--accent-nav)" }} />
+          <div className="mx-auto mb-2 relative flex items-center justify-center">
+            <ProgressRing
+              progress={progress}
+              color={isComplete ? "var(--state-good)" : "var(--accent-nav)"}
+              bgColor="var(--accent-nav-light)"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              {isComplete ? (
+                <CheckCircle2
+                  className="h-5 w-5"
+                  style={{ color: "var(--state-good)" }}
+                />
+              ) : (
+                <Target
+                  className="h-5 w-5"
+                  style={{ color: "var(--accent-nav)" }}
+                />
+              )}
+            </div>
           </div>
           <p
-            className="text-3xl font-bold heading-serif"
-            style={{ color: "var(--accent-nav)" }}
+            className="text-2xl font-bold heading-serif"
+            style={{ color: isComplete ? "var(--state-good)" : "var(--accent-nav)" }}
           >
-            {reviewed}
+            {reviewed}/{dailyTarget}
           </p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Reviewed
+            {isComplete ? "Goal Complete!" : "Daily Goal"}
           </p>
         </div>
 

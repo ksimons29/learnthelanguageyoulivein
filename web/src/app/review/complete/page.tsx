@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Flame, Trophy, Target, Calendar, Loader2 } from "lucide-react";
+import { Flame, Trophy, Target, Calendar, Loader2, CheckCircle2, PartyPopper } from "lucide-react";
 import { InfoButton } from "@/components/brand";
 import { useReviewStore } from "@/lib/store/review-store";
+import { useGamificationStore } from "@/lib/store/gamification-store";
 
 export default function ReviewCompletePage() {
   const router = useRouter();
   const { wordsReviewed, correctCount, dueWords, endSession, resetSession } =
     useReviewStore();
+  const { daily, streak, emitSessionCompleted, fetchState } = useGamificationStore();
 
   const [isEnding, setIsEnding] = useState(false);
   const [tomorrowDue, setTomorrowDue] = useState(0);
@@ -19,12 +21,25 @@ export default function ReviewCompletePage() {
   const accuracy =
     wordsReviewed > 0 ? Math.round((correctCount / wordsReviewed) * 100) : 0;
 
+  // Check if daily goal is complete
+  const isDailyGoalComplete = daily?.isComplete ?? false;
+
   // End the session when this page loads
   useEffect(() => {
     const endCurrentSession = async () => {
       setIsEnding(true);
       try {
         await endSession();
+
+        // Emit session completed event for gamification
+        await emitSessionCompleted({
+          wordsReviewed,
+          correctCount,
+        });
+
+        // Refresh gamification state
+        await fetchState();
+
         // Fetch tomorrow's due count
         const response = await fetch("/api/reviews");
         if (response.ok) {
@@ -195,6 +210,77 @@ export default function ReviewCompletePage() {
             </div>
           </div>
         </div>
+
+        {/* Daily Goal Status */}
+        {daily && (
+          <div
+            className="mb-6 rounded-xl p-4 relative overflow-hidden"
+            style={{
+              backgroundColor: isDailyGoalComplete ? "var(--accent-ribbon-light)" : "var(--accent-nav-light)",
+              border: `2px solid ${isDailyGoalComplete ? "var(--accent-ribbon)" : "var(--accent-nav)"}`,
+            }}
+          >
+            <div className="flex items-center gap-3">
+              {isDailyGoalComplete ? (
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "var(--accent-ribbon)" }}
+                >
+                  <CheckCircle2 className="h-5 w-5 text-white" />
+                </div>
+              ) : (
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: "var(--accent-nav)" }}
+                >
+                  <Target className="h-5 w-5 text-white" />
+                </div>
+              )}
+              <div className="flex-1">
+                <p
+                  className="text-lg font-semibold"
+                  style={{ color: "var(--text-heading)" }}
+                >
+                  {isDailyGoalComplete ? "Daily goal complete!" : `${daily.completedReviews}/${daily.targetReviews} reviews`}
+                </p>
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {isDailyGoalComplete
+                    ? streak && streak.currentStreak > 0
+                      ? `${streak.currentStreak} day streak!`
+                      : "Great work today!"
+                    : `${daily.targetReviews - daily.completedReviews} more to complete your goal`}
+                </p>
+              </div>
+              {isDailyGoalComplete && (
+                <PartyPopper
+                  className="h-6 w-6 flex-shrink-0"
+                  style={{ color: "var(--accent-ribbon)" }}
+                />
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {!isDailyGoalComplete && (
+              <div className="mt-3">
+                <div
+                  className="h-2 rounded-full overflow-hidden"
+                  style={{ backgroundColor: "rgba(12, 107, 112, 0.2)" }}
+                >
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min((daily.completedReviews / daily.targetReviews) * 100, 100)}%`,
+                      backgroundColor: "var(--accent-nav)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tomorrow Preview */}
         <div

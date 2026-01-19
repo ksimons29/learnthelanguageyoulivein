@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, PartyPopper, X } from "lucide-react";
 import {
   CaptureButton,
   ReviewDueButton,
@@ -12,6 +12,7 @@ import {
 import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
+import { useGamificationStore } from "@/lib/store/gamification-store";
 import { useOnboardingStatus } from "@/lib/hooks";
 
 export default function HomePage() {
@@ -19,6 +20,15 @@ export default function HomePage() {
   const { user, isLoading: authLoading } = useAuthStore();
   const { words, isLoading: wordsLoading, fetchWords } = useWordsStore();
   const { needsOnboarding, isLoading: onboardingLoading } = useOnboardingStatus();
+
+  // Gamification state
+  const {
+    daily,
+    streak,
+    showDailyGoalCelebration,
+    fetchState: fetchGamificationState,
+    dismissDailyGoalCelebration,
+  } = useGamificationStore();
 
   // Redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -33,6 +43,13 @@ export default function HomePage() {
       fetchWords();
     }
   }, [user, authLoading, fetchWords]);
+
+  // Fetch gamification state
+  useEffect(() => {
+    if (user && !authLoading) {
+      fetchGamificationState();
+    }
+  }, [user, authLoading, fetchGamificationState]);
 
   // TODO: Uncomment to enable auth redirect after testing
   // Redirect to sign-in if not authenticated
@@ -66,16 +83,11 @@ export default function HomePage() {
       return lastReview >= todayStart;
     });
 
-    // TODO: Implement streak calculation from review_sessions table
-    // For now, show placeholder streak
-    const streak = 0;
-
     return {
       capturedToday,
       capturedCount: capturedToday.length,
       dueCount: dueForReview.length,
       reviewedCount: reviewedToday.length,
-      streak,
     };
   }, [words]);
 
@@ -205,12 +217,114 @@ export default function HomePage() {
           <div className="page-stack-3d page-curl">
             <TodaysProgress
               captured={stats.capturedCount}
-              reviewed={stats.reviewedCount}
-              streak={stats.streak}
+              reviewed={daily?.completedReviews ?? stats.reviewedCount}
+              streak={streak?.currentStreak ?? 0}
+              dailyTarget={daily?.targetReviews ?? 10}
+              dailyComplete={daily?.isComplete ?? false}
             />
           </div>
         </section>
       </div>
+
+      {/* Daily Goal Celebration Modal */}
+      {showDailyGoalCelebration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={dismissDailyGoalCelebration}
+          />
+
+          {/* Celebration Card */}
+          <div
+            className="relative mx-4 max-w-sm w-full rounded-r-2xl rounded-l-sm p-8 text-center animate-in zoom-in-95 duration-300"
+            style={{
+              backgroundColor: "var(--surface-page)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={dismissDailyGoalCelebration}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
+            </button>
+
+            {/* Binding edge */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-4 rounded-l-sm"
+              style={{
+                background: "linear-gradient(90deg, var(--accent-ribbon) 0%, var(--accent-ribbon-hover) 100%)",
+              }}
+            />
+            <div
+              className="absolute left-1.5 top-4 bottom-4 w-0.5"
+              style={{
+                backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, rgba(255,255,255,0.4) 6px, rgba(255,255,255,0.4) 10px)",
+              }}
+            />
+
+            {/* Icon */}
+            <div
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6"
+              style={{
+                backgroundColor: "var(--accent-ribbon-light)",
+              }}
+            >
+              <PartyPopper
+                className="h-10 w-10"
+                style={{ color: "var(--accent-ribbon)" }}
+              />
+            </div>
+
+            {/* Title */}
+            <h2
+              className="text-3xl font-bold heading-serif mb-2"
+              style={{ color: "var(--text-heading)" }}
+            >
+              Done for today!
+            </h2>
+
+            {/* Message */}
+            <p
+              className="text-base mb-6"
+              style={{ color: "var(--text-muted)" }}
+            >
+              You completed your daily goal of {daily?.targetReviews ?? 10} reviews.
+              {(streak?.currentStreak ?? 0) > 1 && (
+                <span className="block mt-1 font-medium" style={{ color: "var(--accent-ribbon)" }}>
+                  {streak?.currentStreak} day streak!
+                </span>
+              )}
+            </p>
+
+            {/* Action Button */}
+            <button
+              onClick={dismissDailyGoalCelebration}
+              className="w-full py-4 text-lg font-semibold rounded-xl text-white transition-all hover:-translate-y-0.5 active:translate-y-0"
+              style={{
+                backgroundColor: "var(--accent-ribbon)",
+                boxShadow: "0 4px 12px rgba(232, 92, 74, 0.3)",
+              }}
+            >
+              Keep it up!
+            </button>
+
+            {/* Optional: Practice more link */}
+            <button
+              onClick={() => {
+                dismissDailyGoalCelebration();
+                router.push("/review");
+              }}
+              className="mt-3 text-sm font-medium transition-colors"
+              style={{ color: "var(--accent-nav)" }}
+            >
+              Practice more
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

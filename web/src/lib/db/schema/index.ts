@@ -10,3 +10,4 @@ export * from './sessions';
 export * from './sentences';
 export * from './tags';
 export * from './user-profiles';
+export * from './gamification';
