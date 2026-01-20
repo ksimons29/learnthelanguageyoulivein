@@ -32,6 +32,7 @@ npm run build             # Production build
 
 ### Not Started
 - **Stripe payments** - Post-MVP priority
+- **Speech input** - Voice capture for iOS app (post-MVP)
 
 ## Key Files
 | File | Purpose |
@@ -82,6 +83,7 @@ npm run build             # Production build
 | #36 | Category Hunt | post-mvp |
 | #37 | Real Life Mission Check-in | post-mvp |
 | #41 | More language pairs | P3-low/post-mvp |
+| - | Speech input for iOS capture | post-mvp |
 
 ---
 
