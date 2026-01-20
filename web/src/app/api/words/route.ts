@@ -123,18 +123,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Determine translation direction
-    // Default behavior: text is in target language, translate to native
-    // User captures phrases in language they're learning, gets translation in native
-    const textLang = requestSourceLang || languagePreference.targetLanguage;
-    const translationLang = requestTargetLang || languagePreference.nativeLanguage;
+    // 5. Determine translation direction using language detection
+    // Smart detection: figure out which language the user typed in
+    // Then translate TO the other language in their learning pair
+    let textLang: string;
+    let translationLang: string;
+
+    if (requestSourceLang && requestTargetLang) {
+      // Explicit languages provided - use them
+      textLang = requestSourceLang;
+      translationLang = requestTargetLang;
+    } else {
+      // Auto-detect: is the input in native or target language?
+      const possibleLanguages = [
+        languagePreference.nativeLanguage,
+        languagePreference.targetLanguage,
+      ];
+      const detectedLang = await detectLanguage(text, possibleLanguages);
+
+      if (
+        detectedLang &&
+        detectedLang.split('-')[0] ===
+          languagePreference.nativeLanguage.split('-')[0]
+      ) {
+        // Input is in NATIVE language → translate TO target language
+        // e.g., "Trainwreck" (English) → translate to Portuguese
+        textLang = languagePreference.nativeLanguage;
+        translationLang = languagePreference.targetLanguage;
+      } else {
+        // Input is in TARGET language (default) → translate TO native language
+        // e.g., "bom dia" (Portuguese) → translate to English
+        textLang = languagePreference.targetLanguage;
+        translationLang = languagePreference.nativeLanguage;
+      }
+    }
 
     // For the word record, store the language of original text and its translation
     const sourceLang = textLang;
     const targetLang = translationLang;
 
     // Determine if input text is in target language (for TTS voice selection)
-    const isTargetLanguage = textLang === languagePreference.targetLanguage;
+    const isTargetLanguage =
+      textLang.split('-')[0] ===
+      languagePreference.targetLanguage.split('-')[0];
     const language: 'source' | 'target' = isTargetLanguage ? 'target' : 'source';
 
     // 6. Auto-translate and auto-assign category in parallel
@@ -311,6 +342,59 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Detect the language of input text using OpenAI
+ *
+ * Returns a language code (e.g., 'en', 'pt', 'sv', 'nl') or null if uncertain.
+ * Used to auto-detect whether user is entering text in their native or target language.
+ */
+async function detectLanguage(
+  text: string,
+  possibleLanguages: string[]
+): Promise<string | null> {
+  const openai = getOpenAI();
+
+  // Map language codes to readable names for the prompt
+  const langNames = possibleLanguages.map((code) => {
+    const name = getTranslationName(code);
+    return `${code}: ${name}`;
+  });
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a language detection expert. Identify which language the text is written in.
+Respond with ONLY the language code from this list: ${possibleLanguages.join(', ')}
+If uncertain, respond with the most likely match.
+Language codes: ${langNames.join(', ')}`,
+      },
+      {
+        role: 'user',
+        content: text,
+      },
+    ],
+    temperature: 0,
+    max_tokens: 10,
+  });
+
+  const detected = response.choices[0].message.content?.trim().toLowerCase();
+
+  // Normalize pt-PT/pt-BR to just check the base
+  const normalizedDetected = detected?.split('-')[0];
+
+  // Find matching language from possible options
+  for (const lang of possibleLanguages) {
+    const normalizedLang = lang.split('-')[0];
+    if (normalizedLang === normalizedDetected) {
+      return lang;
+    }
+  }
+
+  return null;
 }
 
 /**
