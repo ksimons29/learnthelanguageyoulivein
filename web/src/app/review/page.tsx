@@ -26,6 +26,7 @@ import {
 } from "@/lib/sentences/exercise-type";
 import {
   prepareMultipleChoiceOptions,
+  getNativeLanguageText,
   type MultipleChoiceOption,
 } from "@/lib/review/distractors";
 import type { Word } from "@/lib/db/schema";
@@ -64,6 +65,8 @@ export default function ReviewPage() {
     sentenceTargetWords,
     fetchNextSentence,
     submitSentenceReview,
+    // Language preferences for exercise generation
+    nativeLanguage,
   } = useReviewStore();
 
   const [showMastery, setShowMastery] = useState(false);
@@ -72,6 +75,9 @@ export default function ReviewPage() {
   // Sentence exercise state
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+
+  // Word mode active recall state
+  const [wordModeAnswerCorrect, setWordModeAnswerCorrect] = useState<boolean | null>(null);
   const [multipleChoiceOptions, setMultipleChoiceOptions] = useState<
     MultipleChoiceOption[]
   >([]);
@@ -93,11 +99,12 @@ export default function ReviewPage() {
       : null;
 
   // Load distractors for multiple choice
+  // IMPORTANT: nativeLanguage ensures all options are in the user's native language
   const loadDistractors = useCallback(async (targetWord: Word) => {
     setIsLoadingDistractors(true);
     try {
       const { options, correctOptionId: correctId } =
-        await prepareMultipleChoiceOptions(targetWord);
+        await prepareMultipleChoiceOptions(targetWord, nativeLanguage);
       setMultipleChoiceOptions(options);
       setCorrectOptionId(correctId);
     } catch (err) {
@@ -106,7 +113,7 @@ export default function ReviewPage() {
     } finally {
       setIsLoadingDistractors(false);
     }
-  }, []);
+  }, [nativeLanguage]);
 
   // Setup offline auto-sync on mount
   useEffect(() => {
@@ -161,12 +168,15 @@ export default function ReviewPage() {
     };
   }, [stop]);
 
-  // Reset sentence state when moving to next item
-  const resetSentenceState = () => {
+  // Reset exercise state when moving to next item
+  const resetExerciseState = () => {
+    // Sentence mode state
     setIsAnswerCorrect(null);
     setSelectedOptionId(null);
     setMultipleChoiceOptions([]);
     setCorrectOptionId("");
+    // Word mode state
+    setWordModeAnswerCorrect(null);
   };
 
   const handleClose = () => {
@@ -178,9 +188,14 @@ export default function ReviewPage() {
     setReviewState("revealed");
   };
 
-  // Handle fill-in-the-blank answer submission
+  // Handle fill-in-the-blank answer submission (sentence mode)
   const handleFillBlankSubmit = (userAnswer: string, isCorrect: boolean) => {
     setIsAnswerCorrect(isCorrect);
+  };
+
+  // Handle word mode active recall submission
+  const handleWordModeRecallSubmit = (userAnswer: string, isCorrect: boolean) => {
+    setWordModeAnswerCorrect(isCorrect);
   };
 
   // Handle multiple choice selection
@@ -261,7 +276,7 @@ export default function ReviewPage() {
   };
 
   const handleContinue = async () => {
-    resetSentenceState();
+    resetExerciseState();
 
     // Try to get next sentence
     const hasSentence = await fetchNextSentence();
@@ -725,24 +740,35 @@ export default function ReviewPage() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          {reviewState === "recall" && (
+          {/* Active Recall Input */}
+          {reviewState === "recall" && wordModeAnswerCorrect === null && currentWord && (
+            <FillBlankInput
+              correctAnswer={getNativeLanguageText(currentWord, nativeLanguage)}
+              onSubmit={handleWordModeRecallSubmit}
+              autoFocus={true}
+            />
+          )}
+
+          {/* Answer Feedback for word mode */}
+          {reviewState === "recall" && wordModeAnswerCorrect !== null && (
+            <AnswerFeedback
+              isCorrect={wordModeAnswerCorrect}
+              correctAnswer={getNativeLanguageText(currentWord, nativeLanguage)}
+            />
+          )}
+
+          {/* Proceed to grading button (after answering) */}
+          {reviewState === "recall" && wordModeAnswerCorrect !== null && (
             <button
               onClick={handleReveal}
-              className="w-full py-6 text-lg font-semibold rounded-lg text-white transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
-              style={{ backgroundColor: "var(--accent-ribbon)" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  "var(--accent-ribbon-hover)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--accent-ribbon)";
-              }}
+              className="w-full py-3 mt-2 text-base font-semibold rounded-lg text-white transition-all hover:shadow-md"
+              style={{ backgroundColor: "var(--accent-nav)" }}
             >
-              Reveal
+              Rate Your Recall
             </button>
           )}
 
+          {/* Grading buttons */}
           {reviewState === "revealed" && (
             <GradingButtons onGrade={handleGrade} disabled={isLoading} />
           )}

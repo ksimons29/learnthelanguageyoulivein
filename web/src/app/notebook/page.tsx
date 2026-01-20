@@ -101,9 +101,13 @@ export default function NotebookPage() {
       {/* Elastic band */}
       <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
-      <div className="mx-auto max-w-md px-5 py-6">
-        {/* Info Button - top right */}
-        <div className="flex justify-end mb-4">
+      {/* Safe area inset for iOS notch */}
+      <div
+        className="mx-auto max-w-md px-5 pb-6"
+        style={{ paddingTop: "max(24px, env(safe-area-inset-top, 24px))" }}
+      >
+        {/* Info Button - top right, with additional notch clearance */}
+        <div className="flex justify-end mb-4 pt-1">
           <InfoButton />
         </div>
 

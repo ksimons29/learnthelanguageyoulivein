@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Critical Review System Fixes** - 6 major bugs: due count, sentence priority, language consistency, active recall, session limits, UI polish (Session 45)
 - [x] **Language Auto-Detection + B2 Level** - Smart language detection, idiom handling, B2-level sentences (Session 43)
 - [x] **E2E Bug Fixes** - Fixed sentence generation language bug, added /capture auth protection (Session 42)
 - [x] **Pre-Launch Review** - Added notebook word search, "Words That Connect" science section, updated starter words messaging, D4-D6 test cases (Session 41)
@@ -88,6 +89,92 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 45 - 2026-01-20 - Critical Review System Bug Fixes
+
+**Focus**: Fix 6 critical issues with the review system discovered during manual testing. Test-driven approach with verification after each fix.
+
+#### Issues Fixed
+
+**Bug #1: Due Today Count Unrealistic (700+ words)**
+- **Files**: `api/words/stats/route.ts`, `api/progress/route.ts`
+- **Root Cause**: Due calculation included ALL words where `retrievability < 0.9 OR nextReviewDate <= now`. For bulk-imported words, every unreviewed word counted as "due."
+- **Fix**: Separate "new cards" (never reviewed) from "review cards" (reviewed, now due). Cap new cards at 15/day.
+- **Formula**: `dueToday = MIN(newCards, DAILY_NEW_CARDS_LIMIT) + reviewDue`
+- **Result**: 912 words → shows ~39 due (15 new + 24 reviews) instead of 724
+
+**Bug #2: Sentence Mode Never Triggers**
+- **File**: `api/sentences/next/route.ts`
+- **Root Cause**: `allWordsDue` check blocked sentences when ANY word was already reviewed individually
+- **Fix**: Removed `allWordsDue` requirement. Any unused sentence is now returned regardless of individual word due status
+- **Result**: Sentences now show as primary learning mode as designed
+
+**Bug #3: Mixed Languages in Multiple Choice**
+- **Files**: `lib/review/distractors.ts`, `api/reviews/route.ts`, `lib/store/review-store.ts`, `app/review/page.tsx`
+- **Root Cause**: `buildMultipleChoiceOptions()` didn't account for bidirectional word capture direction
+- **Fix**: Added `getNativeLanguageText()` helper that checks `sourceLang`/`targetLang` to return text in user's native language
+- **Result**: All multiple choice options now consistently in same language
+
+**Bug #4: Recall Mode Missing Active Input**
+- **File**: `app/review/page.tsx`
+- **Root Cause**: Word mode only had "Reveal" button - passive recognition instead of active recall
+- **Fix**: Added `FillBlankInput` for word mode. User must type answer before rating
+- **Result**: True active recall experience matching sentence mode
+
+**Bug #5: Session Never Completes with 700+ Words**
+- **File**: `api/reviews/route.ts`
+- **Root Cause**: With 700+ due words, user never reaches `currentIndex >= dueWords.length - 1`
+- **Fix**: Added `MAX_SESSION_WORDS = 25` limit following FSRS scientific principles (20-30 items per session optimal)
+- **Result**: Session completes at 25 words, showing completion page
+
+**Bug #6: UI Polish**
+- **File**: `app/notebook/page.tsx`
+- **Fix**: Added iOS safe-area-inset-top padding using `style={{ paddingTop: "max(24px, env(safe-area-inset-top, 24px))" }}`
+- **Verified**: "On Track" logic (journal-header.tsx) acceptable with new due calculation
+- **Verified**: Word translation visible in detail sheet (word-detail-sheet.tsx:156)
+
+#### Testing Documentation Added
+
+**New sections in TESTING.md**:
+- Section 6E-2: FSRS & Due Calculation Verification
+  - E6: Due count sanity check
+  - E7: Session word limit
+  - E8: Multiple choice language consistency
+  - E9: Session completion triggers
+  - E10: Sentence mode priority
+- Section 6E-3: Word Detail & Display Tests
+  - E11: Word detail shows translation
+  - E12: Word detail shows context
+
+#### Files Modified Summary
+
+| File | Change |
+|------|--------|
+| `api/words/stats/route.ts` | Added DAILY_NEW_CARDS_LIMIT, separated new/review cards |
+| `api/progress/route.ts` | Added DAILY_NEW_CARDS_LIMIT, reviewDue calculation |
+| `api/reviews/route.ts` | Added MAX_SESSION_WORDS=25, return language preferences |
+| `api/sentences/next/route.ts` | Removed allWordsDue blocking check |
+| `lib/review/distractors.ts` | Added getNativeLanguageText(), updated buildMultipleChoiceOptions() |
+| `lib/store/review-store.ts` | Added nativeLanguage/targetLanguage to store |
+| `app/review/page.tsx` | Added active recall input, use nativeLanguage for distractors |
+| `app/notebook/page.tsx` | Added iOS safe-area padding |
+| `src/__tests__/lib/distractors.test.ts` | Added bidirectional capture test |
+| `docs/engineering/TESTING.md` | Added sections 6E-2, 6E-3 with tests E6-E12 |
+
+#### Key Design Decisions
+
+1. **FSRS Scientific Principles**: 15 new cards/day + 25 max session words follows Anki/FSRS research for optimal retention
+2. **Sentence Priority**: Sentences are primary learning mode; word mode is fallback only
+3. **Language Normalization**: Multiple choice always in native language for consistent testing
+4. **Active Recall**: Type-to-reveal enforces retrieval practice vs passive recognition
+
+#### Testing
+
+- `npm run build` ✅ Passed
+- `npm run test:run` ✅ 66 tests passed
+- Each fix verified via Playwright MCP before proceeding to next
+
+---
 
 ### Session 44 - 2026-01-20 - Translation & Audio Fixes
 

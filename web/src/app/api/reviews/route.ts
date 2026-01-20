@@ -12,6 +12,16 @@ import { eq, and, desc, lte, or, isNull, sql } from 'drizzle-orm';
 const SESSION_BOUNDARY_HOURS = 2;
 
 /**
+ * Maximum words per review session
+ *
+ * Following FSRS scientific principles:
+ * - Users should review 20-30 items per session for optimal retention
+ * - Sessions longer than ~25 items lead to diminishing returns
+ * - This ensures users see the "Session Complete" screen regularly
+ */
+const MAX_SESSION_WORDS = 25;
+
+/**
  * GET /api/reviews
  *
  * Get words due for review and create/resume a session.
@@ -39,8 +49,10 @@ export async function GET(request: NextRequest) {
     const languagePreference = await getUserLanguagePreference(user.id);
 
     // 3. Parse query parameters
+    // Default limit enforces session size for healthy learning habits
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const requestedLimit = parseInt(searchParams.get('limit') || String(MAX_SESSION_WORDS));
+    const limit = Math.min(requestedLimit, MAX_SESSION_WORDS); // Cap at maximum
 
     // 4. Get or create review session
     const sessionId = await getOrCreateSession(user.id);
@@ -92,6 +104,9 @@ export async function GET(request: NextRequest) {
         sessionId,
         words: limitedWords,
         totalDue: dueWords.length,
+        // Include language preferences for client-side exercise generation
+        nativeLanguage: languagePreference.nativeLanguage,
+        targetLanguage: languagePreference.targetLanguage,
       },
     });
   } catch (error) {

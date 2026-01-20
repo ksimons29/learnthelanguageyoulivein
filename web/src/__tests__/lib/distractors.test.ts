@@ -20,6 +20,10 @@ function createMockWord(overrides: Partial<Word> = {}): Word {
     translation: 'test translation',
     language: 'target',
     audioUrl: null,
+    // Language codes for bidirectional support
+    sourceLang: 'pt-PT',  // Default: PT word
+    targetLang: 'en',     // Translation in English
+    translationProvider: 'openai-gpt4o-mini',
     category: 'food_dining',
     categoryConfidence: 0.9,
     difficulty: 0.3,
@@ -32,6 +36,10 @@ function createMockWord(overrides: Partial<Word> = {}): Word {
     consecutiveCorrectSessions: 0,
     lastCorrectSessionId: null,
     masteryStatus: 'learning',
+    locationHint: null,
+    timeOfDay: null,
+    situationTags: null,
+    personalNote: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -79,31 +87,38 @@ describe('shuffleArray', () => {
 })
 
 describe('buildMultipleChoiceOptions', () => {
+  // All tests use 'en' as native language (user knows English, learning Portuguese)
+  const nativeLanguage = 'en'
+
   it('includes correct word as an option', () => {
     const correctWord = createMockWord({
       id: 'correct-id',
-      translation: 'apple',
+      originalText: 'maçã',     // Portuguese word
+      translation: 'apple',     // English meaning
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
     })
     const distractors = [
-      createMockWord({ id: 'dist-1', translation: 'orange' }),
-      createMockWord({ id: 'dist-2', translation: 'banana' }),
+      createMockWord({ id: 'dist-1', originalText: 'laranja', translation: 'orange', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ id: 'dist-2', originalText: 'banana', translation: 'banana', sourceLang: 'pt-PT', targetLang: 'en' }),
     ]
 
-    const options = buildMultipleChoiceOptions(correctWord, distractors)
+    const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage)
 
     expect(options.some((o) => o.id === 'correct-id')).toBe(true)
+    // Should show English (native language) text
     expect(options.some((o) => o.text === 'apple')).toBe(true)
   })
 
   it('includes all distractors', () => {
-    const correctWord = createMockWord({ translation: 'apple' })
+    const correctWord = createMockWord({ originalText: 'maçã', translation: 'apple', sourceLang: 'pt-PT', targetLang: 'en' })
     const distractors = [
-      createMockWord({ id: 'dist-1', translation: 'orange' }),
-      createMockWord({ id: 'dist-2', translation: 'banana' }),
-      createMockWord({ id: 'dist-3', translation: 'grape' }),
+      createMockWord({ id: 'dist-1', originalText: 'laranja', translation: 'orange', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ id: 'dist-2', originalText: 'banana', translation: 'banana', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ id: 'dist-3', originalText: 'uva', translation: 'grape', sourceLang: 'pt-PT', targetLang: 'en' }),
     ]
 
-    const options = buildMultipleChoiceOptions(correctWord, distractors)
+    const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage)
 
     expect(options).toHaveLength(4) // 1 correct + 3 distractors
     expect(options.some((o) => o.text === 'orange')).toBe(true)
@@ -112,8 +127,8 @@ describe('buildMultipleChoiceOptions', () => {
   })
 
   it('returns options with correct structure', () => {
-    const correctWord = createMockWord({ id: 'test-id', translation: 'test' })
-    const options = buildMultipleChoiceOptions(correctWord, [])
+    const correctWord = createMockWord({ id: 'test-id', translation: 'test', sourceLang: 'pt-PT', targetLang: 'en' })
+    const options = buildMultipleChoiceOptions(correctWord, [], nativeLanguage)
 
     expect(options).toHaveLength(1)
     expect(options[0]).toHaveProperty('id')
@@ -121,10 +136,45 @@ describe('buildMultipleChoiceOptions', () => {
   })
 
   it('works with empty distractors array', () => {
-    const correctWord = createMockWord({ translation: 'apple' })
-    const options = buildMultipleChoiceOptions(correctWord, [])
+    const correctWord = createMockWord({ originalText: 'maçã', translation: 'apple', sourceLang: 'pt-PT', targetLang: 'en' })
+    const options = buildMultipleChoiceOptions(correctWord, [], nativeLanguage)
 
     expect(options).toHaveLength(1)
     expect(options[0].text).toBe('apple')
+  })
+
+  it('normalizes bidirectional captures to native language', () => {
+    // User captured an English word (native→target direction)
+    const wordCapturedInEnglish = createMockWord({
+      id: 'en-word',
+      originalText: 'timeless',  // English (native) word
+      translation: 'intemporal', // Portuguese translation
+      sourceLang: 'en',          // Source is English
+      targetLang: 'pt-PT',       // Target is Portuguese
+    })
+
+    // User captured a Portuguese word (target→native direction)
+    const wordCapturedInPortuguese = createMockWord({
+      id: 'pt-word',
+      originalText: 'folgar',    // Portuguese word
+      translation: 'to relax',   // English translation
+      sourceLang: 'pt-PT',       // Source is Portuguese
+      targetLang: 'en',          // Target is English
+    })
+
+    const options = buildMultipleChoiceOptions(
+      wordCapturedInEnglish,
+      [wordCapturedInPortuguese],
+      nativeLanguage
+    )
+
+    // Both options should be in English (native language)
+    // wordCapturedInEnglish: sourceLang='en' matches native, so use originalText='timeless'
+    // wordCapturedInPortuguese: targetLang='en' matches native, so use translation='to relax'
+    expect(options.some((o) => o.text === 'timeless')).toBe(true)
+    expect(options.some((o) => o.text === 'to relax')).toBe(true)
+    // Should NOT show Portuguese text
+    expect(options.some((o) => o.text === 'intemporal')).toBe(false)
+    expect(options.some((o) => o.text === 'folgar')).toBe(false)
   })
 })

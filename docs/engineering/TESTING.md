@@ -984,6 +984,150 @@ Expected
 
 ---
 
+## 6E-2. FSRS & Due Calculation Verification (CRITICAL)
+
+These tests verify the spaced repetition algorithm shows realistic due counts.
+
+### E6 Due count sanity check
+
+The "Due Today" count must be realistic for healthy learning (not showing 700+ words).
+
+Steps
+
+1. Create a fresh test user
+2. Add 50 words via capture or starter words
+3. Check Due Today count on notebook page
+4. Check Due Today on progress page
+
+Expected
+
+* Due Today shows MAX 15-20 for a fresh account (new card limit)
+* NOT showing hundreds of words due
+* New cards and review cards should be separated in the calculation
+
+Verification SQL
+
+```sql
+-- New cards (never reviewed)
+SELECT COUNT(*) as new_cards
+FROM words
+WHERE user_id = 'YOUR-USER-ID' AND review_count = 0;
+
+-- Review cards due (reviewed before, now due)
+SELECT COUNT(*) as review_due
+FROM words
+WHERE user_id = 'YOUR-USER-ID'
+  AND review_count > 0
+  AND next_review_date <= NOW();
+
+-- Due Today should be: MIN(new_cards, 15) + review_due
+```
+
+### E7 Session word limit
+
+Steps
+
+1. Ensure user has 50+ words due
+2. Start review session
+3. Complete 25 words
+
+Expected
+
+* Session completes at 25 (or configured limit)
+* "Session Complete" page appears
+* User can start new session if more due
+* Stats on completion page are correct
+
+### E8 Multiple choice language consistency
+
+Steps
+
+1. Sign in as Portuguese learner
+2. Capture words in BOTH directions:
+   * Portuguese word "folgar" → English translation
+   * English word "timeless" → Portuguese translation
+3. Start review in sentence mode
+4. For "Choose correct meaning" exercise, check all options
+
+Expected
+
+* ALL options in the same language (user's native language)
+* NO mixing Portuguese sentences with English words as options
+* Correct answer is the meaning of the highlighted word in native language
+
+Failure signature
+
+* Options show mix of "A feira de emprego..." (Portuguese) and "Timeless" (English)
+
+### E9 Session completion triggers
+
+Steps
+
+1. Start review
+2. Complete reviews until one of:
+   a. Session limit reached (25 words)
+   b. Daily goal reached (10 reviews)
+   c. All session words reviewed
+
+Expected for each trigger
+
+* Complete page appears
+* Stats show correctly
+* Can start new session
+
+### E10 Sentence mode priority
+
+Steps
+
+1. Ensure user has pre-generated sentences
+2. Start review
+
+Expected
+
+* Sentence mode shown first if sentences available
+* Falls back to word mode only when no sentences
+* Sentence combines 2-4 words per the app design
+
+Verification SQL
+
+```sql
+SELECT COUNT(*) as unused_sentences
+FROM generated_sentences
+WHERE user_id = 'YOUR-USER-ID' AND used_at IS NULL;
+```
+
+---
+
+## 6E-3. Word Detail & Display Tests
+
+### E11 Word detail shows translation
+
+Steps
+
+1. Go to notebook
+2. Tap any word to open detail sheet
+3. Check the SheetDescription area below the word
+
+Expected
+
+* Word shows in large text (e.g., "folgar")
+* Translation shows below (e.g., "to relax / take time off")
+* Both are clearly visible, not hidden
+
+### E12 Word detail shows both word AND context
+
+Steps
+
+1. Open word detail for a word that has memory context
+
+Expected
+
+* Word and translation visible at top
+* Memory context section shows if context exists
+* Personal note, location hint, situation tags displayed
+
+---
+
 ## 6F. Gamification full coverage
 
 ### F1 Daily goal increments correctly

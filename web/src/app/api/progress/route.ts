@@ -5,6 +5,16 @@ import { words, reviewSessions, streakState } from '@/lib/db/schema';
 import { eq, sql, and, gte, lte, desc, or } from 'drizzle-orm';
 
 /**
+ * Daily new card limit for spaced repetition
+ *
+ * Following FSRS scientific principles:
+ * - Users should see 15-20 new cards per day MAX to prevent burnout
+ * - Review cards (already in learning cycle) are unlimited
+ * - This prevents overwhelming users with 700+ "due" cards from bulk imports
+ */
+const DAILY_NEW_CARDS_LIMIT = 15;
+
+/**
  * GET /api/progress
  *
  * Returns comprehensive progress statistics for the dashboard.
@@ -93,6 +103,11 @@ export async function GET() {
     ] = await Promise.all([
       // 1. Combined aggregated stats in a single query
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
+      //
+      // Due Today Calculation (FSRS scientific principles):
+      // - newCardsCount: Words never reviewed (reviewCount = 0)
+      // - reviewDue: Words in learning cycle with nextReviewDate <= now
+      // - dueToday: MIN(newCardsCount, DAILY_NEW_CARDS_LIMIT) + reviewDue
       db
         .select({
           totalWords: sql<number>`count(*)::int`,
@@ -105,6 +120,8 @@ export async function GET() {
           needPractice: sql<number>`count(*) filter (where ${words.retrievability} < 0.9)::int`,
           strugglingWords: sql<number>`count(*) filter (where ${words.lapseCount} >= 3)::int`,
           newCardsCount: sql<number>`count(*) filter (where ${words.reviewCount} = 0)::int`,
+          // Review due: reviewed at least once AND nextReviewDate <= now
+          reviewDue: sql<number>`count(*) filter (where ${words.reviewCount} > 0 and ${words.nextReviewDate} <= now())::int`,
         })
         .from(words)
         .where(
@@ -250,6 +267,7 @@ export async function GET() {
       needPractice: 0,
       strugglingWords: 0,
       newCardsCount: 0,
+      reviewDue: 0,
     };
 
     const totalWords = stats.totalWords;
@@ -262,6 +280,7 @@ export async function GET() {
     const needPractice = stats.needPractice;
     const strugglingWords = stats.strugglingWords;
     const newCardsCount = stats.newCardsCount;
+    const reviewDue = stats.reviewDue;
 
     // Calculate words to focus on
     const wordsToFocusOn = Math.min(needPractice + strugglingWords, totalWords);
@@ -283,7 +302,11 @@ export async function GET() {
 
     // Build forecast from pre-fetched data
     const forecast = buildForecast(forecastData, today);
-    const dueToday = forecast[0]?.count ?? 0;
+
+    // Calculate dueToday with capped new cards (FSRS scientific principles)
+    // This prevents showing 700+ "due" for bulk imports
+    const cappedNewCards = Math.min(newCardsCount, DAILY_NEW_CARDS_LIMIT);
+    const dueToday = cappedNewCards + reviewDue;
 
     return NextResponse.json({
       data: {
@@ -309,6 +332,7 @@ export async function GET() {
 
         // Learning Indicators (Anki-style)
         dueToday,
+        reviewDue,  // Words in learning cycle due now (for UI breakdown)
         needPractice,
         strugglingWords,
 

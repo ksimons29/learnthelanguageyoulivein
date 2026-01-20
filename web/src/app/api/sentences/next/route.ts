@@ -8,7 +8,17 @@ import { eq, and, isNull, inArray, or } from 'drizzle-orm';
  * GET /api/sentences/next
  *
  * Get the next sentence for review.
- * Prioritizes sentences where all words are currently due.
+ *
+ * IMPORTANT: We return any UNUSED sentence, regardless of whether all words
+ * are "due". This is intentional because:
+ *
+ * 1. Sentences are the PRIMARY learning mode - they provide context
+ * 2. The old "allWordsDue" check caused a cascade bug:
+ *    - If word A was reviewed individually, it wasn't "due" anymore
+ *    - This blocked ALL sentences containing word A
+ *    - With 900 words, this quickly orphaned ALL sentences
+ * 3. Reviewing a sentence reviews ALL its words together anyway
+ * 4. Word mode is the fallback when no sentences are available
  *
  * Query params:
  * - sessionId: Current review session ID (optional)
@@ -30,7 +40,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
-    // 4. Find unused sentences
+    // 4. Find unused sentences (just get one - first available)
     const now = new Date();
 
     const unusedSentences = await db
@@ -42,9 +52,9 @@ export async function GET(request: NextRequest) {
           isNull(generatedSentences.usedAt)
         )
       )
-      .limit(10); // Get a few to find one with all words due
+      .limit(5); // Get a few in case some have missing words
 
-    // 5. For each sentence, check if all words are currently due
+    // 5. Try each sentence until we find one with all words intact
     for (const sentence of unusedSentences) {
       // Get the words for this sentence (filtered by target language)
       // Match words where the user's target language appears as either sourceLang or targetLang
@@ -63,54 +73,43 @@ export async function GET(request: NextRequest) {
         );
 
       // Verify we found all words (data integrity check)
+      // Skip sentences with missing words (user may have deleted them)
       if (sentenceWords.length !== sentence.wordIds.length) {
         console.warn(
-          `Sentence ${sentence.id} has missing words. Expected ${sentence.wordIds.length}, found ${sentenceWords.length}`
+          `Sentence ${sentence.id} has missing words. Expected ${sentence.wordIds.length}, found ${sentenceWords.length}. Skipping.`
         );
         continue;
       }
 
-      // Check if all words are due (nextReviewDate <= now OR never reviewed)
-      const allWordsDue = sentenceWords.every((w) => {
-        if (!w.lastReviewDate) return true; // Never reviewed = due
-        if (!w.nextReviewDate) return true; // No next date = due
-        return w.nextReviewDate <= now;
-      });
+      // Found a valid sentence with all words! Mark as used and return.
+      // NOTE: We no longer check if words are "due" - see docstring above.
+      await db
+        .update(generatedSentences)
+        .set({
+          usedAt: now,
+          sessionId: sessionId || null,
+        })
+        .where(eq(generatedSentences.id, sentence.id));
 
-      if (allWordsDue) {
-        // 5. Mark sentence as used
-        await db
-          .update(generatedSentences)
-          .set({
+      return NextResponse.json({
+        data: {
+          sentence: {
+            ...sentence,
             usedAt: now,
-            sessionId: sessionId || null,
-          })
-          .where(eq(generatedSentences.id, sentence.id));
-
-        // 6. Return the sentence with its target words
-        return NextResponse.json({
-          data: {
-            sentence: {
-              ...sentence,
-              usedAt: now,
-            },
-            targetWords: sentenceWords,
           },
-        });
-      }
+          targetWords: sentenceWords,
+        },
+      });
     }
 
-    // 7. No sentence available with all words due
-    // Check if there are any unused sentences at all
-    const totalUnused = unusedSentences.length;
-
+    // 6. No valid sentence found
     return NextResponse.json({
       data: {
         sentence: null,
         targetWords: [],
         message:
-          totalUnused > 0
-            ? `${totalUnused} sentences pre-generated but words not yet due.`
+          unusedSentences.length > 0
+            ? 'Pre-generated sentences exist but their words may have been deleted.'
             : 'No pre-generated sentences available. Generate more with POST /api/sentences/generate.',
       },
     });

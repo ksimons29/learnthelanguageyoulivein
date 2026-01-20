@@ -25,6 +25,10 @@ interface ReviewStoreState {
   lastNextReviewText: string | null;
   lastMasteryAchieved: boolean;
 
+  // Language Preferences (for exercise generation)
+  nativeLanguage: string;
+  targetLanguage: string;
+
   // Sentence Review State
   reviewMode: ReviewMode;
   currentSentence: GeneratedSentence | null;
@@ -70,6 +74,10 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   lastNextReviewText: null,
   lastMasteryAchieved: false,
 
+  // Language Preferences (defaults, will be set by startSession)
+  nativeLanguage: 'en',
+  targetLanguage: 'pt-PT',
+
   // Sentence Review State
   reviewMode: 'word',
   currentSentence: null,
@@ -101,6 +109,7 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
       lastRating: null,
       lastNextReviewText: null,
       lastMasteryAchieved: false,
+      // Keep language preferences - they don't change between sessions
       reviewMode: 'word',
       currentSentence: null,
       sentenceTargetWords: [],
@@ -125,6 +134,9 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
         totalDue: data.totalDue,
         currentIndex: 0,
         reviewState: 'recall',
+        // Store language preferences for exercise generation
+        nativeLanguage: data.nativeLanguage || 'en',
+        targetLanguage: data.targetLanguage || 'pt-PT',
         isLoading: false,
       });
     } catch (error) {
