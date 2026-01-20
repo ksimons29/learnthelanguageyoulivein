@@ -1108,4 +1108,41 @@ The `BrandWidget` component (`/web/src/components/brand/brand-widget.tsx`) displ
 
 ---
 
+## Date & Time Formatting Conventions
+
+Consistent date formatting across the app for clarity and internationalization.
+
+### Weekday Labels
+
+| Context | Format | Example | Code |
+|---------|--------|---------|------|
+| Charts/Forecasts | Short weekday | "Wed" | `{ weekday: "short" }` |
+| Review feedback | Full weekday | "Wednesday" | `{ weekday: "long" }` |
+| Today indicator | Literal | "Today" | Hardcoded string |
+
+**Important:** Never use "Tmrw" or "Tomorrow" as labels—always show actual weekday names for consistency.
+
+### Date Labels
+
+| Context | Format | Example | Code |
+|---------|--------|---------|------|
+| Historical dates | Month + day | "Jan 20" | `{ month: "short", day: "numeric" }` |
+| Full dates (detail sheets) | Month + day + year | "Jan 20, 2026" | `{ month: "short", day: "numeric", year: "numeric" }` |
+| Relative time (recent) | Relative | "2d ago" | Custom function |
+
+### Implementation
+
+```typescript
+// Short weekday for charts
+date.toLocaleDateString("en-US", { weekday: "short" });
+
+// Full weekday for messages
+date.toLocaleDateString("en-US", { weekday: "long" });
+
+// Historical date
+date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+```
+
+---
+
 *End of implementation guide*

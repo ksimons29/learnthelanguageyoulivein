@@ -19,9 +19,8 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
   // Format date to show day name (Mon, Tue, etc.)
   const formatDay = (dateStr: string, index: number) => {
     if (index === 0) return "Today";
-    if (index === 1) return "Tmrw";
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 3);
+    return date.toLocaleDateString("en-US", { weekday: "short" });
   };
 
   // Calculate total for the week

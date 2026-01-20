@@ -95,6 +95,7 @@ export const useFsrs = () => { }
 - **Ribbon Rule:** Coral appears as ONE prominent element per screen
 - **Binding Rule:** Cards rounded on right, square on left
 - **Classes:** `.notebook-bg`, `.binding-edge-stitched`, `.ribbon-bookmark`
+- **Dates:** Charts use short weekdays ("Wed"), feedback uses full ("Wednesday"), never "Tmrw"
 
 See `/docs/design/design-system.md` for full reference.
 

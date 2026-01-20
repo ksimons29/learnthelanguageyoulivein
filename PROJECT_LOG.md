@@ -78,27 +78,32 @@ npm run build             # Production build
 
 ## Session Log
 
-### Session 33 - 2026-01-20 - Science Page
+### Session 33 - 2026-01-20 - Science Page + Forecast Chart Fix
 
-**Focus**: Add educational page explaining the research-backed science behind LLYLI's effectiveness
+**Focus**: Add educational Science page, fix forecast chart weekday labels, crisp up copy
 
 **Changes Made**
 | Change | Details |
 |--------|---------|
-| Created `/science` page | New page with Moleskine design explaining forgetting curves, FSRS algorithm, and learning science |
-| Added Science link to InfoButton | "The Science Behind LLYLI" button in About sheet navigates to /science page |
+| Created `/science` page | Moleskine design explaining FSRS algorithm and learning science |
+| Added Science link | "The Science Behind LLYLI" button in InfoButton sheet |
+| Fixed forecast chart | Changed "Tmrw" to actual weekday names (Wed, Thu, etc.) |
+| Made Science copy crisper | Shortened paragraphs, punchier bullet points |
+| Documented date conventions | Added date formatting rules to design system and CLAUDE.md |
 
 **Files Changed**
 | File | Change |
 |------|--------|
 | `web/src/app/science/page.tsx` | **NEW** - Science explanation page with 4 sections |
-| `web/src/components/brand/info-button.tsx` | Added FlaskConical icon, handleScienceClick, and Science button |
+| `web/src/components/brand/info-button.tsx` | Added FlaskConical icon and Science button |
+| `web/src/components/progress/forecast-chart.tsx` | Fixed formatDay to use actual weekday names |
+| `docs/design/design-system.md` | Added Date & Time Formatting Conventions section |
+| `.claude/CLAUDE.md` | Added Dates rule to Design System section |
 
-**Content Sections**
-1. Your Brain Has a Forgetting Curve - Explains Ebbinghaus's research and optimal review timing
-2. Modern Algorithms, Not 1980s Math - FSRS algorithm explanation (Difficulty, Stability, Retrievability)
-3. Less Grinding, More Living - Short sessions, clear goals, 10-word rule, instant feedback
-4. Your Phrases, Your Memory - Context-dependent memory, personal relevance, native audio
+**Date Formatting Convention**
+- Charts: `{ weekday: "short" }` → "Wed"
+- Feedback: `{ weekday: "long" }` → "Wednesday"
+- Never use "Tmrw" or "Tomorrow" as labels
 
 ---
 
