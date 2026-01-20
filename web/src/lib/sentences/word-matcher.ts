@@ -49,6 +49,25 @@ export async function getDueWordsGroupedByCategory(
   const now = new Date();
   const lookaheadDate = new Date(now.getTime() + lookaheadDays * 24 * 60 * 60 * 1000);
 
+  // DEBUG: Log query parameters
+  console.log(`[DEBUG word-matcher] Query params: userId=${userId}, targetLanguage="${targetLanguage}", lookaheadDate=${lookaheadDate.toISOString()}`);
+
+  // First, get ALL user words to see what's in the database
+  const allUserWords = await db
+    .select()
+    .from(words)
+    .where(eq(words.userId, userId))
+    .limit(5);
+
+  console.log(`[DEBUG word-matcher] All user words sample (${allUserWords.length}):`,
+    allUserWords.map(w => ({
+      id: w.id.substring(0, 8),
+      text: w.originalText,
+      src: w.sourceLang,
+      tgt: w.targetLang,
+      nextReview: w.nextReviewDate?.toISOString()
+    })));
+
   // Query user words with nextReviewDate within lookahead window
   // Filter by target language (either sourceLang or targetLang must match)
   const dueWords = await db
@@ -66,8 +85,7 @@ export async function getDueWordsGroupedByCategory(
     );
 
   // DEBUG: Log what words were found
-  console.log(`[DEBUG word-matcher] Found ${dueWords.length} due words for targetLanguage="${targetLanguage}". Sample:`,
-    dueWords.slice(0, 3).map(w => ({ id: w.id, text: w.originalText, src: w.sourceLang, tgt: w.targetLang })));
+  console.log(`[DEBUG word-matcher] Found ${dueWords.length} due words after all filters`);
 
   // Group by category in memory (more flexible than SQL GROUP BY)
   const categoryGroups = new Map<string, Word[]>();
