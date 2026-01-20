@@ -457,6 +457,51 @@ Expected
 * No leakage of another user data
 * No misleading success states while signed out
 
+### A5 Auth redirect for unauthenticated users (CRITICAL)
+
+This test verifies that unauthenticated users cannot access protected pages.
+
+Steps
+
+1. Open a fresh incognito/private browser window (no existing session)
+2. Navigate directly to the production URL: `https://web-eta-gold.vercel.app/`
+3. Wait 2-3 seconds for any client-side redirects
+
+Expected
+
+* URL changes from `/` to `/auth/sign-in`
+* Sign-in page displays with "Welcome Back" heading
+* No flash of homepage content before redirect
+
+Additional protected route tests
+
+4. Navigate directly to `https://web-eta-gold.vercel.app/capture`
+5. Navigate directly to `https://web-eta-gold.vercel.app/review`
+6. Navigate directly to `https://web-eta-gold.vercel.app/notebook`
+7. Navigate directly to `https://web-eta-gold.vercel.app/progress`
+
+Expected for each
+
+* Redirects to `/auth/sign-in`
+* No homepage or protected content visible
+
+Verification with curl
+
+```bash
+curl -sI "https://web-eta-gold.vercel.app/" | grep -E "(HTTP|location|x-vercel)"
+```
+
+Expected headers
+
+* `Cache-Control: no-store, must-revalidate` (prevents edge caching)
+* Either 302/307 redirect to `/auth/sign-in` OR 200 with client-side redirect
+
+Known implementation details
+
+* Server-side redirect handled by Next.js middleware (`web/src/lib/supabase/middleware.ts`)
+* Client-side fallback redirect in `web/src/app/page.tsx` useEffect
+* Cache-Control headers prevent Vercel edge from caching protected pages
+
 ---
 
 ## 6B. Onboarding full coverage
