@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Global Feedback Button** - Coral ribbon-style feedback button visible on all main pages, removed from info menu (Session 38)
 - [x] **User Feedback Form** - In-app feedback form with bug reports, feature requests, and general feedback accessible via About sheet (Session 35)
 - [x] **Personal Memory Journal** - Memory context feature lets users add WHERE/WHEN context to captures, with display in notebook and review (Session 34)
 - [x] **Science Page** - Added `/science` page explaining LLYLI's research-backed approach, accessible via InfoButton sheet (Session 33)
@@ -83,6 +84,39 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 38 - 2026-01-20 - Global Feedback Button + OAuth Setup Docs
+
+**Focus**: Add visible feedback button to all pages, document OAuth setup for future implementation
+
+**UI Changes**
+| Component | Change |
+|-----------|--------|
+| `FeedbackButton` | New coral ribbon-style button on left side of screen |
+| `layout.tsx` | Added `<FeedbackButton />` globally alongside FAB and BottomNav |
+| `info-button.tsx` | Removed duplicate feedback button from LLYLI info menu |
+
+**Design Decisions**
+- Button positioned on left side (mirrors FAB on right) for visual balance
+- Uses coral (`--accent-ribbon`) ribbon style consistent with Moleskine aesthetic
+- Expands slightly on hover, shows "Feedback" text on larger screens
+- Hidden on auth/onboarding/review-session pages (same as other nav elements)
+
+**Documentation Added**
+| File | Purpose |
+|------|---------|
+| `docs/engineering/AUTH_SETUP.md` | Complete guide for Google/Apple OAuth + iOS Capacitor setup |
+
+**GitHub Issues Created**
+| Issue | Title |
+|-------|-------|
+| #53 | Enable Google Sign-In |
+| #54 | Enable Apple Sign-In (requires $99/yr Apple Developer) |
+| #55 | Fix email confirmation / disable for MVP |
+
+**Note**: Email confirmation disabled in Supabase dashboard (SMTP delivery bug). OAuth code ready but needs Supabase provider configuration.
+
+---
 
 ### Session 37 - 2026-01-20 - Auth Fix + Documentation Cleanup + E2E Testing
 

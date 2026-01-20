@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
-import { BottomNav, FloatingActionButton } from "@/components/navigation";
+import { BottomNav, FloatingActionButton, FeedbackButton } from "@/components/navigation";
 import { AuthProvider, ThemeProvider } from "@/components/providers";
 import { OfflineIndicator } from "@/components/ui";
 
@@ -67,6 +67,7 @@ export default function RootLayout({
 
             {/* Navigation */}
             <FloatingActionButton />
+            <FeedbackButton />
             <BottomNav />
           </AuthProvider>
         </ThemeProvider>
