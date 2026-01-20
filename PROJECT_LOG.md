@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **UX Review Bug Fixes** - Duplicate MC options, untranslatable words, PROJECT_LOG archiving (Session 48)
 - [x] **Critical Review System Fixes** - 6 major bugs: due count, sentence priority, language consistency, active recall, session limits, UI polish (Session 45)
 - [x] **Language Auto-Detection + B2 Level** - Smart language detection, idiom handling, B2-level sentences (Session 43)
 - [x] **E2E Bug Fixes** - Fixed sentence generation language bug, added /capture auth protection (Session 42)
@@ -73,6 +74,7 @@ npm run build             # Production build
 ## Open Feature Issues
 | Issue | Feature | Priority |
 |-------|---------|----------|
+| #57 | Audio generation timeout (~15% failure rate) | P2-normal |
 | #51 | Review page misleading for unauth users | P2-normal |
 | #44 | Progress API 500 error | P1-high |
 | #23 | iOS App Store submission | P1-high |
@@ -91,6 +93,59 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 48 - 2026-01-20 - UX Review Bug Fixes & PROJECT_LOG Archiving
+
+**Focus**: Fix 3 critical bugs from comprehensive UX review, create GitHub issue for audio timeout, archive PROJECT_LOG.
+
+#### Bug Fixes
+
+**1. Duplicate Multiple Choice Options** (`web/src/lib/review/distractors.ts`)
+- **Problem**: Same translation text could appear as multiple buttons (e.g., two "good morning" options)
+- **Root Cause**: `buildMultipleChoiceOptions()` didn't deduplicate by text value
+- **Fix**: Added `seenTexts` Set to track normalized text values; skip distractors with duplicate text
+- **Result**: Correct answer always appears; no duplicate buttons
+
+**2. Missing Translation Options**
+- **Problem**: Correct answer sometimes not visible in multiple choice
+- **Root Cause**: Same as Bug #1 - if correct answer's text matched a distractor, confusion
+- **Fix**: Same fix - correct answer added first, duplicates filtered from distractors
+
+**3. Untranslatable Word Handling** (`web/src/app/api/words/route.ts`)
+- **Problem**: Words like "gezellig" showed identical original and translation
+- **Root Cause**: GPT returning original word unchanged; fallback swap also failing
+- **Fix**: Added final check (6c) - if translation still equals original after both attempts, append "(Dutch expression)" or equivalent
+- **Verified**: New "gezellig" capture → "cozy togetherness" (GPT now follows CRITICAL instruction)
+
+#### GitHub Issue Created
+
+**#57 - Audio generation timeout (~15% failure rate)**
+- P2-normal priority
+- Word capture works, audio is nice-to-have with retry option
+- Deferred to post-MVP audio improvements
+
+#### PROJECT_LOG Archiving
+
+- Reduced from 1,561 → 408 lines (under 500 limit)
+- Archived sessions 15-41 to PROJECT_LOG_ARCHIVE.md
+- Added archiving rule: keep only 10 most recent sessions
+
+#### Files Modified
+
+| File | Change |
+|------|--------|
+| `web/src/lib/review/distractors.ts` | Text deduplication in buildMultipleChoiceOptions, fetch more distractors |
+| `web/src/app/api/words/route.ts` | Final fallback for untranslatable words |
+| `PROJECT_LOG.md` | Trimmed + added archiving rule |
+| `PROJECT_LOG_ARCHIVE.md` | Compressed entries for sessions 15-41 |
+
+#### Testing
+
+- `npm run build` ✅ Passed
+- `npm run test:run` ✅ 66 tests passed
+- E2E via Playwright: Verified "gezellig" → "cozy togetherness", "uitwaaien" → "to get some fresh air"
+
+---
 
 ### Session 47 - 2026-01-20 - Dark Mode Fixes & Full E2E Testing
 
