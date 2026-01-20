@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Vercel Deployment Fix** - Root Directory config fixed, no more duplicate/failing deployments (Session 31)
 - [x] **Language Filtering + E2E Testing** - Fixed OR logic for word queries, added English to target languages, verified all 3 test users (Session 30)
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 - [x] **Auth Bug Fix + Starter Words** - Email confirmation UI, improved sign-in errors, 10 starter words per language (Session 28)
@@ -74,6 +75,51 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 31 - 2026-01-20 - Vercel Deployment Fix + Sentence Generation Verification
+
+**Focus**: Fix failing Vercel deployments causing repeated error emails
+
+**Root Cause Analysis**
+| Problem | Root Cause | Fix |
+|---------|------------|-----|
+| Duplicate deployments per push | GitHub integration + CLI both triggered | Dashboard config fixed |
+| GitHub deploy always failed | Root Directory not set, built from `/` instead of `/web` | Set Root Directory = `web` |
+| "Can't find pages/app directory" | Next.js app in subdirectory, Vercel looking at repo root | Root Directory setting |
+
+**Investigation Steps**
+1. `vercel list` showed Error/Ready pairs for same commits
+2. `vercel inspect --logs` revealed: "Cloning github.com/..." (GitHub) vs "Downloading files" (CLI)
+3. Failed builds showed: `Error: Couldn't find any 'pages' or 'app' directory`
+4. Successful builds showed: `Running "npm run build"` in correct directory
+
+**Fix Applied**
+| Setting | Location | Value |
+|---------|----------|-------|
+| Root Directory | Vercel Dashboard → Project Settings → General | `web` |
+
+**Verification**
+| Before | After |
+|--------|-------|
+| 2 deployments per push (1 Error, 1 Ready) | 1 deployment per push (Ready) |
+| GitHub deploy → Error (7-9s) | GitHub deploy → Ready (41s) |
+| CLI deploy → Ready (redundant) | N/A |
+
+**Sentence Generation Testing**
+| Metric | Result |
+|--------|--------|
+| Avg generation time | ~5 seconds (includes GPT + TTS + upload + DB) |
+| User-facing latency | Instant (background fire-and-forget) |
+| Sentences appearing in review | ✅ Verified - "A conta, por favor, e um café também" |
+
+**Files Changed**
+| File | Change |
+|------|--------|
+| `.gitignore` | Added `.vercel` to prevent accidental commits |
+
+**Transcript Reference**: `docs/reference/VibecodeLisboatranscripts.md` documents same Root Directory issue (lines 878-880)
+
+---
 
 ### Session 30 - 2026-01-20 - Language Filtering Fix + Testing Infrastructure
 
