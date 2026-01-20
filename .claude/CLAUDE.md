@@ -12,7 +12,7 @@ npm run db:push           # Push schema changes (dev only)
 
 ## Deployment
 
-- **Production URL:** https://web-eta-gold.vercel.app
+- **Production URL:** https://llyli.vercel.app
 - **Hosting:** Vercel (auto-deploys on push to `main`)
 - **Database:** Supabase PostgreSQL (same instance for dev/prod)
 
@@ -110,7 +110,7 @@ npm run test:run       # Must pass - unit tests
 ```
 
 **For UI/API changes, also run E2E via Playwright MCP:**
-1. `browser_navigate` to https://web-eta-gold.vercel.app
+1. `browser_navigate` to https://llyli.vercel.app
 2. Sign in with test account: `test-en-pt@llyli.test` / `TestPassword123!`
 3. Test the changed feature
 4. `browser_snapshot` to verify

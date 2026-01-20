@@ -11,7 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
-- [x] **Language Auto-Detection** - Capture now detects input language, translates English→Portuguese correctly (Session 43)
+- [x] **Language Auto-Detection + B2 Level** - Smart language detection, idiom handling, B2-level sentences (Session 43)
 - [x] **E2E Bug Fixes** - Fixed sentence generation language bug, added /capture auth protection (Session 42)
 - [x] **Pre-Launch Review** - Added notebook word search, "Words That Connect" science section, updated starter words messaging, D4-D6 test cases (Session 41)
 - [x] **Launch Plan Implementation** - Fixed 4 bugs, transformed notebook into personal journal, added audio timeout/retry, input validation (Session 40)
@@ -87,13 +87,13 @@ npm run build             # Production build
 
 ## Session Log
 
-### Session 43 - 2026-01-20 - Language Auto-Detection for Capture
+### Session 43 - 2026-01-20 - Language Auto-Detection + Translation Quality
 
-**Focus**: Add smart language detection so users can capture words in either their native or target language.
+**Focus**: Add smart language detection and improve translation quality with idiom handling and B2 level targeting.
 
-#### Feature Added
+#### Features Added
 
-**Language Auto-Detection** (`web/src/app/api/words/route.ts`)
+**1. Language Auto-Detection** (`web/src/app/api/words/route.ts`)
 - Added `detectLanguage()` function using OpenAI GPT-4o-mini
 - Detects whether input text is in user's native or target language
 - Automatically adjusts translation direction:
@@ -101,17 +101,35 @@ npm run build             # Production build
   - Portuguese input → translate TO English (existing behavior)
 - Works for all supported language pairs (EN→PT, EN→SV, NL→EN)
 
-#### Example
-- Before: "Trainwreck" → "Trainwreck" (assumed Portuguese, didn't translate)
-- After: "butterfly" → "borboleta" (detected English, translated to Portuguese)
+**2. Improved Translation Prompts** (`web/src/app/api/words/route.ts`)
+- Core guidelines for handling idioms, slang, and colloquialisms
+- Find equivalent expressions rather than literal translations
+- Language-specific rules for each target language:
+  - **PT-PT**: European Portuguese only, "tu" forms, European vocab
+  - **SV**: Standard Swedish (rikssvenska), natural phrasing
+  - **EN**: Natural conversational English, Dutch idiom equivalents
+  - **NL**: Standard Dutch, natural word order
+- Examples: "piece of cake" → "canja" (PT), "lätt som en plätt" (SV)
+
+**3. B2 Level Sentence Generation** (`web/src/lib/sentences/generator.ts`)
+- Target B2 (Upper Intermediate) CEFR level
+- Sentences are challenging but comprehensible
+- Include idiomatic expressions and natural phrasing
+- Avoid overly simple (A1-A2) or complex (C1-C2) constructions
+- Language-specific rules for PT-PT, SV, EN
+
+#### Examples
+- "Trainwreck" → "desastre" (detected as English, found Portuguese equivalent)
+- "butterfly" → "borboleta" (detected as English, translated to Portuguese)
 
 #### Files Modified
-- `web/src/app/api/words/route.ts` - Added `detectLanguage()` function and smart translation direction
+- `web/src/app/api/words/route.ts` - Language detection + translation prompts
+- `web/src/lib/sentences/generator.ts` - B2 level + language rules
 
 #### Testing
 - `npm run build` ✓
 - `npm run test:run` ✓ (65 tests)
-- E2E: Captured "butterfly" → correctly translated to "borboleta"
+- E2E: Verified "trainwreck" → "desastre", "butterfly" → "borboleta"
 
 ---
 
@@ -305,7 +323,7 @@ git push origin main  # Triggers Vercel auto-deploy
 | Word Detail | ✅ | Expandable with stats, audio, review date |
 | Review Page | ✅ | Session working, 9 due words |
 
-**Production URL**: https://web-eta-gold.vercel.app
+**Production URL**: https://llyli.vercel.app
 
 ---
 

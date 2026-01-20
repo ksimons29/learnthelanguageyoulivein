@@ -40,7 +40,7 @@ B. Local production build
 
 C. Production
 
-* URL: [https://web-eta-gold.vercel.app](https://web-eta-gold.vercel.app)
+* URL: [https://llyli.vercel.app](https://llyli.vercel.app)
 
 Rule
 
@@ -464,7 +464,7 @@ This test verifies that unauthenticated users cannot access protected pages.
 Steps
 
 1. Open a fresh incognito/private browser window (no existing session)
-2. Navigate directly to the production URL: `https://web-eta-gold.vercel.app/`
+2. Navigate directly to the production URL: `https://llyli.vercel.app/`
 3. Wait 2-3 seconds for any client-side redirects
 
 Expected
@@ -475,10 +475,10 @@ Expected
 
 Additional protected route tests
 
-4. Navigate directly to `https://web-eta-gold.vercel.app/capture`
-5. Navigate directly to `https://web-eta-gold.vercel.app/review`
-6. Navigate directly to `https://web-eta-gold.vercel.app/notebook`
-7. Navigate directly to `https://web-eta-gold.vercel.app/progress`
+4. Navigate directly to `https://llyli.vercel.app/capture`
+5. Navigate directly to `https://llyli.vercel.app/review`
+6. Navigate directly to `https://llyli.vercel.app/notebook`
+7. Navigate directly to `https://llyli.vercel.app/progress`
 
 Expected for each
 
@@ -488,7 +488,7 @@ Expected for each
 Verification with curl
 
 ```bash
-curl -sI "https://web-eta-gold.vercel.app/" | grep -E "(HTTP|location|x-vercel)"
+curl -sI "https://llyli.vercel.app/" | grep -E "(HTTP|location|x-vercel)"
 ```
 
 Expected headers

@@ -34,13 +34,13 @@ Due to SMTP delivery issues with Supabase's built-in email service, disable emai
 5. Configure OAuth consent screen if prompted:
    - App name: "LLYLI"
    - User support email: your email
-   - Authorized domains: `supabase.co`, `web-eta-gold.vercel.app`
+   - Authorized domains: `supabase.co`, `llyli.vercel.app`
 6. Create OAuth client ID:
    - Application type: **Web application**
    - Name: "LLYLI Web"
    - Authorized JavaScript origins:
      ```
-     https://web-eta-gold.vercel.app
+     https://llyli.vercel.app
      http://localhost:3000
      ```
    - Authorized redirect URIs:

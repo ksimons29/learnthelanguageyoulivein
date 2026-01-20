@@ -2,7 +2,7 @@
 
 A vocabulary app for language learners living abroad. Capture words from your daily life, get instant translations with native audio, and remember them forever with spaced repetition.
 
-**Live:** https://web-eta-gold.vercel.app
+**Live:** https://llyli.vercel.app
 
 ## Quick Start
 
