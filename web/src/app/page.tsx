@@ -56,13 +56,12 @@ export default function HomePage() {
     }
   }, [user, authLoading, fetchGamificationState]);
 
-  // TODO: Uncomment to enable auth redirect after testing
-  // Redirect to sign-in if not authenticated
-  // useEffect(() => {
-  //   if (!authLoading && !user) {
-  //     router.push("/auth/sign-in");
-  //   }
-  // }, [user, authLoading, router]);
+  // Redirect to sign-in if not authenticated (client-side fallback)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth/sign-in");
+    }
+  }, [user, authLoading, router]);
 
   // Compute stats from words
   const stats = useMemo(() => {
@@ -136,11 +135,10 @@ export default function HomePage() {
     );
   }
 
-  // TODO: Uncomment to hide page when not authenticated
   // Don't render if not authenticated (will redirect)
-  // if (!user) {
-  //   return null;
-  // }
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen notebook-bg relative">

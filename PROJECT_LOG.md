@@ -94,7 +94,8 @@ npm run build             # Production build
 **Code Changes**
 | File | Change |
 |------|--------|
-| `web/src/lib/supabase/middleware.ts` | Enabled `protectedPaths` array for route protection |
+| `web/src/lib/supabase/middleware.ts` | Enabled `protectedPaths` array + cache control headers to prevent edge caching |
+| `web/src/app/page.tsx` | Enabled client-side auth redirect (was commented out during dev) |
 | `web/scripts/generate-presentation.ts` | Fixed TypeScript literal type error (`as const`) |
 
 **Documentation Cleanup**

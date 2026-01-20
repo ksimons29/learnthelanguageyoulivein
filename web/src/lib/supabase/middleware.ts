@@ -49,22 +49,19 @@ export async function updateSession(request: NextRequest) {
     error,
   } = await supabase.auth.getUser();
 
-  // Debug logging for auth redirect
-  console.log('[Middleware]', {
-    pathname: request.nextUrl.pathname,
-    hasUser: !!user,
-    userId: user?.id?.slice(0, 8),
-    error: error?.message,
-  });
-
   // Protected routes - redirect to sign-in if not authenticated
   const protectedPaths = ['/', '/capture', '/review', '/notebook', '/progress'];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
   );
 
+  // Add cache control headers for protected routes to prevent edge caching
+  if (isProtectedPath) {
+    supabaseResponse.headers.set('Cache-Control', 'no-store, must-revalidate');
+    supabaseResponse.headers.set('x-middleware-cache', 'no-cache');
+  }
+
   if (!user && isProtectedPath) {
-    console.log('[Middleware] Redirecting unauthenticated user to sign-in');
     const url = request.nextUrl.clone();
     url.pathname = '/auth/sign-in';
     return NextResponse.redirect(url);
