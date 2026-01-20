@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Language Auto-Detection** - Capture now detects input language, translates English→Portuguese correctly (Session 43)
 - [x] **E2E Bug Fixes** - Fixed sentence generation language bug, added /capture auth protection (Session 42)
 - [x] **Pre-Launch Review** - Added notebook word search, "Words That Connect" science section, updated starter words messaging, D4-D6 test cases (Session 41)
 - [x] **Launch Plan Implementation** - Fixed 4 bugs, transformed notebook into personal journal, added audio timeout/retry, input validation (Session 40)
@@ -85,6 +86,34 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 43 - 2026-01-20 - Language Auto-Detection for Capture
+
+**Focus**: Add smart language detection so users can capture words in either their native or target language.
+
+#### Feature Added
+
+**Language Auto-Detection** (`web/src/app/api/words/route.ts`)
+- Added `detectLanguage()` function using OpenAI GPT-4o-mini
+- Detects whether input text is in user's native or target language
+- Automatically adjusts translation direction:
+  - English input → translate TO Portuguese (for EN→PT learners)
+  - Portuguese input → translate TO English (existing behavior)
+- Works for all supported language pairs (EN→PT, EN→SV, NL→EN)
+
+#### Example
+- Before: "Trainwreck" → "Trainwreck" (assumed Portuguese, didn't translate)
+- After: "butterfly" → "borboleta" (detected English, translated to Portuguese)
+
+#### Files Modified
+- `web/src/app/api/words/route.ts` - Added `detectLanguage()` function and smart translation direction
+
+#### Testing
+- `npm run build` ✓
+- `npm run test:run` ✓ (65 tests)
+- E2E: Captured "butterfly" → correctly translated to "borboleta"
+
+---
 
 ### Session 42 - 2026-01-20 - E2E Bug Fixes: Auth Protection + Sentence Generation
 
