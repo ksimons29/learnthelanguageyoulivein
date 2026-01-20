@@ -89,6 +89,35 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 44 - 2026-01-20 - Translation & Audio Fixes
+
+**Focus**: Fix translation failures and ensure audio is always in target language.
+
+#### Bug Fixes
+
+**1. Login Error Message** (`web/src/app/auth/sign-in/page.tsx`)
+- Removed misleading "check your email to confirm" text
+- Now shows clearer "check your credentials" message
+
+**2. Translation Fallback** (`web/src/app/api/words/route.ts`)
+- Added safety check: if translation equals original text, retry with swapped languages
+- Fixes cases where language detection fails (e.g., "Trainwreck" detected as Portuguese)
+- Prevents identical original/translation entries in database
+
+**3. Audio Always in Target Language** (`web/src/app/api/words/route.ts`)
+- Audio now ALWAYS generated in the language being learned
+- If user enters native language text → audio is the translation
+- If user enters target language text → audio is the original
+- Examples:
+  - en→pt-PT: "trainwreck" → audio is Portuguese "desastre"
+  - nl→en: "hallo" → audio is English "hello"
+
+#### Files Modified
+- `web/src/app/auth/sign-in/page.tsx` - Error message clarity
+- `web/src/app/api/words/route.ts` - Translation fallback + audio language fix
+
+---
+
 ### Session 43 - 2026-01-20 - Language Auto-Detection + Translation Quality
 
 **Focus**: Add smart language detection and improve translation quality with idiom handling and B2 level targeting.
