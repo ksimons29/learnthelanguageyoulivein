@@ -43,7 +43,7 @@ export default function SignInPage() {
         // Improve error message for common cases
         if (signInError.message === 'Invalid login credentials') {
           setError(
-            'Invalid email or password. If you just signed up, please check your email and confirm your account first.'
+            'Invalid email or password. Please check your credentials and try again.'
           );
         } else {
           setError(signInError.message);
