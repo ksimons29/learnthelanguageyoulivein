@@ -20,6 +20,11 @@ import { eq, and, isNull, inArray, or } from 'drizzle-orm';
  * 3. Reviewing a sentence reviews ALL its words together anyway
  * 4. Word mode is the fallback when no sentences are available
  *
+ * GUARDRAIL: Self-healing orphaned sentences
+ * If a sentence references words that no longer exist (user deleted them),
+ * we automatically delete the orphaned sentence. This prevents stale data
+ * from accumulating and ensures the system self-heals over time.
+ *
  * Query params:
  * - sessionId: Current review session ID (optional)
  *
@@ -55,10 +60,10 @@ export async function GET(request: NextRequest) {
       .limit(5); // Get a few in case some have missing words
 
     // 5. Try each sentence until we find one with all words intact
-    for (const sentence of unusedSentences) {
-      // DEBUG: Log sentence details
-      console.log(`[DEBUG] Checking sentence ${sentence.id}, wordIds: ${JSON.stringify(sentence.wordIds)}, targetLanguage: ${languagePreference.targetLanguage}`);
+    // Track orphaned sentences for cleanup (self-healing guardrail)
+    const orphanedSentenceIds: string[] = [];
 
+    for (const sentence of unusedSentences) {
       // Get the words for this sentence (filtered by target language)
       // Match words where the user's target language appears as either sourceLang or targetLang
       const sentenceWords = await db
@@ -75,15 +80,13 @@ export async function GET(request: NextRequest) {
           )
         );
 
-      // DEBUG: Log what was found
-      console.log(`[DEBUG] Found ${sentenceWords.length} words for sentence. Words:`, sentenceWords.map(w => ({ id: w.id, text: w.originalText, src: w.sourceLang, tgt: w.targetLang })));
-
       // Verify we found all words (data integrity check)
-      // Skip sentences with missing words (user may have deleted them)
+      // GUARDRAIL: Auto-delete orphaned sentences (words were deleted)
       if (sentenceWords.length !== sentence.wordIds.length) {
         console.warn(
-          `Sentence ${sentence.id} has missing words. Expected ${sentence.wordIds.length}, found ${sentenceWords.length}. Skipping.`
+          `[GUARDRAIL] Sentence ${sentence.id} has missing words. Expected ${sentence.wordIds.length}, found ${sentenceWords.length}. Marking for deletion.`
         );
+        orphanedSentenceIds.push(sentence.id);
         continue;
       }
 
@@ -108,15 +111,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 6. No valid sentence found
+    // 6. GUARDRAIL: Clean up any orphaned sentences we found
+    if (orphanedSentenceIds.length > 0) {
+      console.log(`[GUARDRAIL] Auto-deleting ${orphanedSentenceIds.length} orphaned sentences`);
+      await db
+        .delete(generatedSentences)
+        .where(inArray(generatedSentences.id, orphanedSentenceIds));
+    }
+
+    // 7. No valid sentence found
     return NextResponse.json({
       data: {
         sentence: null,
         targetWords: [],
-        message:
-          unusedSentences.length > 0
-            ? 'Pre-generated sentences exist but their words may have been deleted.'
-            : 'No pre-generated sentences available. Generate more with POST /api/sentences/generate.',
+        orphanedSentencesDeleted: orphanedSentenceIds.length > 0 ? orphanedSentenceIds.length : undefined,
+        message: 'No pre-generated sentences available. Generate more with POST /api/sentences/generate.',
       },
     });
   } catch (error) {
