@@ -239,7 +239,15 @@ export async function POST(request: NextRequest) {
     });
 
     // 10. Fire-and-forget audio generation in background
-    generateAudioInBackground(user.id, newWord.id, text, sourceLang).catch(
+    // IMPORTANT: Audio should ALWAYS be in the target language (the language being learned)
+    // If user entered text in target language → use original text
+    // If user entered text in native language → use translation (which is in target language)
+    const isInputInTargetLanguage =
+      sourceLang.split('-')[0] === languagePreference.targetLanguage.split('-')[0];
+    const audioText = isInputInTargetLanguage ? text : translation;
+    const audioLang = languagePreference.targetLanguage;
+
+    generateAudioInBackground(user.id, newWord.id, audioText, audioLang).catch(
       (err) => console.error('Background audio generation failed:', err)
     );
 
