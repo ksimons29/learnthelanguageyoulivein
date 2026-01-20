@@ -100,7 +100,7 @@ See `/docs/design/design-system.md` for full reference.
 
 ## Testing (MANDATORY)
 
-**After EVERY feature change, run these checks:**
+**⚠️ CRITICAL: After EVERY code change (feature, bug fix, or refactor), run:**
 
 ```bash
 cd web
@@ -114,6 +114,15 @@ npm run test:run       # Must pass - unit tests
 3. Test the changed feature
 4. `browser_snapshot` to verify
 
+**Integration test scripts (run when changing related systems):**
+```bash
+cd web
+npx tsx scripts/test-database.js      # Database/schema changes
+npx tsx scripts/test-supabase.js      # Auth changes
+npx tsx scripts/test-openai.js        # Translation/TTS changes
+npx tsx scripts/test-comprehensive.ts # Major features
+```
+
 **Test Accounts (pre-confirmed, ready to use):**
 | Email | Password | Languages |
 |-------|----------|-----------|
@@ -123,7 +132,7 @@ npm run test:run       # Must pass - unit tests
 
 **Reset test users:** `npx tsx scripts/create-test-users.ts`
 
-See `/docs/engineering/TESTING.md` for full E2E scenarios and database queries.
+**📖 Full testing guide:** `/docs/engineering/TESTING.md` - Contains E2E scenarios, database queries, all test user types, and release readiness checklist.
 
 ## Session Workflow
 

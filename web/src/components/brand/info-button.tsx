@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { BookOpen, Sparkles, Brain, Volume2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BookOpen, Sparkles, Brain, Volume2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/lib/store/auth-store";
 import {
   Sheet,
   SheetContent,
@@ -26,10 +28,26 @@ interface InfoButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
  */
 function InfoButton({ className, ...props }: InfoButtonProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
+  const router = useRouter();
+  const signOut = useAuthStore((state) => state.signOut);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setIsOpen(true);
     props.onClick?.(e);
+  };
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      setIsOpen(false);
+      router.push("/auth/sign-in");
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -128,6 +146,22 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
               </div>
             ))}
           </div>
+
+          {/* Sign Out Button */}
+          <button
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="w-full py-3 mb-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+            style={{
+              backgroundColor: "var(--surface-page-aged)",
+              color: "var(--text-muted)",
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              {isSigningOut ? "Signing out..." : "Sign Out"}
+            </span>
+          </button>
 
           {/* Footer */}
           <div

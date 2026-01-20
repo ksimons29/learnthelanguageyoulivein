@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { words, reviewSessions } from '@/lib/db/schema';
+import { words, reviewSessions, streakState } from '@/lib/db/schema';
 import { eq, sql, and, gte, lte, desc, or } from 'drizzle-orm';
 
 /**
@@ -83,6 +83,7 @@ export async function GET() {
     const [
       aggregatedStats,
       reviewStats,
+      storedStreak,
       streakData,
       forecastData,
       activityHeatmap,
@@ -125,7 +126,13 @@ export async function GET() {
         .from(reviewSessions)
         .where(eq(reviewSessions.userId, user.id)),
 
-      // 3. Streak calculation data
+      // 3. Stored streak state (from gamification system - single source of truth)
+      db
+        .select()
+        .from(streakState)
+        .where(eq(streakState.userId, user.id)),
+
+      // 4. Streak calculation data (fallback for longest streak calculation)
       db
         .select({
           date: sql<string>`date(${reviewSessions.endedAt})`,
@@ -140,7 +147,7 @@ export async function GET() {
         .groupBy(sql`date(${reviewSessions.endedAt})`)
         .orderBy(desc(sql`date(${reviewSessions.endedAt})`)),
 
-      // 4. Forecast data in a single query with date grouping
+      // 5. Forecast data in a single query with date grouping
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select({
@@ -160,7 +167,7 @@ export async function GET() {
         )
         .groupBy(sql`date(${words.nextReviewDate})`),
 
-      // 5. Activity heatmap
+      // 6. Activity heatmap
       db
         .select({
           date: sql<string>`date(${reviewSessions.endedAt})`,
@@ -176,7 +183,7 @@ export async function GET() {
         .groupBy(sql`date(${reviewSessions.endedAt})`)
         .orderBy(sql`date(${reviewSessions.endedAt})`),
 
-      // 6. Ready to use words
+      // 7. Ready to use words
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select()
@@ -194,7 +201,7 @@ export async function GET() {
         .orderBy(desc(words.updatedAt))
         .limit(10),
 
-      // 7. Struggling words list
+      // 8. Struggling words list
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select()
@@ -212,7 +219,7 @@ export async function GET() {
         .orderBy(desc(words.lapseCount))
         .limit(10),
 
-      // 8. New cards list
+      // 9. New cards list
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select()
@@ -266,8 +273,13 @@ export async function GET() {
       ? Math.round((correctReviews / totalReviews) * 100)
       : 0;
 
-    // Calculate streak from pre-fetched data
-    const { currentStreak, longestStreak } = calculateStreakFromDates(streakData, today);
+    // Use stored streak from gamification system (single source of truth)
+    // Fall back to calculated streak if no stored streak exists
+    const storedStreakData = storedStreak[0];
+    const calculatedStreak = calculateStreakFromDates(streakData, today);
+
+    const currentStreak = storedStreakData?.currentStreak ?? calculatedStreak.currentStreak;
+    const longestStreak = storedStreakData?.longestStreak ?? calculatedStreak.longestStreak;
 
     // Build forecast from pre-fetched data
     const forecast = buildForecast(forecastData, today);

@@ -76,6 +76,47 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 32 - 2026-01-20 - Testing Documentation Consolidation + E2E Verification
+
+**Focus**: Consolidate testing docs into single source of truth, ensure CLAUDE.md references testing requirements clearly
+
+**Changes Made**
+| Change | Details |
+|--------|---------|
+| Consolidated testing docs | Merged useful content from `web/TESTING_GUIDE.md`, `web/QUICK_TEST.md`, `TESTING_READY.md` into `/docs/engineering/TESTING.md` |
+| Deleted redundant files | Removed 3 outdated testing files (TESTING_GUIDE.md, QUICK_TEST.md, TESTING_READY.md) |
+| Updated CLAUDE.md | Added emphasis on testing after EVERY code change, added integration test scripts section |
+| Updated TESTING.md | Added section 4.3 for integration test scripts (test-database.js, test-supabase.js, test-openai.js, test-comprehensive.ts) |
+| Fixed Bingo labels | Changed cryptic labels like "MC" to "Pick" / "Multiple choice", "Fill" to "Fill in the blank" |
+
+**E2E Test Results** (Playwright MCP on production)
+| Test | User | Result |
+|------|------|--------|
+| Auth - Sign in | test-en-pt@llyli.test | ✅ Pass |
+| Auth - Sign in | test-en-sv@llyli.test | ✅ Pass |
+| Capture - Portuguese | "muito obrigado" → "thank you very much" | ✅ Pass |
+| Capture - Swedish | "tack så mycket" → "thank you very much" | ✅ Pass |
+| Review - Sentence exercise | Multiple choice with 2 words | ✅ Pass |
+| Review - Single word | Reveal + FSRS rating | ✅ Pass |
+| Notebook | Categories load correctly | ✅ Pass |
+| Progress | Stats display correctly | ✅ Pass |
+| **Gamification - Daily Goal** | Shows 3/10, increments with reviews | ✅ Pass |
+| **Gamification - Daily Bingo** | 3x3 grid, 2/9 completed, squares display | ✅ Pass (labels fixed) |
+| **Gamification - Streak** | Shows 0 Day Streak | ✅ Pass |
+| Build | `npm run build` | ✅ Pass |
+| Unit tests | 65/65 tests pass | ✅ Pass |
+
+**Gamification Issues Found & Fixed**
+- Bingo square labels were confusing ("MC", "Fill" / "Fill") - fixed with clearer labels
+
+**Files Changed**
+- `docs/engineering/TESTING.md` - Added integration test scripts section
+- `.claude/CLAUDE.md` - Enhanced testing section with CRITICAL emphasis
+- `web/src/components/gamification/bingo-board.tsx` - Clearer bingo square labels
+- Deleted: `web/TESTING_GUIDE.md`, `web/QUICK_TEST.md`, `TESTING_READY.md`
+
+---
+
 ### Session 31 - 2026-01-20 - Vercel Deployment Fix + Sentence Generation Verification
 
 **Focus**: Fix failing Vercel deployments causing repeated error emails

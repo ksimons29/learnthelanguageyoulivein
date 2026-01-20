@@ -222,9 +222,11 @@ Notes
 
 ## 4. Mandatory checks after every code change
 
+**CRITICAL: Run these after EVERY build, bug fix, or new feature.**
+
 Run these before any manual QA.
 
-### 4.1 Build
+### 4.1 Build (ALWAYS RUN)
 
 ```bash
 cd web && npm run build
@@ -234,7 +236,7 @@ Expected
 
 * Passes with no TypeScript errors
 
-### 4.2 Unit tests
+### 4.2 Unit tests (ALWAYS RUN)
 
 ```bash
 cd web && npm run test:run
@@ -244,7 +246,31 @@ Expected
 
 * All tests pass
 
-### 4.3 Quick database health check
+### 4.3 Integration test scripts (run when changing related systems)
+
+```bash
+cd web
+
+# Database connection and schema validation
+npx tsx scripts/test-database.js
+
+# Supabase auth connection
+npx tsx scripts/test-supabase.js
+
+# OpenAI translation and TTS
+npx tsx scripts/test-openai.js
+
+# Comprehensive integration test
+npx tsx scripts/test-comprehensive.ts
+```
+
+Run the relevant script when making changes to:
+* Database schema or queries → `test-database.js`
+* Authentication flow → `test-supabase.js`
+* Translation, categorization, or audio → `test-openai.js`
+* Any major feature → `test-comprehensive.ts`
+
+### 4.4 Quick database health check
 
 Supabase SQL
 

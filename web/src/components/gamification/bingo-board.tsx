@@ -22,14 +22,14 @@ interface BingoBoardProps {
 // Square labels and icons for display
 const SQUARE_LABELS: Record<BingoSquareId, { short: string; full: string }> = {
   review5: { short: "5", full: "Review 5 words" },
-  streak3: { short: "3x", full: "3 correct in a row" },
-  fillBlank: { short: "Fill", full: "Complete a fill-blank" },
-  multipleChoice: { short: "MC", full: "Complete a multiple choice" },
-  typeTranslation: { short: "Type", full: "Type a translation" },
-  workWord: { short: "Work", full: "Review a work word" },
-  socialWord: { short: "Social", full: "Review a social word" },
+  streak3: { short: "3x", full: "3 in a row" },
+  fillBlank: { short: "Fill", full: "Fill in the blank" },
+  multipleChoice: { short: "Pick", full: "Multiple choice" },
+  typeTranslation: { short: "Type", full: "Type translation" },
+  workWord: { short: "Work", full: "Work category" },
+  socialWord: { short: "Social", full: "Social category" },
   masterWord: { short: "Master", full: "Master a word" },
-  finishSession: { short: "Done", full: "Finish daily session" },
+  finishSession: { short: "Done", full: "Finish session" },
 };
 
 // Winning lines for bingo detection
