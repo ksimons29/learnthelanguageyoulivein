@@ -44,9 +44,9 @@ vercel logs <deployment-url> --since 5m
 | Document | Purpose |
 |----------|---------|
 | `/docs/design/design-system.md` | **★ Moleskine design tokens** - Always for UI |
+| `/docs/engineering/TESTING.md` | **★ Testing guide** - Run after every feature |
 | `/docs/engineering/implementation_plan.md` | Architecture, data model, API routes |
-| `/docs/engineering/session-workflow.md` | **Claude Code session best practices** |
-| `/docs/engineering/TESTING.md` | **QA test cases, database queries** |
+| `/docs/engineering/session-workflow.md` | Claude Code session best practices |
 | `/docs/engineering/CAPACITOR_IOS_SETUP.md` | iOS app setup, native plugins |
 | `/docs/product/prd.md` | User stories, acceptance criteria |
 | `/docs/design/wireframes.md` | UI layouts, screen flows |
@@ -98,11 +98,38 @@ export const useFsrs = () => { }
 
 See `/docs/design/design-system.md` for full reference.
 
+## Testing (MANDATORY)
+
+**After EVERY feature change, run these checks:**
+
+```bash
+cd web
+npm run build          # Must pass - catches TypeScript errors
+npm run test:run       # Must pass - unit tests
+```
+
+**For UI/API changes, also run E2E via Playwright MCP:**
+1. `browser_navigate` to https://web-eta-gold.vercel.app
+2. Sign in with test account: `test-en-pt@llyli.test` / `TestPassword123!`
+3. Test the changed feature
+4. `browser_snapshot` to verify
+
+**Test Accounts (pre-confirmed, ready to use):**
+| Email | Password | Languages |
+|-------|----------|-----------|
+| `test-en-pt@llyli.test` | `TestPassword123!` | EN→PT |
+| `test-en-sv@llyli.test` | `TestPassword123!` | EN→SV |
+| `test-nl-en@llyli.test` | `TestPassword123!` | NL→EN |
+
+**Reset test users:** `npx tsx scripts/create-test-users.ts`
+
+See `/docs/engineering/TESTING.md` for full E2E scenarios and database queries.
+
 ## Session Workflow
 
 **Start:** `/clear` → read PROJECT_LOG.md → use plan mode for complex work
 
-**End:** Update PROJECT_LOG.md → Commit with `fixes #N`
+**End:** Update PROJECT_LOG.md → Commit with `fixes #N` → **Run tests**
 
 **Debug:** Copy server logs → paste to Claude with page context
 

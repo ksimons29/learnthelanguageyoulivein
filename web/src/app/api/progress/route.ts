@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, reviewSessions } from '@/lib/db/schema';
-import { eq, sql, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, sql, and, gte, lte, desc, or } from 'drizzle-orm';
 
 /**
  * GET /api/progress
@@ -91,7 +91,7 @@ export async function GET() {
       newCardsList,
     ] = await Promise.all([
       // 1. Combined aggregated stats in a single query
-      // ALWAYS filter by user's target language
+      // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select({
           totalWords: sql<number>`count(*)::int`,
@@ -109,7 +109,10 @@ export async function GET() {
         .where(
           and(
             eq(words.userId, user.id),
-            eq(words.targetLang, languagePreference.targetLanguage)
+            or(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            )
           )
         ),
 
@@ -138,7 +141,7 @@ export async function GET() {
         .orderBy(desc(sql`date(${reviewSessions.endedAt})`)),
 
       // 4. Forecast data in a single query with date grouping
-      // ALWAYS filter by user's target language
+      // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select({
           date: sql<string>`date(${words.nextReviewDate})`,
@@ -148,7 +151,10 @@ export async function GET() {
         .where(
           and(
             eq(words.userId, user.id),
-            eq(words.targetLang, languagePreference.targetLanguage),
+            or(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            ),
             lte(words.nextReviewDate, sevenDaysFromNow)
           )
         )
@@ -171,14 +177,17 @@ export async function GET() {
         .orderBy(sql`date(${reviewSessions.endedAt})`),
 
       // 6. Ready to use words
-      // ALWAYS filter by user's target language
+      // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
-            eq(words.targetLang, languagePreference.targetLanguage),
+            or(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            ),
             eq(words.masteryStatus, 'ready_to_use')
           )
         )
@@ -186,14 +195,17 @@ export async function GET() {
         .limit(10),
 
       // 7. Struggling words list
-      // ALWAYS filter by user's target language
+      // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
-            eq(words.targetLang, languagePreference.targetLanguage),
+            or(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            ),
             gte(words.lapseCount, 1)
           )
         )
@@ -201,14 +213,17 @@ export async function GET() {
         .limit(10),
 
       // 8. New cards list
-      // ALWAYS filter by user's target language
+      // ALWAYS filter by user's target language (check both sourceLang and targetLang)
       db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
-            eq(words.targetLang, languagePreference.targetLanguage),
+            or(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            ),
             eq(words.reviewCount, 0)
           )
         )

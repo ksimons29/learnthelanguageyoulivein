@@ -5,14 +5,14 @@ This document describes how to test the LLYLI application to ensure it works cor
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Unit Tests](#unit-tests)
-3. [Manual QA Testing](#manual-qa-testing)
-   - Test Cases 1-10: Core Features
-   - Test Cases 11-14: Gamification (Session 22)
-   - Test Case 15: Multi-Language Support
-4. [Database Validation](#database-validation)
-5. [API Testing](#api-testing)
-6. [Troubleshooting](#troubleshooting)
+2. [Test After Every Feature Change](#test-after-every-feature-change)
+3. [Test Accounts](#test-accounts)
+4. [Unit Tests](#unit-tests)
+5. [E2E Testing with Playwright](#e2e-testing-with-playwright)
+6. [Manual QA Testing](#manual-qa-testing)
+7. [Database Validation](#database-validation)
+8. [API Testing](#api-testing)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -28,9 +28,129 @@ npm run test:run
 # Run with coverage
 npm run test:coverage
 
+# Build check (catches type errors)
+npm run build
+
 # Start dev server for manual testing
 npm run dev
 # Then open http://localhost:3000
+```
+
+---
+
+## Test After Every Feature Change
+
+**MANDATORY**: After implementing any feature, run this checklist:
+
+### 1. Build Verification
+```bash
+cd web && npm run build
+```
+Must pass with no errors. Catches TypeScript and import issues.
+
+### 2. Unit Tests
+```bash
+npm run test:run
+```
+All tests must pass. Add tests for new functionality.
+
+### 3. Critical Path E2E (via Playwright MCP)
+Test these flows on production (https://web-eta-gold.vercel.app):
+
+| Flow | Test Steps |
+|------|------------|
+| **Sign In** | Navigate to `/auth/sign-in` → Enter test credentials → Verify redirect |
+| **Onboarding** | Fresh user → Language selection → Capture words → Complete |
+| **Word Capture** | `/capture` → Enter word → Verify translation + audio |
+| **Review** | `/review` → Complete 3 reviews → Verify FSRS updates |
+| **Notebook** | `/notebook` → Verify categories show → Click category → See words |
+
+### 4. Database Spot Check
+Run Query 1.1 (Health Check) after changes to data layer:
+```sql
+SELECT 'words' as table_name, COUNT(*) FROM words
+UNION ALL SELECT 'user_profiles', COUNT(*) FROM user_profiles;
+```
+
+---
+
+## Test Accounts
+
+Pre-provisioned test accounts for E2E testing. All have email pre-confirmed.
+
+| Account | Email | Password | Languages | Purpose |
+|---------|-------|----------|-----------|---------|
+| EN→PT | `test-en-pt@llyli.test` | `TestPassword123!` | English → Portuguese | Primary test account |
+| EN→SV | `test-en-sv@llyli.test` | `TestPassword123!` | English → Swedish | Multi-language testing |
+| NL→EN | `test-nl-en@llyli.test` | `TestPassword123!` | Dutch → English | Reverse direction testing |
+| Claude Test | `claudetest20260119@gmail.com` | `testpass123` | en → pt-PT | Legacy test account |
+
+### Provisioning Test Users
+
+```bash
+# Reset and create test users (onboarding_completed = false)
+cd web && npx tsx scripts/create-test-users.ts
+```
+
+This script:
+- Creates users if they don't exist (email pre-confirmed via Admin API)
+- Resets `onboarding_completed = false` for full flow testing
+- Deletes existing words for clean state
+
+---
+
+## E2E Testing with Playwright
+
+Use Claude Code's Playwright MCP server for automated browser testing.
+
+### Basic Flow: Sign In + Verify
+
+```
+1. browser_navigate to https://web-eta-gold.vercel.app/auth/sign-in
+2. browser_snapshot to see page state
+3. browser_fill_form with test credentials
+4. browser_click "Sign In" button
+5. browser_wait_for navigation
+6. browser_snapshot to verify landing page
+```
+
+### Critical E2E Scenarios
+
+#### Scenario 1: Fresh User Onboarding
+```
+1. Sign in with test-en-pt@llyli.test (onboarding incomplete)
+2. Verify redirect to /onboarding/languages
+3. Select Portuguese (target) → English (native)
+4. Verify redirect to /onboarding/capture
+5. Add 3 words
+6. Complete onboarding
+7. Verify starter words + captured words in notebook
+```
+
+#### Scenario 2: Word Capture Flow
+```
+1. Sign in → Navigate to /capture
+2. Enter "obrigado" in text field
+3. Click capture button
+4. Verify: Translation appears, Category assigned, Audio button works
+5. Navigate to /notebook → Verify word appears
+```
+
+#### Scenario 3: Review Session
+```
+1. Sign in → Navigate to /review
+2. If "All caught up" → User needs words due (check database)
+3. Complete fill-blank exercise → Verify green/red feedback
+4. Complete multiple-choice exercise → Verify options work
+5. Rate recall → Verify next card appears
+6. Complete session → Verify celebration page
+```
+
+### Capturing Screenshots
+
+```
+browser_take_screenshot with descriptive filename
+# Saves to .playwright-mcp/ directory
 ```
 
 ---
@@ -94,15 +214,8 @@ describe('myFunction', () => {
 ### Prerequisites
 
 1. Dev server running: `cd web && npm run dev`
-2. Test account logged in
+2. Test account logged in (see [Test Accounts](#test-accounts) above)
 3. Database has words (import from Anki or capture manually)
-
-### Test Accounts
-
-| Account | Email | User ID | Notes |
-|---------|-------|---------|-------|
-| Primary | koossimons91@gmail.com | `0146698d-0d6a-49f9-924f-ebe50c154511` | Main account with 900+ words |
-| Claude Test | claudetest20260119@gmail.com | `c3f710bd-676a-439a-bd94-e32584183254` | Password: `testpass123` - Fresh account |
 
 ---
 

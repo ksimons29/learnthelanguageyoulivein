@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { generatedSentences, words } from '@/lib/db/schema';
-import { eq, and, isNull, inArray } from 'drizzle-orm';
+import { eq, and, isNull, inArray, or } from 'drizzle-orm';
 
 /**
  * GET /api/sentences/next
@@ -47,13 +47,17 @@ export async function GET(request: NextRequest) {
     // 5. For each sentence, check if all words are currently due
     for (const sentence of unusedSentences) {
       // Get the words for this sentence (filtered by target language)
+      // Match words where the user's target language appears as either sourceLang or targetLang
       const sentenceWords = await db
         .select()
         .from(words)
         .where(
           and(
             eq(words.userId, user.id),
-            eq(words.targetLang, languagePreference.targetLanguage),
+            or(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            ),
             inArray(words.id, sentence.wordIds)
           )
         );

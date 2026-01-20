@@ -46,13 +46,19 @@ export async function GET(request: NextRequest) {
     const sessionId = await getOrCreateSession(user.id);
 
     // 5. Get user's words filtered by target language
+    // Match words where the user's target language appears as either:
+    // - sourceLang (they entered a word in their target language)
+    // - targetLang (they entered a word in their native language, translated to target)
     const userWords = await db
       .select()
       .from(words)
       .where(
         and(
           eq(words.userId, user.id),
-          eq(words.targetLang, languagePreference.targetLanguage)
+          or(
+            eq(words.sourceLang, languagePreference.targetLanguage),
+            eq(words.targetLang, languagePreference.targetLanguage)
+          )
         )
       );
 

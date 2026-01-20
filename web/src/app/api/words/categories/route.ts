@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
-import { eq, sql, and } from 'drizzle-orm';
+import { eq, sql, and, or } from 'drizzle-orm';
 import { VALID_CATEGORIES } from '@/lib/config/categories';
 
 /**
@@ -55,7 +55,13 @@ export async function GET() {
       .where(
         and(
           eq(words.userId, user.id),
-          eq(words.targetLang, languagePreference.targetLanguage)
+          // Match words where the user's target language appears as either:
+          // - sourceLang (they entered a word in their target language)
+          // - targetLang (they entered a word in their native language, translated to target)
+          or(
+            eq(words.sourceLang, languagePreference.targetLanguage),
+            eq(words.targetLang, languagePreference.targetLanguage)
+          )
         )
       )
       .groupBy(words.category)
@@ -104,7 +110,11 @@ export async function GET() {
       .where(
         and(
           eq(words.userId, user.id),
-          eq(words.targetLang, languagePreference.targetLanguage),
+          // Match words where the user's target language appears as either sourceLang or targetLang
+          or(
+            eq(words.sourceLang, languagePreference.targetLanguage),
+            eq(words.targetLang, languagePreference.targetLanguage)
+          ),
           eq(words.reviewCount, 0),
           sql`${words.createdAt} >= ${twentyFourHoursAgoISO}::timestamp`
         )

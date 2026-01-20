@@ -75,6 +75,43 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 30 - 2026-01-20 - Language Filtering Fix + Testing Infrastructure
+
+**Focus**: Fix critical bug where words captured in target language weren't appearing in notebook/review
+
+**Bug Analysis**
+| Problem | Root Cause | Fix |
+|---------|------------|-----|
+| Words not showing in notebook | Query used `targetLang = user.targetLanguage` | Changed to OR: `sourceLang = target OR targetLang = target` |
+| Semantic mismatch | `words.targetLang` = translation language, not user's target | Both columns now checked |
+
+**Files Changed (Language Filter)**
+| File | Lines | Change |
+|------|-------|--------|
+| `api/words/route.ts` | 193-202 | GET query uses OR logic |
+| `api/words/categories/route.ts` | 55-64, 110-117 | Category stats + inbox count |
+| `api/reviews/route.ts` | 52-63 | Due words query |
+| `api/progress/route.ts` | 5 queries | All word stats |
+| `api/sentences/next/route.ts` | 54-62 | Sentence word lookup |
+
+**Testing Infrastructure**
+| Addition | Purpose |
+|----------|---------|
+| `scripts/create-test-users.ts` | Provisions pre-confirmed test accounts via Supabase Admin API |
+| TESTING.md updates | Added test accounts, E2E scenarios, Playwright MCP guide |
+| CLAUDE.md testing section | Mandatory testing checklist after every feature change |
+
+**Test Accounts Created**
+| Email | Languages |
+|-------|-----------|
+| `test-en-pt@llyli.test` | EN→PT |
+| `test-en-sv@llyli.test` | EN→SV |
+| `test-nl-en@llyli.test` | NL→EN |
+
+**Key Insight**: Users can enter words in EITHER language (target or native). When entering a Portuguese word while learning Portuguese, `sourceLang=pt-PT` and `targetLang=en`. Must check both.
+
+---
+
 ### Session 29 - 2026-01-19 - Project Documentation + Onboarding Flow Fix
 **Focus**: Create comprehensive README, organize GitHub issues, restore capture step in onboarding
 

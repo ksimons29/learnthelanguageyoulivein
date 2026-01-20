@@ -191,9 +191,15 @@ export async function GET(request: NextRequest) {
     const excludeId = searchParams.get('excludeId');
 
     // 4. Build query with filters - ALWAYS filter by user's target language
+    // Match words where the user's target language appears as either:
+    // - sourceLang (they entered a word in their target language)
+    // - targetLang (they entered a word in their native language, translated to target)
     const conditions = [
       eq(words.userId, user.id),
-      eq(words.targetLang, languagePreference.targetLanguage),
+      or(
+        eq(words.sourceLang, languagePreference.targetLanguage),
+        eq(words.targetLang, languagePreference.targetLanguage)
+      )!,
     ];
 
     if (category) {
