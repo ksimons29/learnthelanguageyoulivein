@@ -11,11 +11,11 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Language Filtering + E2E Testing** - Fixed OR logic for word queries, added English to target languages, verified all 3 test users (Session 30)
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 - [x] **Auth Bug Fix + Starter Words** - Email confirmation UI, improved sign-in errors, 10 starter words per language (Session 28)
 - [x] **User Research Synthesis** - Analyzed 24 survey responses, created product guide (Session 27)
 - [x] **Language Filtering Fix** - Fixed #43 BLOCKER via shared helper function (Session 26)
-- [x] **Multi-Language Support** - Schema, API, and validation for en→pt-PT, nl→pt-PT, nl→en, en→sv (Session 24)
 
 ### In Progress
 - [ ] **Sentence generation** - Pre-gen works, review integration WIP
@@ -51,11 +51,11 @@ npm run build             # Production build
 
 ### Closed This Session
 - ~~#43~~ **BLOCKER** - Fixed: Language filtering via shared helper in all word queries
+- ~~#50~~ **P0-critical** - Fixed: E2E User Flow Verification - all 3 test users pass (Session 30)
 
 ## Open Feature Issues
 | Issue | Feature | Priority |
 |-------|---------|----------|
-| #50 | E2E User Flow Verification on Vercel | P0-critical |
 | #51 | Review page misleading for unauth users | P2-normal |
 | #52 | Protected pages auth redirect | P3-low |
 | #44 | Progress API 500 error | P1-high |
@@ -84,6 +84,7 @@ npm run build             # Production build
 |---------|------------|-----|
 | Words not showing in notebook | Query used `targetLang = user.targetLanguage` | Changed to OR: `sourceLang = target OR targetLang = target` |
 | Semantic mismatch | `words.targetLang` = translation language, not user's target | Both columns now checked |
+| English missing from target languages | `TARGET_LANGUAGES` array in onboarding didn't include "en" | Added "en" to array |
 
 **Files Changed (Language Filter)**
 | File | Lines | Change |
@@ -93,6 +94,7 @@ npm run build             # Production build
 | `api/reviews/route.ts` | 52-63 | Due words query |
 | `api/progress/route.ts` | 5 queries | All word stats |
 | `api/sentences/next/route.ts` | 54-62 | Sentence word lookup |
+| `onboarding/languages/page.tsx` | Line 10 | Added "en" to TARGET_LANGUAGES |
 
 **Testing Infrastructure**
 | Addition | Purpose |
@@ -107,6 +109,21 @@ npm run build             # Production build
 | `test-en-pt@llyli.test` | EN→PT |
 | `test-en-sv@llyli.test` | EN→SV |
 | `test-nl-en@llyli.test` | NL→EN |
+
+**E2E Test Results**
+| User | Flow | Result |
+|------|------|--------|
+| test-en-pt@llyli.test | Sign-in → Notebook → Review | ✅ PASS |
+| test-en-sv@llyli.test | Sign-in → Notebook → Review | ✅ PASS |
+| test-nl-en@llyli.test | Sign-in → Notebook → Review | ✅ PASS (found English target bug, fixed) |
+
+**Deployment**
+| Step | Status | Notes |
+|------|--------|-------|
+| Local build | ✅ Pass | `npm run build` succeeds |
+| Git push | ✅ Pass | Pushed to origin/main |
+| Vercel auto-deploy | ❌ Fail | Webhook/socket hang up error |
+| Vercel manual deploy | ✅ Pass | `vercel --prod` succeeded |
 
 **Key Insight**: Users can enter words in EITHER language (target or native). When entering a Portuguese word while learning Portuguese, `sourceLang=pt-PT` and `targetLang=en`. Must check both.
 
