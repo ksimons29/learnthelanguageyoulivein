@@ -442,9 +442,12 @@ export default function ReviewPage() {
             <SentenceCard
               sentence={currentSentence.text}
               highlightedWords={sentenceTargetWords.map((w) => w.originalText)}
-              translation={sentenceTargetWords
-                .map((w) => `${w.originalText}: ${w.translation}`)
-                .join(" | ")}
+              translation={
+                currentSentence.translation ||
+                sentenceTargetWords
+                  .map((w) => `${w.originalText}: ${w.translation}`)
+                  .join(" | ")
+              }
               showTranslation={
                 reviewState !== "recall" || isAnswerCorrect !== null
               }

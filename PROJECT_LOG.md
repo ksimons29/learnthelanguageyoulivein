@@ -85,6 +85,45 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 39 - 2026-01-20 - Bug Fixes: Capture Speed, Bingo Navigation, Sentence Translations
+
+**Focus**: Fix three bugs impacting user experience
+
+**Bug 1: Slow Capture Flow** (~10s → ~2-4s)
+- Root cause: Sequential API calls blocking response
+- Fix: Parallelize translation + category assignment, make audio generation non-blocking
+- User sees word immediately, audio button shows spinner until audio is ready
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/words/route.ts` | `Promise.all()` for translate+category, background audio generation |
+| `web/src/lib/store/words-store.ts` | Added `pollForAudio()` and `isAudioGenerating()` for client-side polling |
+| `web/src/components/home/phrase-card.tsx` | Added `audioGenerating` prop for loading state |
+| `web/src/components/home/captured-today-list.tsx` | Pass `audioGenerating` to PhraseCard |
+
+**Bug 2: Bingo Cards Don't Navigate**
+- Root cause: Squares were plain `<div>` elements with no click handlers
+- Fix: Added `SQUARE_ACTIONS` mapping with routes and tooltips
+
+| File | Change |
+|------|--------|
+| `web/src/components/gamification/bingo-board.tsx` | Added `SQUARE_ACTIONS` config, click handlers, hover tooltips, visual affordances |
+
+**Bug 3: Sentences Missing Translations**
+- Root cause: Schema missing `translation` column, API not saving it
+- Fix: Added column, save translation on generation, display with fallback
+
+| File | Change |
+|------|--------|
+| `web/src/lib/db/schema/sentences.ts` | Added `translation` column |
+| `web/src/app/api/sentences/generate/route.ts` | Save `result.translation` |
+| `web/src/app/api/words/route.ts` | Save `result.translation` in background sentence gen |
+| `web/src/app/review/page.tsx` | Display sentence translation with word-by-word fallback |
+
+**Migration**: `ALTER TABLE "generated_sentences" ADD COLUMN "translation" text;`
+
+---
+
 ### Session 38 - 2026-01-20 - Global Feedback Button + OAuth Setup Docs
 
 **Focus**: Add visible feedback button to all pages, document OAuth setup for future implementation

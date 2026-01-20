@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, X, Trophy } from "lucide-react";
 import { useGamificationStore } from "@/lib/store/gamification-store";
 import type { BingoSquareId } from "@/lib/db/schema";
@@ -32,6 +33,23 @@ const SQUARE_LABELS: Record<BingoSquareId, { short: string; full: string }> = {
   finishSession: { short: "Done", full: "Finish session" },
 };
 
+// Navigation actions for each square
+const SQUARE_ACTIONS: Record<BingoSquareId, {
+  type: 'navigate' | 'tooltip';
+  route?: string;
+  tooltip?: string;
+}> = {
+  review5: { type: 'navigate', route: '/review' },
+  streak3: { type: 'tooltip', tooltip: 'Answer 3 questions correctly in a row' },
+  fillBlank: { type: 'navigate', route: '/review' },
+  multipleChoice: { type: 'navigate', route: '/review' },
+  addContext: { type: 'navigate', route: '/capture' },
+  workWord: { type: 'navigate', route: '/notebook?category=work' },
+  socialWord: { type: 'navigate', route: '/notebook?category=social' },
+  masterWord: { type: 'tooltip', tooltip: 'Master any word through practice' },
+  finishSession: { type: 'navigate', route: '/review' },
+};
+
 // Winning lines for bingo detection
 const WINNING_LINES = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
@@ -40,7 +58,9 @@ const WINNING_LINES = [
 ];
 
 export function BingoBoard({ variant = "full", onExpand }: BingoBoardProps) {
+  const router = useRouter();
   const { bingo, showBingoCelebration, dismissBingoCelebration } = useGamificationStore();
+  const [hoveredSquare, setHoveredSquare] = useState<BingoSquareId | null>(null);
 
   if (!bingo) {
     return null;
@@ -172,15 +192,31 @@ export function BingoBoard({ variant = "full", onExpand }: BingoBoardProps) {
           const isCompleted = completedSet.has(id);
           const isWinningSquare = winningLine?.includes(idx);
           const labels = SQUARE_LABELS[id];
+          const action = SQUARE_ACTIONS[id];
+          const isNavigable = !isCompleted && action.type === 'navigate';
+          const hasTooltip = !isCompleted && action.type === 'tooltip';
+          const isHovered = hoveredSquare === id;
+
+          const handleClick = () => {
+            if (isCompleted) return;
+            if (action.type === 'navigate' && action.route) {
+              router.push(action.route);
+            }
+          };
 
           return (
             <div
               key={id}
-              className={`aspect-square rounded-lg flex flex-col items-center justify-center p-2 transition-all ${
+              className={`aspect-square rounded-lg flex flex-col items-center justify-center p-2 transition-all relative ${
                 isCompleted
                   ? "bg-[var(--accent-nav)] text-white"
                   : "bg-[var(--accent-nav-light)]"
-              } ${isWinningSquare ? "ring-2 ring-[var(--accent-ribbon)] ring-offset-2" : ""}`}
+              } ${isWinningSquare ? "ring-2 ring-[var(--accent-ribbon)] ring-offset-2" : ""} ${
+                isNavigable ? "cursor-pointer hover:scale-105 hover:shadow-md" : ""
+              } ${hasTooltip ? "cursor-help" : ""}`}
+              onClick={handleClick}
+              onMouseEnter={() => hasTooltip && setHoveredSquare(id)}
+              onMouseLeave={() => setHoveredSquare(null)}
             >
               {isCompleted ? (
                 <Check className="h-6 w-6 mb-1" />
@@ -200,6 +236,23 @@ export function BingoBoard({ variant = "full", onExpand }: BingoBoardProps) {
               >
                 {labels.full.length > 20 ? labels.short : labels.full}
               </span>
+
+              {/* Tooltip for non-navigable squares */}
+              {hasTooltip && isHovered && action.tooltip && (
+                <div
+                  className="absolute -top-12 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap z-10"
+                  style={{
+                    backgroundColor: "var(--text-heading)",
+                    color: "var(--surface-page)",
+                  }}
+                >
+                  {action.tooltip}
+                  <div
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45"
+                    style={{ backgroundColor: "var(--text-heading)" }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

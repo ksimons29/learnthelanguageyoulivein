@@ -1,6 +1,7 @@
 "use client";
 
 import { PhraseCard } from "./phrase-card";
+import { useWordsStore } from "@/lib/store/words-store";
 
 interface CapturedPhrase {
   id: string;
@@ -15,6 +16,8 @@ interface CapturedTodayListProps {
 }
 
 export function CapturedTodayList({ phrases, onEdit }: CapturedTodayListProps) {
+  const isAudioGenerating = useWordsStore((state) => state.isAudioGenerating);
+
   if (phrases.length === 0) {
     return (
       <div
@@ -50,6 +53,7 @@ export function CapturedTodayList({ phrases, onEdit }: CapturedTodayListProps) {
           phrase={item.phrase}
           translation={item.translation}
           audioUrl={item.audioUrl}
+          audioGenerating={isAudioGenerating(item.id)}
           onEdit={onEdit ? () => onEdit(item.id) : undefined}
         />
       ))}

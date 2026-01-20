@@ -18,6 +18,7 @@ export const generatedSentences = pgTable('generated_sentences', {
 
   // Sentence Content
   text: text('text').notNull(), // The generated sentence (max 10 words)
+  translation: text('translation'), // Translation in user's native language
   audioUrl: text('audio_url'), // Sentence audio URL
 
   // Word Tracking

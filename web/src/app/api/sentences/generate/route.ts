@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
           .values({
             userId: user.id,
             text: result.text,
+            translation: result.translation,
             audioUrl,
             wordIds: wordGroup.map((w) => w.id),
             wordIdsHash,

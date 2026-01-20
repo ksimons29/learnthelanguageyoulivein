@@ -29,6 +29,9 @@ interface WordsState {
     search?: string;
   };
 
+  // Audio generation tracking
+  audioGeneratingIds: Set<string>;
+
   // Categories State
   categories: CategoryStats[];
   categoriesLoading: boolean;
@@ -60,6 +63,8 @@ interface WordsState {
     }
   ) => Promise<Word>;
   deleteWord: (id: string) => Promise<void>;
+  pollForAudio: (wordId: string) => void;
+  isAudioGenerating: (wordId: string) => boolean;
 }
 
 export const useWordsStore = create<WordsState>((set, get) => ({
@@ -68,6 +73,9 @@ export const useWordsStore = create<WordsState>((set, get) => ({
   isLoading: false,
   error: null,
   currentFilter: {},
+
+  // Audio generation tracking
+  audioGeneratingIds: new Set<string>(),
 
   // Categories Initial State
   categories: [],
@@ -182,11 +190,17 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
       const { data } = await response.json();
       const word = data.word;
+      const isGeneratingAudio = data.word.audioGenerating === true;
 
       set((state) => ({
         words: [word, ...state.words],
         isLoading: false,
       }));
+
+      // Start polling for audio if it's being generated
+      if (isGeneratingAudio) {
+        get().pollForAudio(word.id);
+      }
 
       return word;
     } catch (error) {
@@ -220,5 +234,71 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       });
       throw error;
     }
+  },
+
+  pollForAudio: (wordId: string) => {
+    // Add to tracking set
+    set((state) => {
+      const newSet = new Set(state.audioGeneratingIds);
+      newSet.add(wordId);
+      return { audioGeneratingIds: newSet };
+    });
+
+    // Poll every 1 second for up to 30 seconds
+    const maxAttempts = 30;
+    let attempts = 0;
+
+    const poll = async () => {
+      attempts++;
+      try {
+        const response = await fetch(`/api/words/${wordId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch word');
+        }
+
+        const { data } = await response.json();
+        const word = data.word;
+
+        if (word.audioUrl) {
+          // Audio is ready - update the word and remove from tracking
+          set((state) => {
+            const newSet = new Set(state.audioGeneratingIds);
+            newSet.delete(wordId);
+            return {
+              audioGeneratingIds: newSet,
+              words: state.words.map((w) =>
+                w.id === wordId ? { ...w, audioUrl: word.audioUrl } : w
+              ),
+            };
+          });
+          return; // Stop polling
+        }
+
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1000);
+        } else {
+          // Give up after max attempts
+          set((state) => {
+            const newSet = new Set(state.audioGeneratingIds);
+            newSet.delete(wordId);
+            return { audioGeneratingIds: newSet };
+          });
+        }
+      } catch (error) {
+        console.error('Audio polling error:', error);
+        set((state) => {
+          const newSet = new Set(state.audioGeneratingIds);
+          newSet.delete(wordId);
+          return { audioGeneratingIds: newSet };
+        });
+      }
+    };
+
+    // Start polling after 1 second delay (give audio generation time to start)
+    setTimeout(poll, 1000);
+  },
+
+  isAudioGenerating: (wordId: string) => {
+    return get().audioGeneratingIds.has(wordId);
   },
 }));

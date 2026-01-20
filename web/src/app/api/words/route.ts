@@ -101,11 +101,12 @@ export async function POST(request: NextRequest) {
     const isTargetLanguage = textLang === languagePreference.targetLanguage;
     const language: 'source' | 'target' = isTargetLanguage ? 'target' : 'source';
 
-    // 6. Auto-translate using OpenAI
-    const translation = await translateText(text, sourceLang, targetLang);
-
-    // 7. Auto-assign category using OpenAI
-    const { category, confidence } = await assignCategory(text, context);
+    // 6. Auto-translate and auto-assign category in parallel
+    // This saves 1-3 seconds compared to sequential calls
+    const [translation, { category, confidence }] = await Promise.all([
+      translateText(text, sourceLang, targetLang),
+      assignCategory(text, context),
+    ]);
 
     // 8. Create word in database (without audio URL initially)
     // Auto-detect time of day from server timestamp
@@ -142,24 +143,18 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // 9. Generate TTS audio for the original text
-    let audioUrl: string | null = null;
-    try {
-      // Use sourceLang for TTS since original text is in that language
-      const audioBuffer = await generateAudio({ text, languageCode: sourceLang });
+    // 9. Return word immediately (audio will be generated in background)
+    // This reduces capture time from ~10s to ~2-4s
+    const response = NextResponse.json({
+      data: {
+        word: { ...newWord, audioUrl: null, audioGenerating: true },
+      },
+    });
 
-      // 9. Upload audio to Supabase Storage
-      audioUrl = await uploadAudio(user.id, newWord.id, audioBuffer);
-
-      // 10. Update word with audio URL
-      await db
-        .update(words)
-        .set({ audioUrl })
-        .where(eq(words.id, newWord.id));
-    } catch (audioError) {
-      console.error('Audio generation failed (non-fatal):', audioError);
-      // Continue without audio - word is still captured
-    }
+    // 10. Fire-and-forget audio generation in background
+    generateAudioInBackground(user.id, newWord.id, text, sourceLang).catch(
+      (err) => console.error('Background audio generation failed:', err)
+    );
 
     // 11. Trigger sentence pre-generation (fire-and-forget)
     // This opportunistically generates sentences that might include the new word
@@ -167,12 +162,7 @@ export async function POST(request: NextRequest) {
       // Silently fail - this is an optimization, not critical
     });
 
-    // 12. Return created word
-    return NextResponse.json({
-      data: {
-        word: { ...newWord, audioUrl },
-      },
-    });
+    return response;
   } catch (error) {
     console.error('Word capture error:', error);
     return NextResponse.json(
@@ -391,6 +381,32 @@ Respond with ONLY the category name in lowercase (e.g. "food_dining" or "work"),
 }
 
 /**
+ * Generate audio in background and update the word
+ *
+ * This runs after the word is returned to the user, so it doesn't
+ * block the capture flow. The client polls for the audio URL.
+ */
+async function generateAudioInBackground(
+  userId: string,
+  wordId: string,
+  text: string,
+  languageCode: string
+): Promise<void> {
+  try {
+    const audioBuffer = await generateAudio({ text, languageCode });
+    const audioUrl = await uploadAudio(userId, wordId, audioBuffer);
+
+    await db
+      .update(words)
+      .set({ audioUrl })
+      .where(eq(words.id, wordId));
+  } catch (error) {
+    console.error('Background audio generation error:', error);
+    // Non-fatal - word exists without audio
+  }
+}
+
+/**
  * Trigger sentence pre-generation after word capture
  *
  * Runs in the background to generate sentences that might include
@@ -448,6 +464,7 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
       await db.insert(generatedSentences).values({
         userId,
         text: result.text,
+        translation: result.translation,
         audioUrl,
         wordIds: wordGroup.map((w) => w.id),
         wordIdsHash: generateWordIdsHash(wordGroup.map((w) => w.id)),

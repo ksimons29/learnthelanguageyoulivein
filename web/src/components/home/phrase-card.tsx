@@ -9,6 +9,7 @@ interface PhraseCardProps {
   phrase: string;
   translation: string;
   audioUrl?: string | null;
+  audioGenerating?: boolean;
   onEdit?: () => void;
   className?: string;
 }
@@ -17,6 +18,7 @@ export function PhraseCard({
   phrase,
   translation,
   audioUrl,
+  audioGenerating = false,
   onEdit,
   className,
 }: PhraseCardProps) {
@@ -83,8 +85,8 @@ export function PhraseCard({
         )}
         <AudioPlayButton
           isPlaying={isThisPlaying}
-          isLoading={isLoading && currentUrl === audioUrl}
-          hasAudio={!!audioUrl}
+          isLoading={audioGenerating || (isLoading && currentUrl === audioUrl)}
+          hasAudio={!!audioUrl || audioGenerating}
           onClick={handlePlay}
           size="md"
         />
