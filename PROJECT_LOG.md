@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Sign Out + Bug Fixes** - Added Sign Out to About sheet, fixed Bingo labels, synced Progress streak with gamification (Session 32)
 - [x] **Vercel Deployment Fix** - Root Directory config fixed, no more duplicate/failing deployments (Session 31)
 - [x] **Language Filtering + E2E Testing** - Fixed OR logic for word queries, added English to target languages, verified all 3 test users (Session 30)
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
@@ -76,43 +77,51 @@ npm run build             # Production build
 
 ## Session Log
 
-### Session 32 - 2026-01-20 - Testing Documentation Consolidation + E2E Verification
+### Session 32 - 2026-01-20 - Deep E2E Testing, Sign Out, Progress Streak Fix
 
-**Focus**: Consolidate testing docs into single source of truth, ensure CLAUDE.md references testing requirements clearly
+**Focus**: Comprehensive E2E testing of full user journey including gamification, fix bugs found during testing
+
+**Bugs Found & Fixed**
+| Bug | Fix | File |
+|-----|-----|------|
+| No Sign Out option | Added Sign Out button to About LLYLI sheet | `info-button.tsx:150-164` |
+| Confusing Bingo labels | Changed "MC"→"Pick", "Fill"→"Fill in the blank" | `bingo-board.tsx:23-33` |
+| Progress streak discrepancy | Now uses `streakState` table (same as gamification) | `api/progress/route.ts:129-133, 276-282` |
 
 **Changes Made**
 | Change | Details |
 |--------|---------|
-| Consolidated testing docs | Merged useful content from `web/TESTING_GUIDE.md`, `web/QUICK_TEST.md`, `TESTING_READY.md` into `/docs/engineering/TESTING.md` |
-| Deleted redundant files | Removed 3 outdated testing files (TESTING_GUIDE.md, QUICK_TEST.md, TESTING_READY.md) |
-| Updated CLAUDE.md | Added emphasis on testing after EVERY code change, added integration test scripts section |
-| Updated TESTING.md | Added section 4.3 for integration test scripts (test-database.js, test-supabase.js, test-openai.js, test-comprehensive.ts) |
-| Fixed Bingo labels | Changed cryptic labels like "MC" to "Pick" / "Multiple choice", "Fill" to "Fill in the blank" |
+| Added Sign Out | Sign Out button in About LLYLI sheet, redirects to /auth/sign-in |
+| Fixed Bingo labels | Clearer labels: "Pick" / "Multiple choice", "Type" / "Type translation" |
+| Fixed Progress streak | Progress API now queries `streakState` table for consistency with Home page |
+| Consolidated testing docs | Merged into `/docs/engineering/TESTING.md`, deleted 3 redundant files |
+| Updated CLAUDE.md | Added CRITICAL emphasis on testing after EVERY code change |
 
-**E2E Test Results** (Playwright MCP on production)
-| Test | User | Result |
-|------|------|--------|
+**Deep E2E Test Results** (Playwright MCP on production)
+| Test | Details | Result |
+|------|---------|--------|
 | Auth - Sign in | test-en-pt@llyli.test | ✅ Pass |
-| Auth - Sign in | test-en-sv@llyli.test | ✅ Pass |
-| Capture - Portuguese | "muito obrigado" → "thank you very much" | ✅ Pass |
-| Capture - Swedish | "tack så mycket" → "thank you very much" | ✅ Pass |
-| Review - Sentence exercise | Multiple choice with 2 words | ✅ Pass |
-| Review - Single word | Reveal + FSRS rating | ✅ Pass |
-| Notebook | Categories load correctly | ✅ Pass |
-| Progress | Stats display correctly | ✅ Pass |
-| **Gamification - Daily Goal** | Shows 3/10, increments with reviews | ✅ Pass |
-| **Gamification - Daily Bingo** | 3x3 grid, 2/9 completed, squares display | ✅ Pass (labels fixed) |
-| **Gamification - Streak** | Shows 0 Day Streak | ✅ Pass |
+| Capture flow | "Onde está a casa de banho?" → "Where is the bathroom?" + TTS | ✅ Pass |
+| Review - 19 reviews | Completed daily goal (19/10) | ✅ Pass |
+| Daily Goal | 0/10 → 19/10 "Goal Complete!" | ✅ Pass |
+| Day Streak | 0 → 1 after goal completion | ✅ Pass |
+| Daily Bingo | 2/9 → 4/9 squares completed | ✅ Pass |
+| **Boss Round** | Prompted after goal complete, 5/5 perfect score in 0:52 | ✅ Pass |
+| Notebook | Categories: Social (9), Food & Dining (4), Getting Around (2), Shopping (1) | ✅ Pass |
+| Word details | Modal shows phrase, translation, review stats, next review date | ✅ Pass |
+| Progress dashboard | Stats display with streak from gamification state | ✅ Pass |
+| **Sign Out** | Button visible in About sheet, redirects to /auth/sign-in | ✅ Pass |
 | Build | `npm run build` | ✅ Pass |
 | Unit tests | 65/65 tests pass | ✅ Pass |
 
-**Gamification Issues Found & Fixed**
-- Bingo square labels were confusing ("MC", "Fill" / "Fill") - fixed with clearer labels
+**Commit**: `fix: add sign out, fix bingo labels, sync progress streak` (11535de)
 
 **Files Changed**
+- `web/src/components/brand/info-button.tsx` - Added Sign Out button with auth store integration
+- `web/src/components/gamification/bingo-board.tsx` - Clearer bingo square labels
+- `web/src/app/api/progress/route.ts` - Query `streakState` for consistent streak data
 - `docs/engineering/TESTING.md` - Added integration test scripts section
 - `.claude/CLAUDE.md` - Enhanced testing section with CRITICAL emphasis
-- `web/src/components/gamification/bingo-board.tsx` - Clearer bingo square labels
 - Deleted: `web/TESTING_GUIDE.md`, `web/QUICK_TEST.md`, `TESTING_READY.md`
 
 ---
