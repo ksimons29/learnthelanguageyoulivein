@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **E2E Bug Fixes** - Fixed sentence generation language bug, added /capture auth protection (Session 42)
 - [x] **Pre-Launch Review** - Added notebook word search, "Words That Connect" science section, updated starter words messaging, D4-D6 test cases (Session 41)
 - [x] **Launch Plan Implementation** - Fixed 4 bugs, transformed notebook into personal journal, added audio timeout/retry, input validation (Session 40)
 - [x] **Global Feedback Button** - Coral ribbon-style feedback button visible on all main pages, removed from info menu (Session 38)
@@ -84,6 +85,46 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 42 - 2026-01-20 - E2E Bug Fixes: Auth Protection + Sentence Generation
+
+**Focus**: Fix issues found during E2E testing - background 500 errors and unprotected capture route.
+
+#### Issues Fixed
+
+**1. Sentence Generation Language Bug** (`web/src/app/api/words/route.ts:455`)
+- Problem: `triggerSentenceGeneration()` used `DEFAULT_LANGUAGE_PREFERENCE` instead of user's actual language settings
+- Impact: Background sentence generation was using wrong language, causing 500 errors
+- Fix: Changed to `await getUserLanguagePreference(userId)` to fetch user's actual preference
+
+**2. Capture Route Auth Protection** (`web/src/app/capture/page.tsx`)
+- Problem: `/capture` route accessible while signed out (showed UI, but save would fail)
+- Fix: Added auth check using same pattern as review page:
+  - Import `useAuthStore`
+  - Track `user` and `authLoading` state
+  - `useEffect` redirect to `/auth/sign-in` when `!authLoading && !user`
+  - Guard `if (authLoading || !user) return null` to prevent UI flash
+
+#### E2E Verification Results
+
+| Test | Result |
+|------|--------|
+| Capture route auth protection | ✅ Redirects to sign-in when no user |
+| Word capture ("bom dia") | ✅ Captured with translation |
+| Notebook word search ("obrigado") | ✅ 3 results found |
+| Search by translation ("thank") | ✅ 3 results found |
+| Science page new section | ✅ "Words That Connect" visible |
+
+#### Files Modified
+- `web/src/app/api/words/route.ts` - Fixed `triggerSentenceGeneration` language preference
+- `web/src/app/capture/page.tsx` - Added auth protection
+
+#### Testing
+- `npm run build` ✓
+- `npm run test:run` ✓ (65 tests)
+- E2E via Playwright MCP: All verification tests pass
+
+---
 
 ### Session 41 - 2026-01-20 - Pre-Launch Review: Search, Science, UX Polish
 
