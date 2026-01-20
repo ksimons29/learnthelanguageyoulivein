@@ -7,7 +7,7 @@ import { SUPPORTED_LANGUAGES } from "@/lib/config/languages";
 import { FlagStamp, type FlagCode } from "@/components/ui/flag-stamp";
 
 // Target languages (what users can learn)
-const TARGET_LANGUAGES: FlagCode[] = ["pt-PT", "sv", "es", "fr", "de", "nl"];
+const TARGET_LANGUAGES: FlagCode[] = ["en", "pt-PT", "sv", "es", "fr", "de", "nl"];
 
 // Native languages (what users might speak)
 const NATIVE_LANGUAGES: FlagCode[] = ["en", "nl", "pt-PT", "de", "fr", "sv", "es"];
