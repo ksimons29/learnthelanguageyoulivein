@@ -159,8 +159,8 @@ export async function POST(request: NextRequest) {
     }
 
     // For the word record, store the language of original text and its translation
-    const sourceLang = textLang;
-    const targetLang = translationLang;
+    let sourceLang = textLang;
+    let targetLang = translationLang;
 
     // Determine if input text is in target language (for TTS voice selection)
     const isTargetLanguage =
@@ -170,10 +170,29 @@ export async function POST(request: NextRequest) {
 
     // 6. Auto-translate and auto-assign category in parallel
     // This saves 1-3 seconds compared to sequential calls
-    const [translation, { category, confidence }] = await Promise.all([
+    let [translation, { category, confidence }] = await Promise.all([
       translateText(text, sourceLang, targetLang),
       assignCategory(text, context),
     ]);
+
+    // 6b. Safety check: If translation equals original, language detection was likely wrong
+    // Try the opposite direction as a fallback
+    if (translation.toLowerCase().trim() === text.toLowerCase().trim()) {
+      console.log(
+        `Translation equals original for "${text}", trying opposite direction`
+      );
+      // Swap directions
+      const swappedSourceLang = targetLang;
+      const swappedTargetLang = sourceLang;
+      translation = await translateText(text, swappedSourceLang, swappedTargetLang);
+
+      // If this worked (translation is different), update the language direction
+      if (translation.toLowerCase().trim() !== text.toLowerCase().trim()) {
+        // Language detection was wrong - swap the stored values
+        sourceLang = swappedSourceLang;
+        targetLang = swappedTargetLang;
+      }
+    }
 
     // 8. Create word in database (without audio URL initially)
     // Auto-detect time of day from server timestamp
