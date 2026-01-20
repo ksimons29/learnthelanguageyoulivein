@@ -68,6 +68,8 @@ export function getTargetLanguageText(word: Word, targetLanguage: string): strin
  * Fetch distractor words for multiple choice exercises.
  * Returns words from the same category, excluding the correct answer.
  *
+ * Fetches extra words to account for duplicates being filtered out later.
+ *
  * @param correctWord - The word that is the correct answer
  * @param count - Number of distractors to fetch (default: 3)
  * @returns Array of distractor words
@@ -79,7 +81,7 @@ export async function fetchDistractors(
   try {
     const params = new URLSearchParams({
       category: correctWord.category || "other",
-      limit: String(count + 5), // Fetch extra in case some are invalid
+      limit: String(count + 10), // Fetch extra to account for duplicates and invalid words
       excludeId: correctWord.id,
     });
 
@@ -93,8 +95,8 @@ export async function fetchDistractors(
     const { data } = await response.json();
     const words: Word[] = data?.words || [];
 
-    // Return shuffled subset
-    return shuffleArray(words).slice(0, count);
+    // Return shuffled words (deduplication happens in buildMultipleChoiceOptions)
+    return shuffleArray(words);
   } catch (error) {
     console.error("Error fetching distractors:", error);
     return [];
@@ -109,6 +111,7 @@ export async function fetchDistractors(
  * in either direction (target→native or native→target).
  *
  * Options are shuffled so correct answer isn't always in same position.
+ * Duplicates are filtered out to prevent showing the same text twice.
  *
  * @param correctWord - The word that is the correct answer
  * @param distractors - Array of distractor words
@@ -120,13 +123,30 @@ export function buildMultipleChoiceOptions(
   distractors: Word[],
   nativeLanguage: string
 ): MultipleChoiceOption[] {
+  const correctText = getNativeLanguageText(correctWord, nativeLanguage);
+  const correctTextNormalized = correctText.toLowerCase().trim();
+
+  // Track seen texts to prevent duplicates (case-insensitive)
+  const seenTexts = new Set<string>([correctTextNormalized]);
+
+  // Start with the correct answer
   const options: MultipleChoiceOption[] = [
-    { id: correctWord.id, text: getNativeLanguageText(correctWord, nativeLanguage) },
-    ...distractors.map((d) => ({
-      id: d.id,
-      text: getNativeLanguageText(d, nativeLanguage),
-    })),
+    { id: correctWord.id, text: correctText },
   ];
+
+  // Add distractors, filtering out duplicates by text
+  for (const d of distractors) {
+    const text = getNativeLanguageText(d, nativeLanguage);
+    const textNormalized = text.toLowerCase().trim();
+
+    // Skip if we've already seen this text (prevents duplicate buttons)
+    if (seenTexts.has(textNormalized)) {
+      continue;
+    }
+
+    seenTexts.add(textNormalized);
+    options.push({ id: d.id, text });
+  }
 
   return shuffleArray(options);
 }

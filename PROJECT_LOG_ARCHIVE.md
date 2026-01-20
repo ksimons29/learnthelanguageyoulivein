@@ -1,322 +1,160 @@
 # LLYLI Project Log - Archive
 
-> Archived sessions 1-14. For current sessions, see [PROJECT_LOG.md](./PROJECT_LOG.md)
+> Archived sessions 1-41. For current sessions, see [PROJECT_LOG.md](./PROJECT_LOG.md)
 
 ---
 
-## 2026-01-16 (Session 7) - Dynamic Sentence Generation & Anki Import (Epic 2)
+## Sessions 15-41 (2026-01-19 to 2026-01-20)
 
-**Session Focus**: Implement Epic 2 sentence generation infrastructure and test with real Anki vocabulary data
+### Session 41 - Pre-Launch Review: Search, Science, UX Polish
+Added debounced word search to notebook (searches both originalText and translation), added "Words That Connect" section to Science page explaining LLYLI's unique differentiator, updated starter words messaging, added D4-D6 test cases to TESTING.md.
+**Files**: `notebook/page.tsx`, `science/page.tsx`, `onboarding/complete/page.tsx`, `TESTING.md`
 
-### What Was Done
+### Session 40 - Launch Plan Implementation: Bug Fixes + Notebook Journal
+Fixed 4 ship-blocking bugs: (1) race condition in review stats with atomic SQL increment, (2) wrong language sentences via getUserLanguagePreference, (3) silent review failures with Promise.allSettled, (4) auth state on review page. Transformed notebook into personal journal with JournalHeader, AttentionSection, and StatusBadge components. Added audio timeout tracking with retry.
+**Files**: `api/reviews/route.ts`, `api/sentences/generate/route.ts`, `review-store.ts`, `review/page.tsx`, `journal-header.tsx`, `attention-section.tsx`, `mastery-badge.tsx`, `words-store.ts`
 
-#### 1. Closed Epic 3 GitHub Issue
-- Verified FSRS implementation complete from Session 6
-- Closed issue #13 with implementation summary
+### Session 39 - Bug Fixes: Capture Speed, Bingo Navigation, Sentence Translations
+Optimized capture flow from ~10s to ~2-4s by parallelizing translation+category and making audio non-blocking. Added click handlers to Bingo squares with SQUARE_ACTIONS mapping. Added translation column to sentences schema.
+**Files**: `api/words/route.ts`, `words-store.ts`, `phrase-card.tsx`, `bingo-board.tsx`, `sentences.ts`, `api/sentences/generate/route.ts`
 
-#### 2. Implemented Epic 2: Dynamic Sentence Generation
+### Session 38 - Global Feedback Button + OAuth Setup Docs
+Added coral ribbon-style FeedbackButton to all main pages, positioned on left side. Created AUTH_SETUP.md documenting Google/Apple OAuth setup for future implementation. Created issues #53-#55.
+**Files**: `feedback-button.tsx`, `layout.tsx`, `info-button.tsx`, `docs/engineering/AUTH_SETUP.md`
 
-**Word-Matching Algorithm** (`/web/src/lib/sentences/word-matcher.ts`)
-- `getDueWordsGroupedByCategory()` - Groups due words by category within lookahead window
-- `generateWordCombinations()` - Creates 2-4 word combinations using sliding window
-- `kCombinations()` - Generates k-combinations with early termination
-- `generateWordIdsHash()` - Deterministic hash for deduplication
-- `filterUsedCombinations()` - Batch query to exclude used combinations
-- **Fixed stack overflow**: Limited to 30 words per category, 100 combinations max
+### Session 37 - Auth Fix + Documentation Cleanup + E2E Testing
+Fixed #52 auth redirect by enabling protectedPaths in middleware. Consolidated documentation (README.md 217→102 lines, web/README.md 408→56 lines). Removed outdated files. E2E verified all 3 test users.
+**Files**: `middleware.ts`, `page.tsx`, `README.md`, `.gitignore`, `TESTING.md`
 
-**Sentence Generator** (`/web/src/lib/sentences/generator.ts`)
-- GPT-4o-mini integration (~$0.00006 per sentence)
-- Retry logic with validation (max 3 attempts)
-- Regex validation ensures all target words present
+### Session 36 - Go-Live Preparation
+Created go-live documentation with 13-slide PowerPoint presentation, 11 app screenshots, and comprehensive GitHub documentation. Added trust indicators to sign-up and onboarding complete pages.
+**Files**: `docs/go-live/`, `LLYLI-App-Journey.pptx`, `sign-up/page.tsx`, `onboarding/complete/page.tsx`, `generate-presentation.ts`
 
-**Exercise Type Logic** (`/web/src/lib/sentences/exercise-type.ts`)
-- Determines difficulty based on average consecutive correct sessions:
-  - `< 1`: multiple_choice | `< 2`: fill_blank | `>= 2`: type_translation
+### Session 35 - User Feedback Form
+Implemented in-app feedback form with user_feedback table (type enum: bug_report, feature_request, general_feedback), POST /api/feedback endpoint, FeedbackSheet bottom sheet component, and "Give Feedback" button in About LLYLI sheet.
+**Files**: `user-feedback.ts`, `api/feedback/route.ts`, `feedback-sheet.tsx`, `info-button.tsx`
 
-**API Endpoints**
-- `POST /api/sentences/generate` - Batch generation with optional audio
-- `GET /api/sentences/next` - Get next unused sentence for review
+### Session 34 - Personal Memory Journal Feature
+Added Memory Context feature with 4 new columns (location_hint, time_of_day, situation_tags, personal_note). Created collapsible accordion in capture page, context display in word cards/details/review. Updated Bingo to "Add memory context" square. Added Encoding Specificity research note to Science page.
+**Files**: `words.ts`, `memory-context.ts`, `capture/page.tsx`, `api/words/route.ts`, `word-card.tsx`, `word-detail-sheet.tsx`, `review/page.tsx`, `bingo-board.tsx`, `science/page.tsx`
 
-**Pre-generation Triggers** (`/web/src/lib/hooks/use-sentence-pregeneration.ts`)
-- `useSentencePreGeneration()` hook - Triggers on app visibility (5-min cooldown)
-- Post-capture trigger in `/api/words` - Generates 3 sentences after word capture
+### Session 33 - Science Page + Forecast Chart Fix
+Created `/science` page explaining FSRS algorithm and learning science. Fixed forecast chart to use actual weekday names instead of "Tmrw". Documented date formatting conventions.
+**Files**: `science/page.tsx`, `info-button.tsx`, `forecast-chart.tsx`, `design-system.md`, `CLAUDE.md`
 
-**Review Store Updates** (`/web/src/lib/store/review-store.ts`)
-- Added `reviewMode: 'word' | 'sentence'` state
-- Added `currentSentence`, `sentenceTargetWords` state
-- Added `fetchNextSentence()`, `submitSentenceReview()` actions
+### Session 32 - Deep E2E Testing, Sign Out, Progress Streak Fix
+Added Sign Out button to About LLYLI sheet. Fixed Bingo labels ("MC"→"Pick", "Fill"→"Fill in the blank"). Fixed Progress streak to use streakState table. Consolidated testing docs to TESTING.md.
+**Files**: `info-button.tsx`, `bingo-board.tsx`, `api/progress/route.ts`, `TESTING.md`
 
-#### 3. Created Anki Import Tools
+### Session 31 - Vercel Deployment Fix + Sentence Generation Verification
+Fixed duplicate Vercel deployments by setting Root Directory = `web` in dashboard. Verified sentence generation working with ~5s average time.
+**Files**: `.gitignore`
 
-**Dev Import Endpoint** (`/api/dev/import-anki`)
-- Bypasses auth for development testing
-- Creates users via Supabase service role
-- Converts Anki SM-2 params to FSRS (easeFactor -> difficulty, interval -> stability)
+### Session 30 - Language Filtering Fix + Testing Infrastructure
+Fixed critical bug where words captured in target language weren't appearing. Changed query to OR logic (sourceLang = target OR targetLang = target). Added "en" to TARGET_LANGUAGES. Created test account provisioning script.
+**Files**: `api/words/route.ts`, `api/words/categories/route.ts`, `api/reviews/route.ts`, `api/progress/route.ts`, `onboarding/languages/page.tsx`, `create-test-users.ts`
 
-**Bulk Import Endpoint** (`/api/words/bulk-import`)
-- Batch inserts with learning history preservation
-- Progress logging for large imports
+### Session 29 - Project Documentation + Onboarding Flow Fix
+Created comprehensive README.md. Organized GitHub issues with priority labels. Restored capture step in onboarding (was skipping to complete). Found and documented bugs #51, #52.
+**Files**: `README.md`, `onboarding/languages/page.tsx`
 
-**Test Endpoint** (`/api/dev/test-sentences`)
-- Dev-only endpoint to test sentence generation for specific user
+### Session 28 - Auth Bug Fix + Improved Onboarding
+Fixed email confirmation auth bug by checking session vs user in signup response. Added "Check Your Email" UI. Created starter vocabulary system with 10 curated words per language injected during onboarding.
+**Files**: `sign-up/page.tsx`, `sign-in/page.tsx`, `starter-vocabulary.ts`, `api/onboarding/starter-words/route.ts`, `onboarding/languages/page.tsx`, `onboarding/complete/page.tsx`
 
-#### 4. Successfully Tested with Real Data
-- Created test user: `koossimons91@gmail.com`
-- Imported 903 words from Anki with learning history
-- Generated 5 test sentences combining Portuguese vocabulary
+### Session 27 - User Research Synthesis & Product Documentation
+Analyzed 24-respondent survey: 75% "think I'll remember", 25% "save but never review", 25% motivation issues. Created product_guide.md and user_research_synthesis.md. Created issues #46-#48.
+**Files**: `docs/product/product_guide.md`, `docs/design/user_research_synthesis.md`
 
-### Key Technical Decisions
+### Session 26 - Go-Live Critical Bug Fixes
+Fixed BLOCKER #43 (words not filtered by target_language). Created shared `getUserLanguagePreference()` helper in lib/supabase/server.ts used by 5 API routes.
+**Files**: `lib/supabase/server.ts`, `api/words/route.ts`, `api/words/categories/route.ts`, `api/reviews/route.ts`, `api/progress/route.ts`, `api/sentences/next/route.ts`
 
-**Decision 1: gpt-4o-mini over gpt-4**
-33x cheaper ($0.00006 vs $0.002 per sentence), sufficient quality for short constrained sentences
+### Session 25 - Go-Live E2E Testing
+Comprehensive E2E testing. Found BLOCKER: words not filtered by target_language. Progress API 500 error. Database health: 924 words, 0.88 avg retrievability. Confirmed product decision: one target language per user.
+**Files**: `scripts/update-lang-temp.mjs`
 
-**Decision 2: Pre-generation over on-demand**
-Avoids latency during review, enables background processing
+### Session 24 - Multi-Language Support
+Added sourceLang, targetLang, translationProvider columns to words schema. Created SUPPORTED_DIRECTIONS config (en→pt-PT, nl→pt-PT, nl→en, en→sv). Created comprehensive test suite. Created issues #40-#42.
+**Files**: `words.ts`, `languages.ts`, `api/words/route.ts`, `language-selector.tsx`, `test-comprehensive.ts`, `Multi_Language_Implementation.md`
 
-**Decision 3: Limit combinations per category**
-Fixed stack overflow by limiting to 30 words per category, max 100 combinations
+### Session 23 - PROJECT_LOG Unification
+Combined handoff and changelog into single PROJECT_LOG.md. Archived sessions 1-14. Updated pre-commit hook.
+**Files**: `PROJECT_LOG.md`, `PROJECT_LOG_ARCHIVE.md`, `CLAUDE.md`, `pre-commit`, `session-workflow.md`
 
-**Decision 4: Fire-and-forget post-capture trigger**
-Sentence generation after word capture doesn't block the response
+### Session 22 - Gamification MVP Implementation
+Created gamification database schema (dailyProgress, streakState, bingoState). Built API endpoints for state, events, boss round. Created BingoBoard, BossRound, ProgressRing components. Fixed bugs #38, #39.
+**Files**: `gamification.ts`, `gamification-store.ts`, `api/gamification/`, `bingo-board.tsx`, `boss-round.tsx`, `todays-progress.tsx`, `review/complete/page.tsx`
 
----
+### Session 21 - Issue Cleanup & DX Improvements
+Closed 6 resolved issues. Fixed Turbopack warning. Changed review feedback to show actual day names.
+**Files**: `next.config.ts`, `lib/fsrs/index.ts`
 
-## 2026-01-16 (Session 6) - FSRS Review System Implementation (Epic 3)
+### Session 20 - Test Account Setup & Progress API Fix
+Fixed Progress API Date handling for raw SQL templates. Created and confirmed test account.
+**Files**: `api/progress/route.ts`
 
-**Session Focus**: Implement the FSRS spaced repetition algorithm for the review system, connecting frontend to real backend API
+### Session 19 - Bug Verification, Icon Redesign & QA Updates
+Updated native language options. Replaced emoji icons with Lucide icons. Verified bugs #24-#28, #30.
+**Files**: `onboarding/languages/page.tsx`, `auth/onboarding/page.tsx`, `user-profiles.ts`
 
-### What Was Done
+### Session 18 - Bug Fixes & Language Selection Redesign
+Created FlagStamp component with vinyl sticker appearance. Fixed #27 nested button hydration. Fixed #28 Progress API slow query (10x faster). Fixed #30 sentence validation with Unicode-aware matching.
+**Files**: `flag-stamp.tsx`, `globals.css`, `word-detail-sheet.tsx`, `api/progress/route.ts`, `generator.ts`
 
-#### 1. Closed Completed GitHub Issues
-Based on CHANGELOG analysis, closed issues that were already implemented:
-- **Epic 0: Technical Foundation (#16)** - Database, auth, state management complete
-- **Epic 1: Word Capture (#11)** - API endpoints, OpenAI integration, audio storage complete
+### Session 18a - Bug Fixes: Storage RLS & Sentence Generation
+Applied storage RLS migration for audio bucket. Fixed duplicate sentence hash with onConflictDoNothing().
+**Files**: `api/sentences/generate/route.ts`
 
-#### 2. Installed ts-fsrs Library
-Added the official FSRS (Free Spaced Repetition Scheduler) library
+### Session 17 - Comprehensive QA Testing + Bug Fixes
+Tested 13 scenarios across 4 phases. Discovered 7 bugs (#24-#30). Fixed critical onboarding infinite loop (#24).
+**Files**: `onboarding/complete/page.tsx`, `20260119_fix_audio_storage_rls.sql`, `QA_REPORT_20260119.md`
 
-#### 3. Created FSRS Utility Functions (`/web/src/lib/fsrs/index.ts`)
-Core functions for spaced repetition:
-- `calculateRetrievability()` - Uses forgetting curve formula
-- `isDue()` - Checks if word needs review (retrievability < 90%)
-- `wordToCard()` - Converts Word entity to ts-fsrs Card format
-- `processReview()` - Calculates new FSRS parameters after review
-- `getNextReviewText()` - Human-readable next review timing
+### Session 16 - Capacitor iOS Setup + Database Queries
+Implemented Capacitor for iOS with hybrid approach (loads from Vercel URL). Created 25+ database validation queries. Enhanced useAudioPlayer hook.
+**Files**: `capacitor.config.ts`, `ios/`, `lib/capacitor/`, `CAPACITOR_IOS_SETUP.md`, `database-queries.sql`, `TESTING.md`
 
-#### 4. Built Review API Endpoints
-- `/api/reviews` GET - Fetch due words + create/resume session
-- `/api/reviews` POST - Submit review rating, update FSRS params
-- `/api/reviews/end` POST - End session, return summary stats
-
-#### 5. Updated Review Store
-Added new state fields: `totalDue`, `lastNextReviewText`, `lastMasteryAchieved`
-
-#### 6-8. Connected Review Page to Real API
-Replaced mock data with live API integration, real FSRS-calculated next review times
-
-### Key Technical Decisions
-
-**Decision 1: Use ts-fsrs Library**
-ML-optimized parameters (FSRS-4.5), handles edge cases, future personalization ability
-
-**Decision 2: 2-Hour Session Boundary**
-Sessions expire after 2 hours - ensures "3 correct recalls across 3 sessions" mastery rule works
-
-**Decision 3: Rating Scale (1-4)**
-Following FSRS standard: Again, Hard, Good, Easy
+### Session 15 - Epic 7: PWA Implementation
+Added Serwist for service worker generation. Created manifest.json, offline fallback page, IndexedDB review queue, install prompt banner, audio preloader.
+**Files**: `manifest.json`, `sw.ts`, `~offline/page.tsx`, `use-network-status.ts`, `use-install-prompt.ts`, `review-queue.ts`, `sync-service.ts`, `audio/preload.ts`, `offline-indicator.tsx`, `install-banner.tsx`
 
 ---
 
-## 2026-01-16 (Session 5) - Dark Mode Polish & App-Wide Consistency
-
-**Session Focus**: Apply dark mode styling consistently across all pages and fix remaining dark mode issues
-
-### What Was Done
-
-- Fixed PhraseInput Component for Dark Mode
-- Fixed BrandWidget Modal (About LLYLI)
-- Applied Dark Mode to All Auth Pages
-- Updated All Component Files with CSS variables
-
----
-
-## 2026-01-16 (Session 4) - Dark Mode Implementation
-
-**Session Focus**: Add dark mode with "leather Moleskine at night" aesthetic and theme toggle in bottom navigation
-
-### What Was Done
-
-- Created complete dark theme with warm, desaturated colors
-- Installed `next-themes` package for theme management
-- Created `ThemeProvider` component wrapping the app
-- Updated all Moleskine CSS utilities with `.dark` variants
-- Added theme toggle to bottom navigation
-
-### Key Design Decisions
-
-**Decision 1: "Leather Moleskine at Night" Aesthetic**
-Dark mode uses warm charcoals (#1C1F21, #2A2D30) instead of pure blacks
-
-**Decision 2: Single Theme Toggle Location**
-Best practice: one consistent location (bottom nav)
-
-**Decision 3: System Preference Detection**
-`next-themes` detects OS preference on first visit
-
----
-
-## 2026-01-16 (Session 3) - Home Page Real Data & Audio Playback
-
-**Session Focus**: Connect home page to real API data and implement audio playback component
-
-### What Was Done
-
-- Created `useAudioPlayer` hook for audio state management
-- Created `AudioPlayButton` component with visual states
-- Converted home page from mock data to live API integration
-- Updated PhraseCard with audio playback
-
----
-
-## 2026-01-16 (Session 2) - Authentication Pages & FSRS Documentation
-
-**Session Focus**: Complete authentication UI pages and create standalone FSRS algorithm documentation
-
-### What Was Done
-
-- Created complete auth UI (Sign In, Sign Up, Onboarding, Reset/Update Password)
-- Created FSRS_IMPLEMENTATION.md documentation
-
----
-
-## 2026-01-16 - Phase 1 Implementation: Backend Foundation & Word Capture
-
-**Session Focus**: Implement complete backend foundation including database, authentication, API endpoints, OpenAI integration, and frontend connectivity
-
-### What Was Done
-
-#### Epic 0: Technical Foundation
-- Database Setup (Drizzle ORM + Supabase)
-- Authentication (Supabase Auth)
-- State Management (Zustand)
-- Environment Configuration
-
-#### Epic 1: Word Capture
-- API Endpoints (CRUD for words)
-- OpenAI Integration (TTS, translation, categorization)
-- Audio Storage (Supabase Storage)
-- Frontend Integration
-
-### Key Decisions
-
-**Lazy Loading Pattern**: Database and OpenAI clients lazy-loaded for build safety
-**Cost Optimization**: GPT-4o-mini and OpenAI TTS for cost efficiency
-**Audio Non-Fatal**: Audio failures don't block word capture
-**Supabase Full-Stack**: Single platform for auth + database + storage
-
----
-
-## 2026-01-15 - Progress & Review Pages Alignment
-
-**Session Focus**: Bring Progress and Review pages into alignment with the Moleskine design system
-
-### What Was Done
-
-- Progress Page Redesign with Moleskine aesthetic
-- Review Page Updates with elastic band element
-- Review Complete Page Redesign with celebration styling
-
----
-
-## 2026-01-15 - Moleskine Design Enhancement & Icon Organization
-
-**Session Focus**: Transform the UI into an immersive Moleskine notebook aesthetic with realistic paper textures
-
-### What Was Done
-
-- Enhanced Moleskine Paper Textures (globals.css)
-- Applied Notebook Styling to All Pages
-- Category Icons Redesign (emojis to Lucide icons)
-- BrandWidget Improvements
-- Icon Organization (consolidated to 4 files)
-
----
-
-## 2026-01-15 - Brand Widget Integration
-
-**Session Focus**: Integrate LLYLI brand mascot/widget across all pages
-
-### What Was Done
-
-- Created BrandWidget component with CVA-based variants
-- Integrated widget across all pages
-- Created Info Dialog with app information
-
----
-
-## 2026-01-15 - Next.js Web App Implementation
-
-**Session Focus**: Convert prototype PNG mockups into production-ready Next.js screens
-
-### What Was Done
-
-- Project Foundation Setup (Next.js 14+, shadcn/ui, Tailwind)
-- Shared Navigation Components (BottomNav, FAB)
-- Implemented 8 MVP Screens
-- Created ~25 components
-
----
-
-## 2026-01-14 - Frame0 Mockups Update
-
-**Session Focus**: Update Frame0 mobile mockups to match LLYLI product direction
-
-### What Was Done
-
-- Created Complete iOS Mockup Suite (6 screens)
-- Design System & Tokens
-- Navigation Structure
-
----
-
-## 2026-01-14 (Part 2-6) - Brand Colors, Missing Screens, Scientific Aesthetic
-
-**Session Focus**: Define brand colors, create missing MVP screens, refine to scientific aesthetic
-
-### What Was Done
-
-- Defined LLYLI brand colors (coral, cream, teal)
-- Created 7 new MVP screens (onboarding, completion, mastery)
-- Refined celebrations to calm/scientific aesthetic
-- Created comprehensive info/help pages
-- Final cleanup to 12 screens
-
----
-
-## 2026-01-15 - Strategic Platform Reorganization: Web-First MVP
-
-**Session Focus**: Reorganize project from iOS-first to web-first MVP with audio as primary feature
-
-### What Was Done
-
-- Shifted from native iOS MVP to responsive web application MVP
-- Updated PRD, Implementation Plan, Vision documentation
-- Created V2 Native iOS Roadmap
-- Positioned audio as core feature
-
-### Key Decisions
-
-**Decision 1: Web-First MVP (Not iOS-First)**
-Faster iteration, universal reach, lower cost, validate methodology first
-
-**Decision 2: Audio as Primary Feature**
-TTS API integration, CDN delivery, Service Worker caching
-
-**Decision 3: Preserve All iOS Content for V2**
-iOS native apps valuable for Share Extension, Widgets, offline-first - after validation
-
-**Decision 4: Progressive Web App (PWA)**
-Offline capabilities, install prompt, app-like experience without app store
+## Sessions 1-14 (2026-01-14 to 2026-01-16)
+
+### Session 7 - Dynamic Sentence Generation & Anki Import (Epic 2)
+Implemented word-matching algorithm with getDueWordsGroupedByCategory(), generateWordCombinations(), kCombinations(). Created sentence generator with GPT-4o-mini (~$0.00006/sentence). Built API endpoints POST /api/sentences/generate and GET /api/sentences/next. Created Anki import tools. Successfully tested with 903 real words.
+**Files**: `word-matcher.ts`, `generator.ts`, `exercise-type.ts`, `api/sentences/`, `review-store.ts`
+
+### Session 6 - FSRS Review System Implementation (Epic 3)
+Installed ts-fsrs library. Created FSRS utility functions (calculateRetrievability, isDue, wordToCard, processReview, getNextReviewText). Built review API endpoints. 2-hour session boundary for mastery rule.
+**Files**: `lib/fsrs/index.ts`, `api/reviews/route.ts`, `api/reviews/end/route.ts`
+
+### Session 5 - Dark Mode Polish & App-Wide Consistency
+Fixed PhraseInput Component, BrandWidget Modal, applied dark mode to all auth pages.
+
+### Session 4 - Dark Mode Implementation
+Created dark theme with "leather Moleskine at night" aesthetic using warm charcoals (#1C1F21, #2A2D30). Installed next-themes, added theme toggle to bottom nav.
+**Files**: `ThemeProvider`, `globals.css`, `bottom-nav.tsx`
+
+### Session 3 - Home Page Real Data & Audio Playback
+Created useAudioPlayer hook and AudioPlayButton component. Connected home page to live API.
+**Files**: `use-audio-player.ts`, `audio-play-button.tsx`, `phrase-card.tsx`
+
+### Session 2 - Authentication Pages & FSRS Documentation
+Created complete auth UI (Sign In, Sign Up, Onboarding, Reset/Update Password). Created FSRS_IMPLEMENTATION.md.
+
+### Session 1 - Phase 1 Implementation: Backend Foundation & Word Capture
+Database Setup (Drizzle + Supabase), Authentication (Supabase Auth), State Management (Zustand), API Endpoints (CRUD for words), OpenAI Integration (TTS, translation, categorization), Audio Storage (Supabase Storage).
+
+### Sessions before numbering (2026-01-14 to 2026-01-15)
+- Progress & Review Pages Alignment with Moleskine aesthetic
+- Moleskine Design Enhancement with paper textures
+- Brand Widget Integration with CVA-based variants
+- Next.js Web App Implementation (8 MVP screens, ~25 components)
+- Frame0 Mockups Update (6 iOS screens)
+- Brand Colors, Missing Screens, Scientific Aesthetic
+- Strategic Platform Reorganization: Web-First MVP (shifted from iOS-first)
 
 ---
 

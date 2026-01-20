@@ -194,6 +194,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 6c. Final check: If translation STILL equals original after trying both directions,
+    // this is likely an untranslatable/culturally-specific word.
+    // Add an explanatory note rather than showing identical text.
+    if (translation.toLowerCase().trim() === text.toLowerCase().trim()) {
+      console.log(
+        `Word "${text}" appears untranslatable - adding explanatory note`
+      );
+      // Create an explanatory phrase based on the source language
+      const langNames: Record<string, string> = {
+        'nl': 'Dutch',
+        'pt-PT': 'Portuguese',
+        'sv': 'Swedish',
+        'en': 'English',
+      };
+      const sourceLangName = langNames[sourceLang] || sourceLang;
+      translation = `${text} (${sourceLangName} expression)`;
+    }
+
     // 8. Create word in database (without audio URL initially)
     // Auto-detect time of day from server timestamp
     const captureTime = new Date();
