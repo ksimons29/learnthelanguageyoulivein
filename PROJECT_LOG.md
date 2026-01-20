@@ -159,6 +159,31 @@ npm run build             # Production build
 **Build:** ✓ Passed
 **Tests:** ✓ 65 tests passed
 
+#### Deployment
+
+**Issue Found**: Initial `vercel --prod` deployed old code because changes weren't committed. Vercel auto-deploys from `main` branch only.
+
+**Resolution**:
+```bash
+git add -A
+git commit -m "feat: LLYLI Launch Plan - bugs, notebook journal, polish"
+git push origin main  # Triggers Vercel auto-deploy
+```
+
+**Commit**: `7d80fcd` (19 files, 1405 insertions)
+
+#### Production E2E Verification
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| JournalHeader | ✅ | "Your Portuguese Journal" with stats |
+| Stats API | ✅ | `/api/words/stats` returns correct data |
+| StatusBadge | ✅ | New/Due/Learning badges on word cards |
+| Word Detail | ✅ | Expandable with stats, audio, review date |
+| Review Page | ✅ | Session working, 9 due words |
+
+**Production URL**: https://web-eta-gold.vercel.app
+
 ---
 
 ### Session 39 - 2026-01-20 - Bug Fixes: Capture Speed, Bingo Navigation, Sentence Translations
