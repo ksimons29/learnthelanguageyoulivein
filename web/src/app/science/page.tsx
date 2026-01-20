@@ -74,7 +74,7 @@ export default function SciencePage() {
               Your memory fades predictably. Ebbinghaus proved it in 1885.
             </p>
             <p className="text-sm" style={{ color: "var(--text-body)" }}>
-              Review at the right moment—just as you're about to forget—and memory strengthens dramatically. LLYLI times this precisely.
+              Review just as you start to forget, and memory strengthens. LLYLI times this precisely.
             </p>
 
             {/* Stat Callout */}
@@ -111,7 +111,7 @@ export default function SciencePage() {
             </div>
 
             <p className="text-sm mb-3" style={{ color: "var(--text-body)" }}>
-              Most apps use 1987 math. LLYLI uses FSRS—machine learning research from 2023.
+              Most apps use 1987 math. LLYLI uses FSRS, built on 2023 ML research.
             </p>
 
             <ul className="space-y-1.5">
@@ -123,7 +123,7 @@ export default function SciencePage() {
                 <li key={i} className="flex gap-2 text-sm" style={{ color: "var(--text-body)" }}>
                   <span style={{ color: "var(--accent-nav)" }}>•</span>
                   <span>
-                    <strong style={{ color: "var(--text-heading)" }}>{item.label}</strong> — {item.desc}
+                    <strong style={{ color: "var(--text-heading)" }}>{item.label}:</strong> {item.desc}
                   </span>
                 </li>
               ))}
@@ -176,7 +176,7 @@ export default function SciencePage() {
                 <li key={i} className="flex gap-2 text-sm" style={{ color: "var(--text-body)" }}>
                   <span style={{ color: "var(--accent-nav)" }}>•</span>
                   <span>
-                    <strong style={{ color: "var(--text-heading)" }}>{item.label}</strong> — {item.desc}
+                    <strong style={{ color: "var(--text-heading)" }}>{item.label}:</strong> {item.desc}
                   </span>
                 </li>
               ))}
@@ -216,7 +216,7 @@ export default function SciencePage() {
             </div>
 
             <p className="text-sm mb-3" style={{ color: "var(--text-body)" }}>
-              Capture phrases from your actual life—not generic vocab lists.
+              Capture phrases from your actual life, not generic vocab lists.
             </p>
 
             <ul className="space-y-1.5">
@@ -228,7 +228,7 @@ export default function SciencePage() {
                 <li key={i} className="flex gap-2 text-sm" style={{ color: "var(--text-body)" }}>
                   <span style={{ color: "var(--accent-nav)" }}>•</span>
                   <span>
-                    <strong style={{ color: "var(--text-heading)" }}>{item.label}</strong> — {item.desc}
+                    <strong style={{ color: "var(--text-heading)" }}>{item.label}:</strong> {item.desc}
                   </span>
                 </li>
               ))}
@@ -261,7 +261,7 @@ export default function SciencePage() {
             className="text-xs text-center"
             style={{ color: "var(--text-muted)" }}
           >
-            Built on FSRS by Open Spaced Repetition—peer-reviewed, open source.
+            Built on FSRS by Open Spaced Repetition. Peer-reviewed, open source.
           </p>
         </div>
       </div>
