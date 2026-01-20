@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Science Page** - Added `/science` page explaining LLYLI's research-backed approach, accessible via InfoButton sheet (Session 33)
 - [x] **Sign Out + Bug Fixes** - Added Sign Out to About sheet, fixed Bingo labels, synced Progress streak with gamification (Session 32)
 - [x] **Vercel Deployment Fix** - Root Directory config fixed, no more duplicate/failing deployments (Session 31)
 - [x] **Language Filtering + E2E Testing** - Fixed OR logic for word queries, added English to target languages, verified all 3 test users (Session 30)
@@ -76,6 +77,30 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 33 - 2026-01-20 - Science Page
+
+**Focus**: Add educational page explaining the research-backed science behind LLYLI's effectiveness
+
+**Changes Made**
+| Change | Details |
+|--------|---------|
+| Created `/science` page | New page with Moleskine design explaining forgetting curves, FSRS algorithm, and learning science |
+| Added Science link to InfoButton | "The Science Behind LLYLI" button in About sheet navigates to /science page |
+
+**Files Changed**
+| File | Change |
+|------|--------|
+| `web/src/app/science/page.tsx` | **NEW** - Science explanation page with 4 sections |
+| `web/src/components/brand/info-button.tsx` | Added FlaskConical icon, handleScienceClick, and Science button |
+
+**Content Sections**
+1. Your Brain Has a Forgetting Curve - Explains Ebbinghaus's research and optimal review timing
+2. Modern Algorithms, Not 1980s Math - FSRS algorithm explanation (Difficulty, Stability, Retrievability)
+3. Less Grinding, More Living - Short sessions, clear goals, 10-word rule, instant feedback
+4. Your Phrases, Your Memory - Context-dependent memory, personal relevance, native audio
+
+---
 
 ### Session 32 - 2026-01-20 - Deep E2E Testing, Sign Out, Progress Streak Fix
 

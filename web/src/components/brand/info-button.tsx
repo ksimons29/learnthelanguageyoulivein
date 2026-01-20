@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BookOpen, Sparkles, Brain, Volume2, LogOut } from "lucide-react";
+import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/auth-store";
 import {
@@ -48,6 +48,11 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
     } finally {
       setIsSigningOut(false);
     }
+  };
+
+  const handleScienceClick = () => {
+    setIsOpen(false);
+    router.push("/science");
   };
 
   return (
@@ -146,6 +151,19 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
               </div>
             ))}
           </div>
+
+          {/* The Science Button */}
+          <button
+            onClick={handleScienceClick}
+            className="w-full py-3 mb-2 rounded-lg flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+            style={{
+              backgroundColor: "var(--surface-page-aged)",
+              color: "var(--accent-nav)",
+            }}
+          >
+            <FlaskConical className="h-4 w-4" />
+            <span className="text-sm font-medium">The Science Behind LLYLI</span>
+          </button>
 
           {/* Sign Out Button */}
           <button
