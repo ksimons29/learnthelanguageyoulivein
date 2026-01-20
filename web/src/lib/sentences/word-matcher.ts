@@ -65,6 +65,10 @@ export async function getDueWordsGroupedByCategory(
       )
     );
 
+  // DEBUG: Log what words were found
+  console.log(`[DEBUG word-matcher] Found ${dueWords.length} due words for targetLanguage="${targetLanguage}". Sample:`,
+    dueWords.slice(0, 3).map(w => ({ id: w.id, text: w.originalText, src: w.sourceLang, tgt: w.targetLang })));
+
   // Group by category in memory (more flexible than SQL GROUP BY)
   const categoryGroups = new Map<string, Word[]>();
 

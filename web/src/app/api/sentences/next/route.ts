@@ -56,6 +56,9 @@ export async function GET(request: NextRequest) {
 
     // 5. Try each sentence until we find one with all words intact
     for (const sentence of unusedSentences) {
+      // DEBUG: Log sentence details
+      console.log(`[DEBUG] Checking sentence ${sentence.id}, wordIds: ${JSON.stringify(sentence.wordIds)}, targetLanguage: ${languagePreference.targetLanguage}`);
+
       // Get the words for this sentence (filtered by target language)
       // Match words where the user's target language appears as either sourceLang or targetLang
       const sentenceWords = await db
@@ -71,6 +74,9 @@ export async function GET(request: NextRequest) {
             inArray(words.id, sentence.wordIds)
           )
         );
+
+      // DEBUG: Log what was found
+      console.log(`[DEBUG] Found ${sentenceWords.length} words for sentence. Words:`, sentenceWords.map(w => ({ id: w.id, text: w.originalText, src: w.sourceLang, tgt: w.targetLang })));
 
       // Verify we found all words (data integrity check)
       // Skip sentences with missing words (user may have deleted them)
