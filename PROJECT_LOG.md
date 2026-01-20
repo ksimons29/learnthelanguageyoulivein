@@ -112,7 +112,9 @@ npm run build             # Production build
 |------|----------|---------|---------|--------|----------|----------|
 | test-en-pt | EN→PT | ✅ | ✅ (saudade→longing) | ✅ | ✅ | ✅ |
 | test-en-sv | EN→SV | ✅ | ✅ (lagom→just right) | ✅ | ✅ | ✅ |
-| test-nl-en | NL→EN | Pending | - | - | - | - |
+| test-nl-en | NL→EN | ✅ | ✅ (gezellig) | ✅ | ✅ | ✅ |
+
+**Auth Redirect Fix Verified**: Unauthenticated users are now correctly redirected to `/auth/sign-in`.
 
 ---
 
