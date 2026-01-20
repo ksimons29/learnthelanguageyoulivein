@@ -103,7 +103,7 @@ Transform the notebook from a vocabulary list into a memory journal where each p
 | API update | Words API accepts memoryContext, auto-detects timeOfDay from server timestamp |
 | Words store | Updated captureWord to accept memoryContext option |
 | Word card | Subtle context line below translation (e.g., "at the bakery · evening") |
-| Word detail sheet | New "Memory" section with teal left border (margin-note aesthetic) |
+| Word detail sheet | New "Context" section with teal left border (margin-note aesthetic) |
 | Review page | Memory hint appears after answer reveal ("Remember: at the bakery · Nervous, Alone") |
 | Bingo board | Replaced "Type translation" with "Add memory context" square (📍) |
 | Gamification | New `word_captured_with_context` event type triggers bingo square |
@@ -149,6 +149,12 @@ Transform the notebook from a vocabulary list into a memory journal where each p
 - `npm run build` ✅ Pass
 - `npm run test:run` ✅ Pass (65/65 tests)
 - `npm run db:push` ✅ Pass (4 columns added)
+
+**Production Verified** ✅
+- Capture page: "Add memory context" accordion with 9 Lucide icon tags
+- Note field: "What will help you remember?" with flexible placeholder
+- Word detail: "Context" header, clean note display without quotes
+- Full E2E test: captured "boa tarde" with location, tags, and note - all displayed correctly
 
 ---
 
