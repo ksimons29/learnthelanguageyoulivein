@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Volume2, Sparkles, ArrowRight, BookOpen } from "lucide-react";
+import { Loader2, Volume2, Sparkles, ArrowRight, BookOpen, Cloud } from "lucide-react";
 import { useAudioPlayer } from "@/lib/hooks";
 
 interface StarterWord {
@@ -241,9 +241,18 @@ export default function CompletePage() {
         </button>
       </div>
 
+      {/* Data safety assurance */}
+      <div
+        className="mt-6 flex items-center justify-center gap-2 text-xs"
+        style={{ color: "var(--text-muted)" }}
+      >
+        <Cloud className="w-3.5 h-3.5" style={{ color: "var(--accent-nav)" }} />
+        <span>Your progress is safely synced to your account</span>
+      </div>
+
       {/* Subtitle */}
       <p
-        className="mt-6 text-sm text-center max-w-xs"
+        className="mt-3 text-sm text-center max-w-xs"
         style={{ color: "var(--text-muted)" }}
       >
         Welcome to LLYLI - your personal language notebook

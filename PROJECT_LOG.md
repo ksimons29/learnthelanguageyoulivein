@@ -34,6 +34,8 @@ npm run build             # Production build
 | File | Purpose |
 |------|---------|
 | `README.md` | Project overview, tech stack, quick start guide |
+| `docs/go-live/README.md` | **★ Go-live documentation with screenshots** |
+| `docs/go-live/LLYLI-App-Journey.pptx` | PowerPoint presentation (13 slides) |
 | `docs/product/product_guide.md` | Comprehensive product explanation, onboarding, gamification |
 | `docs/design/user_research_synthesis.md` | Survey analysis (24 respondents), personas, gap analysis |
 | `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
@@ -81,6 +83,70 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 36 - 2026-01-20 - Go-Live Preparation
+
+**Focus**: Create go-live documentation including account security verification, app journey presentation, and user-facing materials
+
+**Deliverables Created**
+| Deliverable | Location | Purpose |
+|-------------|----------|---------|
+| PowerPoint presentation | `docs/go-live/LLYLI-App-Journey.pptx` | 13-slide deck with speaker notes |
+| GitHub documentation | `docs/go-live/README.md` | Comprehensive page with embedded screenshots |
+| Technical documentation | `docs/go-live/GO_LIVE_PREPARATION.md` | Security details and data persistence |
+| Screenshots | `docs/go-live/screenshots/` | 11 app screenshots for presentations |
+| Generation script | `web/scripts/generate-presentation.ts` | Regenerate PPTX if needed |
+
+**Code Changes**
+| File | Change |
+|------|--------|
+| `web/src/app/auth/sign-up/page.tsx` | Added "Your progress is securely saved to the cloud" trust indicator |
+| `web/src/app/onboarding/complete/page.tsx` | Added "Your progress is safely synced to your account" message |
+
+**Screenshots Captured**
+| Screenshot | Description |
+|------------|-------------|
+| 01-today-dashboard.png | Main home screen with daily progress |
+| 02-capture-page.png | Phrase capture interface |
+| 03-review-question.png | Review mode - question |
+| 04-review-answer.png | Review mode - answer with ratings |
+| 05-notebook.png | Notebook browser with categories |
+| 06-progress.png | Progress tracking dashboard |
+| 07-sign-up.png | Account creation page |
+| 08-onboarding-language.png | Target language selection |
+| 09-onboarding-native.png | Native language selection |
+| 10-onboarding-capture.png | Initial word capture |
+| 11-onboarding-complete.png | Onboarding celebration |
+
+**Presentation Slides (13 total)**
+1. Welcome to LLYLI / Sign-up
+2. Choose Your Target Language
+3. Set Your Native Language
+4. Add Your First Words
+5. Your Notebook is Ready
+6. Your Daily Dashboard
+7. Capturing Phrases
+8. Review: The Question
+9. Review: The Answer
+10. Your Notebook
+11. Track Your Progress
+12. Daily Usage
+13. The LLYLI Promise
+
+**Security Verification**
+- Supabase Auth with bcrypt password hashing
+- JWT tokens in HTTP-only cookies
+- User data isolation via userId filtering on all queries
+- Cloud-synced progress with automatic backups
+
+**Build & Tests**
+- `npm run build` ✅ Pass
+- `npm run test:run` ✅ Pass
+
+**Dependencies Added**
+- `pptxgenjs` (dev) - PowerPoint generation
+
+---
 
 ### Session 35 - 2026-01-20 - User Feedback Form
 

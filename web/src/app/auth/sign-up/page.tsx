@@ -550,8 +550,14 @@ export default function SignUpPage() {
               </Link>
             </p>
 
+            {/* Data safety notice */}
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-[var(--text-muted)]">
+              <CheckCircle className="w-3.5 h-3.5 text-[var(--accent-nav)]" />
+              <span>Your progress is securely saved to the cloud</span>
+            </div>
+
             {/* Terms notice */}
-            <p className="mt-4 text-center text-xs text-[var(--text-muted)]">
+            <p className="mt-3 text-center text-xs text-[var(--text-muted)]">
               By creating an account, you agree to our{' '}
               <Link href="/terms" className="underline">
                 Terms of Service
