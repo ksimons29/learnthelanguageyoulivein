@@ -301,18 +301,18 @@ export default function CapturePage() {
                   </div>
                 </div>
 
-                {/* Personal note */}
+                {/* Memory note - research shows context aids recall */}
                 <div>
                   <label
                     className="text-xs font-medium mb-1.5 block"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    Add a note
+                    What will help you remember?
                   </label>
                   <textarea
                     value={personalNote}
                     onChange={(e) => setPersonalNote(e.target.value)}
-                    placeholder="First time ordering alone..."
+                    placeholder="The context, a usage tip, or a memory..."
                     rows={2}
                     className="w-full px-3 py-2 text-sm rounded-lg bg-transparent outline-none resize-none handwritten"
                     style={{

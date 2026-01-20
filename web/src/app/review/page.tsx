@@ -653,7 +653,7 @@ export default function ReviewPage() {
             />
           )}
 
-          {/* Memory Hint - shown after reveal if word has context */}
+          {/* Context Hint - shown after reveal if word has context */}
           {currentWord &&
             reviewState !== "recall" &&
             hasMemoryContext(currentWord) && (

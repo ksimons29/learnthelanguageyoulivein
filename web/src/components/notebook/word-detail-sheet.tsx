@@ -217,7 +217,7 @@ export function WordDetailSheet({
                 className="text-sm font-semibold"
                 style={{ color: "var(--text-heading)" }}
               >
-                Memory
+                Context
               </h3>
             </div>
 
@@ -259,13 +259,13 @@ export function WordDetailSheet({
               </div>
             )}
 
-            {/* Personal note */}
+            {/* Note */}
             {word.personalNote && (
               <p
-                className="text-sm italic handwritten"
-                style={{ color: "var(--text-muted)" }}
+                className="text-sm handwritten"
+                style={{ color: "var(--text-body)" }}
               >
-                "{word.personalNote}"
+                {word.personalNote}
               </p>
             )}
           </div>

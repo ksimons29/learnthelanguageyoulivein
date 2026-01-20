@@ -110,13 +110,22 @@ Transform the notebook from a vocabulary list into a memory journal where each p
 | Science page | Added "Retrieval anchors" bullet and Encoding Specificity research note |
 | Testing docs | Added comprehensive Memory Context testing section (C7-C12) |
 
-**Situation Tags Available**
-| Tag | Emoji | Tag | Emoji |
-|-----|-------|-----|-------|
-| Alone | 🚶 | With partner | 💑 |
-| With friends | 👥 | At work | 💼 |
-| Shopping | 🛒 | Dining out | 🍽️ |
-| Nervous | 😰 | Proud | 🎉 |
+**Situation Tags Available** (Lucide icons, Moleskine styling)
+| Tag | Icon | Tag | Icon |
+|-----|------|-----|------|
+| Alone | User | With loved one | Heart |
+| With friends | Users | At work | Briefcase |
+| Shopping | ShoppingBag | Dining out | UtensilsCrossed |
+| Outdoor | TreePine | Nervous | Frown |
+| Proud | Trophy | | |
+
+**Design Updates (based on research)**
+- Changed "With partner" → "With loved one" (more inclusive)
+- Added "Outdoor" tag with TreePine icon
+- Replaced emojis with Lucide icons for Moleskine consistency
+- Rebranded note field: "What will help you remember?" with placeholder "The context, a usage tip, or a memory..."
+- Word detail: "Context" header (was "Memory"), cleaner note display without quotes
+- Research shows emotional context aids retention (encoding specificity) while allowing professional/linguistic notes
 
 **Files Changed**
 | File | Change |
