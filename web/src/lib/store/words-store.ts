@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Word } from '@/lib/db/schema';
+import type { MemoryContext } from '@/lib/config/memory-context';
 
 /**
  * Words Store
@@ -51,7 +52,12 @@ interface WordsState {
   fetchCategories: () => Promise<void>;
   captureWord: (
     text: string,
-    options?: { context?: string; sourceLang?: string; targetLang?: string }
+    options?: {
+      context?: string;
+      sourceLang?: string;
+      targetLang?: string;
+      memoryContext?: MemoryContext;
+    }
   ) => Promise<Word>;
   deleteWord: (id: string) => Promise<void>;
 }
@@ -148,7 +154,12 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
   captureWord: async (
     text: string,
-    options?: { context?: string; sourceLang?: string; targetLang?: string }
+    options?: {
+      context?: string;
+      sourceLang?: string;
+      targetLang?: string;
+      memoryContext?: MemoryContext;
+    }
   ) => {
     set({ isLoading: true, error: null });
     try {
@@ -160,6 +171,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
           context: options?.context,
           sourceLang: options?.sourceLang,
           targetLang: options?.targetLang,
+          memoryContext: options?.memoryContext,
         }),
       });
 

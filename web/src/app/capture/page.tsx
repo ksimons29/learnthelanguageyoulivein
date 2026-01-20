@@ -4,24 +4,99 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PhraseInput } from "@/components/capture";
 import { InfoButton } from "@/components/brand";
-import { PenLine, X } from "lucide-react";
-import { useWordsStore, useUIStore } from "@/lib/store";
+import {
+  PenLine,
+  X,
+  ChevronDown,
+  MapPin,
+  User,
+  Heart,
+  Users,
+  Briefcase,
+  ShoppingBag,
+  UtensilsCrossed,
+  TreePine,
+  Frown,
+  Trophy,
+} from "lucide-react";
+
+// Map icon names to components for situation tags
+const SITUATION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  User,
+  Heart,
+  Users,
+  Briefcase,
+  ShoppingBag,
+  UtensilsCrossed,
+  TreePine,
+  Frown,
+  Trophy,
+};
+import { useWordsStore, useUIStore, useGamificationStore } from "@/lib/store";
+import {
+  SITUATION_TAGS,
+  type SituationTagId,
+  type MemoryContext,
+} from "@/lib/config/memory-context";
 
 export default function CapturePage() {
   const router = useRouter();
   const [phrase, setPhrase] = useState("");
+  const [showContextFields, setShowContextFields] = useState(false);
+  const [locationHint, setLocationHint] = useState("");
+  const [selectedTags, setSelectedTags] = useState<SituationTagId[]>([]);
+  const [personalNote, setPersonalNote] = useState("");
   const { captureWord, isLoading } = useWordsStore();
   const { showToast } = useUIStore();
+  const { emitWordCapturedWithContext } = useGamificationStore();
+
+  const handleTagToggle = (tagId: SituationTagId) => {
+    setSelectedTags((prev) => {
+      if (prev.includes(tagId)) {
+        return prev.filter((id) => id !== tagId);
+      }
+      // Max 3 tags
+      if (prev.length >= 3) {
+        return prev;
+      }
+      return [...prev, tagId];
+    });
+  };
 
   const handleSave = async () => {
     if (!phrase.trim()) return;
 
     try {
+      // Build memory context (only include non-empty fields)
+      const memoryContext: MemoryContext = {};
+      if (locationHint.trim()) {
+        memoryContext.locationHint = locationHint.trim();
+      }
+      if (selectedTags.length > 0) {
+        memoryContext.situationTags = selectedTags;
+      }
+      if (personalNote.trim()) {
+        memoryContext.personalNote = personalNote.trim();
+      }
+
       // Language direction is determined by user's profile settings
       // (set during onboarding) - no need to pass explicit languages
-      await captureWord(phrase.trim());
+      const hasContext = Object.keys(memoryContext).length > 0;
+      const word = await captureWord(phrase.trim(), {
+        memoryContext: hasContext ? memoryContext : undefined,
+      });
+
+      // Emit gamification event if phrase was captured with context
+      if (hasContext && word?.id) {
+        emitWordCapturedWithContext(word.id);
+      }
+
       showToast("Phrase captured successfully!", "success");
       setPhrase("");
+      setLocationHint("");
+      setSelectedTags([]);
+      setPersonalNote("");
+      setShowContextFields(false);
       router.push("/");
     } catch (error) {
       showToast(
@@ -110,7 +185,7 @@ export default function CapturePage() {
 
           {/* Input with ruled lines */}
           <div
-            className="mb-6 relative rounded-xl p-4"
+            className="mb-4 relative rounded-xl p-4"
             style={{
               backgroundColor: "var(--surface-page-aged)",
               boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.04)",
@@ -130,6 +205,124 @@ export default function CapturePage() {
               onChange={setPhrase}
               placeholder="Type or paste a phrase..."
             />
+          </div>
+
+          {/* Memory Context Accordion */}
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setShowContextFields(!showContextFields)}
+              className="flex items-center gap-2 w-full py-2 text-sm font-medium transition-colors"
+              style={{ color: "var(--accent-nav)" }}
+            >
+              <MapPin className="h-4 w-4" />
+              <span>Add memory context</span>
+              <ChevronDown
+                className={`h-4 w-4 ml-auto transition-transform ${
+                  showContextFields ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {showContextFields && (
+              <div
+                className="mt-3 p-4 rounded-xl space-y-4"
+                style={{
+                  backgroundColor: "var(--surface-page)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {/* Location hint */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label
+                      className="text-xs font-medium"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Where did you hear this?
+                    </label>
+                    <button
+                      type="button"
+                      disabled
+                      className="text-[10px] px-2 py-0.5 rounded-full opacity-60"
+                      style={{
+                        backgroundColor: "var(--accent-nav-light)",
+                        color: "var(--accent-nav)",
+                      }}
+                    >
+                      📍 Auto-locate coming soon
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={locationHint}
+                    onChange={(e) => setLocationHint(e.target.value)}
+                    placeholder="at the bakery, in the park..."
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-transparent outline-none"
+                    style={{
+                      border: "1px solid var(--border)",
+                      color: "var(--text-body)",
+                    }}
+                  />
+                </div>
+
+                {/* Situation tags */}
+                <div>
+                  <label
+                    className="text-xs font-medium mb-1.5 block"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Situation (pick up to 3)
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SITUATION_TAGS.map((tag) => {
+                      const isSelected = selectedTags.includes(tag.id);
+                      const IconComponent = SITUATION_ICONS[tag.icon];
+                      return (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => handleTagToggle(tag.id)}
+                          className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all"
+                          style={{
+                            backgroundColor: isSelected
+                              ? "rgba(12, 107, 112, 0.15)"
+                              : "rgba(139, 90, 43, 0.08)",
+                            color: isSelected
+                              ? "var(--accent-nav)"
+                              : "#8B5A2B",
+                          }}
+                        >
+                          {IconComponent && <IconComponent className="h-3 w-3" />}
+                          {tag.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Personal note */}
+                <div>
+                  <label
+                    className="text-xs font-medium mb-1.5 block"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Add a note
+                  </label>
+                  <textarea
+                    value={personalNote}
+                    onChange={(e) => setPersonalNote(e.target.value)}
+                    placeholder="First time ordering alone..."
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm rounded-lg bg-transparent outline-none resize-none handwritten"
+                    style={{
+                      border: "1px solid var(--border)",
+                      color: "var(--text-body)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Save button - styled as ribbon tab */}
@@ -175,7 +368,9 @@ export default function CapturePage() {
             className="mt-5 text-center text-sm handwritten"
             style={{ color: "var(--text-muted)" }}
           >
-            You can add translation and context later
+            {showContextFields
+              ? "Context helps you remember where you learned it"
+              : "Tap above to add where you heard this phrase"}
           </p>
         </div>
 

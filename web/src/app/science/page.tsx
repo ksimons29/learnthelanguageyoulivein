@@ -224,6 +224,7 @@ export default function SciencePage() {
                 { label: "Context memory", desc: "Real experiences stick" },
                 { label: "Personal relevance", desc: "Brain prioritizes what matters" },
                 { label: "Native audio", desc: "Authentic pronunciation" },
+                { label: "Retrieval anchors", desc: "WHERE and WHEN you learned it" },
               ].map((item, i) => (
                 <li key={i} className="flex gap-2 text-sm" style={{ color: "var(--text-body)" }}>
                   <span style={{ color: "var(--accent-nav)" }}>•</span>
@@ -233,6 +234,21 @@ export default function SciencePage() {
                 </li>
               ))}
             </ul>
+
+            {/* Research Note */}
+            <div
+              className="mt-4 p-3 rounded-lg text-sm"
+              style={{
+                backgroundColor: "var(--surface-page)",
+                borderLeft: "3px solid var(--accent-nav)",
+              }}
+            >
+              <p style={{ color: "var(--text-body)" }}>
+                <strong style={{ color: "var(--text-heading)" }}>Encoding Specificity:</strong>{" "}
+                Memory retrieval improves when recall context matches learning context.
+                Adding where and when you learned a phrase creates retrieval cues that strengthen recall.
+              </p>
+            </div>
 
             {/* Stat Callout */}
             <div

@@ -25,7 +25,7 @@ const SQUARE_LABELS: Record<BingoSquareId, { short: string; full: string }> = {
   streak3: { short: "3x", full: "3 in a row" },
   fillBlank: { short: "Fill", full: "Fill in the blank" },
   multipleChoice: { short: "Pick", full: "Multiple choice" },
-  typeTranslation: { short: "Type", full: "Type translation" },
+  addContext: { short: "📍", full: "Add memory context" },
   workWord: { short: "Work", full: "Work category" },
   socialWord: { short: "Social", full: "Social category" },
   masterWord: { short: "Master", full: "Master a word" },
@@ -48,7 +48,7 @@ export function BingoBoard({ variant = "full", onExpand }: BingoBoardProps) {
 
   const squareOrder: BingoSquareId[] = [
     "review5", "streak3", "fillBlank",
-    "multipleChoice", "typeTranslation", "workWord",
+    "multipleChoice", "addContext", "workWord",
     "socialWord", "masterWord", "finishSession",
   ];
 

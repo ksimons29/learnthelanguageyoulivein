@@ -114,7 +114,7 @@ export const DEFAULT_BINGO_SQUARES = [
   { id: 'streak3', label: '3 correct in a row', target: 3 },
   { id: 'fillBlank', label: 'Complete a fill-blank', target: 1 },
   { id: 'multipleChoice', label: 'Complete a multiple choice', target: 1 },
-  { id: 'typeTranslation', label: 'Type a translation', target: 1 },
+  { id: 'addContext', label: 'Add memory context', target: 1 }, // Capture a phrase with memory context
   { id: 'workWord', label: 'Review a work word', target: 1 },
   { id: 'socialWord', label: 'Review a social word', target: 1 },
   { id: 'masterWord', label: 'Master a word', target: 1 },

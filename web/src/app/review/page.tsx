@@ -29,6 +29,12 @@ import {
   type MultipleChoiceOption,
 } from "@/lib/review/distractors";
 import type { Word } from "@/lib/db/schema";
+import {
+  hasMemoryContext,
+  formatMemoryContextShort,
+  getSituationTag,
+} from "@/lib/config/memory-context";
+import { MapPin } from "lucide-react";
 
 type Rating = "hard" | "good" | "easy";
 
@@ -646,6 +652,48 @@ export default function ReviewPage() {
               isLoadingAudio={audioLoading}
             />
           )}
+
+          {/* Memory Hint - shown after reveal if word has context */}
+          {currentWord &&
+            reviewState !== "recall" &&
+            hasMemoryContext(currentWord) && (
+              <div
+                className="flex items-center gap-2 p-3 rounded-lg"
+                style={{
+                  backgroundColor: "var(--accent-nav-light)",
+                  borderLeft: "3px solid var(--accent-nav)",
+                }}
+              >
+                <MapPin
+                  className="h-4 w-4 shrink-0"
+                  style={{ color: "var(--accent-nav)" }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-xs font-medium"
+                    style={{ color: "var(--accent-nav)" }}
+                  >
+                    Remember:
+                  </p>
+                  <p
+                    className="text-sm truncate"
+                    style={{ color: "var(--text-body)" }}
+                  >
+                    {formatMemoryContextShort(currentWord)}
+                    {currentWord.situationTags &&
+                      currentWord.situationTags.length > 0 && (
+                        <span>
+                          {formatMemoryContextShort(currentWord) ? " · " : ""}
+                          {currentWord.situationTags
+                            .map((tagId) => getSituationTag(tagId)?.label)
+                            .filter(Boolean)
+                            .join(", ")}
+                        </span>
+                      )}
+                  </p>
+                </div>
+              </div>
+            )}
 
           {/* Mastery Progress */}
           {reviewState === "feedback" && currentWord && (

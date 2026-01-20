@@ -9,6 +9,7 @@ import {
   getTranslationName,
   isDirectionSupported,
 } from '@/lib/config/languages';
+import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
 import {
   getUnusedWordCombinations,
   generateSentenceWithRetry,
@@ -46,7 +47,19 @@ export async function POST(request: NextRequest) {
 
     // 2. Validate request body
     const body = await request.json();
-    const { text, context, sourceLang: requestSourceLang, targetLang: requestTargetLang } = body;
+    const {
+      text,
+      context,
+      sourceLang: requestSourceLang,
+      targetLang: requestTargetLang,
+      memoryContext,
+    } = body as {
+      text: string;
+      context?: string;
+      sourceLang?: string;
+      targetLang?: string;
+      memoryContext?: MemoryContext;
+    };
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return NextResponse.json(
@@ -95,6 +108,10 @@ export async function POST(request: NextRequest) {
     const { category, confidence } = await assignCategory(text, context);
 
     // 8. Create word in database (without audio URL initially)
+    // Auto-detect time of day from server timestamp
+    const captureTime = new Date();
+    const timeOfDay = getTimeOfDay(captureTime);
+
     const [newWord] = await db
       .insert(words)
       .values({
@@ -117,6 +134,11 @@ export async function POST(request: NextRequest) {
         lapseCount: 0,
         consecutiveCorrectSessions: 0,
         masteryStatus: 'learning',
+        // Memory context (Personal Memory Journal)
+        locationHint: memoryContext?.locationHint || null,
+        timeOfDay: timeOfDay, // Auto-detected from capture time
+        situationTags: memoryContext?.situationTags || null,
+        personalNote: memoryContext?.personalNote || null,
       })
       .returning();
 

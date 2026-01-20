@@ -11,7 +11,7 @@ import { eq, and, sql } from 'drizzle-orm';
  * - item_answered: User answered a review item
  * - session_completed: User completed their daily goal
  * - word_mastered: User mastered a word (ready_to_use)
- * - exercise_completed: User completed a specific exercise type
+ * - word_captured_with_context: User captured a word with memory context
  */
 type GamificationEvent = {
   type: 'item_answered';
@@ -31,6 +31,11 @@ type GamificationEvent = {
   };
 } | {
   type: 'word_mastered';
+  data: {
+    wordId: string;
+  };
+} | {
+  type: 'word_captured_with_context';
   data: {
     wordId: string;
   };
@@ -70,6 +75,9 @@ export async function POST(request: NextRequest) {
 
       case 'word_mastered':
         return await handleWordMastered(user.id, today);
+
+      case 'word_captured_with_context':
+        return await handleWordCapturedWithContext(user.id, today);
 
       default:
         return NextResponse.json({ error: 'Unknown event type' }, { status: 400 });
@@ -204,6 +212,22 @@ async function handleWordMastered(userId: string, today: string) {
 }
 
 /**
+ * Handle word_captured_with_context event
+ *
+ * Updates bingo square when a word is captured with memory context.
+ * Triggered when user adds location, situation tags, or personal note.
+ */
+async function handleWordCapturedWithContext(userId: string, today: string) {
+  await updateBingoSquare(userId, today, 'addContext');
+
+  return NextResponse.json({
+    data: {
+      processed: true,
+    },
+  });
+}
+
+/**
  * Update streak when user completes daily goal
  */
 async function updateStreakOnCompletion(userId: string, today: string) {
@@ -282,9 +306,9 @@ async function updateBingoSquares(
     squaresToUpdate.push('fillBlank');
   } else if (data.exerciseType === 'multiple-choice') {
     squaresToUpdate.push('multipleChoice');
-  } else if (data.exerciseType === 'type-translation') {
-    squaresToUpdate.push('typeTranslation');
   }
+  // Note: type-translation exercises no longer have a dedicated bingo square
+  // The addContext square is now triggered by word_captured_with_context events
 
   // Category squares
   if (data.category === 'work') {

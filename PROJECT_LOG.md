@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Personal Memory Journal** - Memory context feature lets users add WHERE/WHEN context to captures, with display in notebook and review (Session 34)
 - [x] **Science Page** - Added `/science` page explaining LLYLI's research-backed approach, accessible via InfoButton sheet (Session 33)
 - [x] **Sign Out + Bug Fixes** - Added Sign Out to About sheet, fixed Bingo labels, synced Progress streak with gamification (Session 32)
 - [x] **Vercel Deployment Fix** - Root Directory config fixed, no more duplicate/failing deployments (Session 31)
@@ -35,6 +36,7 @@ npm run build             # Production build
 | `docs/product/product_guide.md` | Comprehensive product explanation, onboarding, gamification |
 | `docs/design/user_research_synthesis.md` | Survey analysis (24 respondents), personas, gap analysis |
 | `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
+| `web/src/lib/config/memory-context.ts` | Memory context types, situation tags, helpers |
 | `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
 | `web/src/lib/data/starter-vocabulary.ts` | Curated starter words for 6 target languages |
 | `web/src/app/api/onboarding/starter-words/route.ts` | API to inject starter words during onboarding |
@@ -77,6 +79,69 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 34 - 2026-01-20 - Personal Memory Journal Feature
+
+**Focus**: Implement Memory Context feature - turning vocabulary capture into a personal memory journal by adding WHERE/WHEN context to phrases
+
+**Feature Overview**
+Transform the notebook from a vocabulary list into a memory journal where each phrase is tied to WHERE and WHEN it was captured. This makes reviewing feel like revisiting memories, not just flashcards.
+
+**Schema Changes**
+| Column | Type | Purpose |
+|--------|------|---------|
+| `location_hint` | text | Where you heard/used the phrase (e.g., "at the bakery") |
+| `time_of_day` | text enum | Auto-detected: morning/afternoon/evening/night |
+| `situation_tags` | text[] | Social/emotional context (e.g., ["nervous", "alone"]) |
+| `personal_note` | text | Margin-note style memory (e.g., "My first time ordering alone!") |
+
+**Changes Made**
+| Change | Details |
+|--------|---------|
+| Database schema | Added 4 new columns to words table |
+| Capture page | Added collapsible "Add memory context" accordion with location, tags, note fields |
+| API update | Words API accepts memoryContext, auto-detects timeOfDay from server timestamp |
+| Words store | Updated captureWord to accept memoryContext option |
+| Word card | Subtle context line below translation (e.g., "at the bakery · evening") |
+| Word detail sheet | New "Memory" section with teal left border (margin-note aesthetic) |
+| Review page | Memory hint appears after answer reveal ("Remember: at the bakery · Nervous, Alone") |
+| Bingo board | Replaced "Type translation" with "Add memory context" square (📍) |
+| Gamification | New `word_captured_with_context` event type triggers bingo square |
+| Science page | Added "Retrieval anchors" bullet and Encoding Specificity research note |
+| Testing docs | Added comprehensive Memory Context testing section (C7-C12) |
+
+**Situation Tags Available**
+| Tag | Emoji | Tag | Emoji |
+|-----|-------|-----|-------|
+| Alone | 🚶 | With partner | 💑 |
+| With friends | 👥 | At work | 💼 |
+| Shopping | 🛒 | Dining out | 🍽️ |
+| Nervous | 😰 | Proud | 🎉 |
+
+**Files Changed**
+| File | Change |
+|------|--------|
+| `web/src/lib/db/schema/words.ts` | Added 4 memory context columns |
+| `web/src/lib/config/memory-context.ts` | **NEW** - Constants, types, helpers for memory context |
+| `web/src/app/capture/page.tsx` | Added context accordion UI with tag pills |
+| `web/src/app/api/words/route.ts` | Accept memoryContext, auto-detect timeOfDay |
+| `web/src/lib/store/words-store.ts` | Updated captureWord signature |
+| `web/src/components/notebook/word-card.tsx` | Added context line display |
+| `web/src/components/notebook/word-detail-sheet.tsx` | Added Memory section |
+| `web/src/app/review/page.tsx` | Added memory hint after reveal |
+| `web/src/lib/db/schema/gamification.ts` | Changed `typeTranslation` to `addContext` |
+| `web/src/app/api/gamification/event/route.ts` | Added `word_captured_with_context` handler |
+| `web/src/lib/store/gamification-store.ts` | Added `emitWordCapturedWithContext` action |
+| `web/src/components/gamification/bingo-board.tsx` | Updated labels for addContext square |
+| `web/src/app/science/page.tsx` | Added Encoding Specificity research note |
+| `docs/engineering/TESTING.md` | Added Memory Context testing section (C7-C12) |
+
+**Build & Tests**
+- `npm run build` ✅ Pass
+- `npm run test:run` ✅ Pass (65/65 tests)
+- `npm run db:push` ✅ Pass (4 columns added)
+
+---
 
 ### Session 33 - 2026-01-20 - Science Page + Forecast Chart Fix
 

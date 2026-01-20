@@ -14,7 +14,41 @@ import { MasteryBadge } from "./mastery-badge";
 import { useAudioPlayer } from "@/lib/hooks";
 import { useWordsStore } from "@/lib/store/words-store";
 import { getCategoryConfig } from "@/lib/config/categories";
-import { Trash2, Calendar, BarChart3, Flame, Loader2 } from "lucide-react";
+import {
+  hasMemoryContext,
+  getSituationTag,
+  formatTimeOfDay,
+} from "@/lib/config/memory-context";
+import {
+  Trash2,
+  Calendar,
+  BarChart3,
+  Flame,
+  Loader2,
+  MapPin,
+  User,
+  Heart,
+  Users,
+  Briefcase,
+  ShoppingBag,
+  UtensilsCrossed,
+  TreePine,
+  Frown,
+  Trophy,
+} from "lucide-react";
+
+// Map icon names to components for situation tags
+const SITUATION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  User,
+  Heart,
+  Users,
+  Briefcase,
+  ShoppingBag,
+  UtensilsCrossed,
+  TreePine,
+  Frown,
+  Trophy,
+};
 import type { Word } from "@/lib/db/schema";
 
 interface WordDetailSheetProps {
@@ -164,6 +198,78 @@ export function WordDetailSheet({
           />
           <StatItem icon={Calendar} label="Next Review" value={nextReviewDate} />
         </div>
+
+        {/* Memory Section - Only show if there's context */}
+        {hasMemoryContext(word) && (
+          <div
+            className="mb-6 p-4 rounded-r-xl"
+            style={{
+              backgroundColor: "var(--surface-page)",
+              borderLeft: "3px solid var(--accent-nav)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin
+                className="h-4 w-4"
+                style={{ color: "var(--accent-nav)" }}
+              />
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: "var(--text-heading)" }}
+              >
+                Memory
+              </h3>
+            </div>
+
+            {/* Location and time */}
+            {(word.locationHint || word.timeOfDay) && (
+              <p
+                className="text-sm mb-2"
+                style={{ color: "var(--text-body)" }}
+              >
+                {word.locationHint && <span>{word.locationHint}</span>}
+                {word.locationHint && word.timeOfDay && <span> · </span>}
+                {word.timeOfDay && (
+                  <span>{formatTimeOfDay(word.timeOfDay as 'morning' | 'afternoon' | 'evening' | 'night')}</span>
+                )}
+              </p>
+            )}
+
+            {/* Situation tags */}
+            {word.situationTags && word.situationTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {word.situationTags.map((tagId) => {
+                  const tag = getSituationTag(tagId);
+                  if (!tag) return null;
+                  const IconComponent = SITUATION_ICONS[tag.icon];
+                  return (
+                    <span
+                      key={tagId}
+                      className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: "rgba(12, 107, 112, 0.15)",
+                        color: "var(--accent-nav)",
+                      }}
+                    >
+                      {IconComponent && <IconComponent className="h-3 w-3" />}
+                      {tag.label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Personal note */}
+            {word.personalNote && (
+              <p
+                className="text-sm italic handwritten"
+                style={{ color: "var(--text-muted)" }}
+              >
+                "{word.personalNote}"
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Created date */}
         <p

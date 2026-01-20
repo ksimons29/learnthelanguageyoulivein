@@ -614,6 +614,130 @@ Expected
 
 ---
 
+## 6C-2. Memory Context (Personal Memory Journal)
+
+This feature allows users to add WHERE and WHEN context when capturing phrases, turning vocabulary into personal memories.
+
+### C7 Capture with memory context
+
+Steps
+
+1. Go to `/capture`
+2. Enter a phrase: "bom dia"
+3. Tap "Add memory context" to expand the accordion
+4. Fill in location: "at the bakery"
+5. Select 1-2 situation tags (e.g., "Nervous", "Alone")
+6. Add a personal note: "My first time ordering alone!"
+7. Save
+
+Expected
+
+* Capture completes successfully
+* Toast shows "Phrase captured successfully!"
+* All context fields are saved to database
+
+Verification SQL
+
+```sql
+SELECT original_text, translation, location_hint, time_of_day, situation_tags, personal_note
+FROM words
+WHERE user_id = 'YOUR-USER-ID'
+ORDER BY created_at DESC
+LIMIT 5;
+```
+
+Expected results
+
+* location_hint contains "at the bakery"
+* time_of_day is auto-detected (morning/afternoon/evening/night)
+* situation_tags is an array like `["nervous", "alone"]`
+* personal_note contains the note text
+
+### C8 Capture without memory context
+
+Steps
+
+1. Go to `/capture`
+2. Enter a phrase without expanding context accordion
+3. Save
+
+Expected
+
+* Capture works normally
+* Context fields are NULL in database
+* Fast capture experience preserved
+
+### C9 Memory context display in notebook
+
+Steps
+
+1. Go to `/notebook`
+2. Find the word with memory context
+3. Check the word card shows context line (e.g., "at the bakery · evening")
+4. Tap to open word detail sheet
+5. Confirm Memory section appears with:
+   * Location and time
+   * Situation tags as pills
+   * Personal note in italic/handwritten style
+
+Expected
+
+* Context line shows on word cards that have context
+* Memory section appears in detail sheet only when context exists
+* Margin-note aesthetic with teal left border
+
+### C10 Memory context in review
+
+Steps
+
+1. Go to `/review`
+2. Review a word that has memory context
+3. Reveal the answer
+
+Expected
+
+* After reveal, memory hint appears: "Remember: at the bakery · evening · Nervous, Alone"
+* Hint styled with MapPin icon and teal border
+
+### C11 Memory context bingo square
+
+Steps
+
+1. Check the bingo board before capturing
+2. Capture a phrase WITH memory context (at least one field filled)
+3. Check the bingo board after capturing
+
+Expected
+
+* "Add memory context" square (center square with 📍) marks complete
+* Only triggers when capturing WITH context, not without
+
+Verification SQL
+
+```sql
+SELECT squares_completed
+FROM bingo_state
+WHERE user_id = 'YOUR-USER-ID' AND date = CURRENT_DATE;
+```
+
+Expected: `addContext` appears in the completed squares array
+
+### C12 Situation tags limit
+
+Steps
+
+1. Go to `/capture`
+2. Expand memory context
+3. Try to select more than 3 situation tags
+
+Expected
+
+* Maximum 3 tags can be selected
+* Selecting a 4th tag does nothing
+* UI provides visual feedback
+
+---
+
 ## 6D. Notebook full coverage
 
 ### D1 Category grid and counts

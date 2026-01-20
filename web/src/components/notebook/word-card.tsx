@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { AudioPlayButton } from "@/components/audio";
 import { MasteryBadge } from "./mastery-badge";
 import { useAudioPlayer } from "@/lib/hooks";
+import { formatMemoryContextShort } from "@/lib/config/memory-context";
 import type { Word } from "@/lib/db/schema";
 
 /**
@@ -130,6 +131,15 @@ export function WordCard({ word, onClick, className }: WordCardProps) {
             · {formatRelativeDate(word.createdAt)}
           </span>
         </div>
+        {/* Memory context line */}
+        {formatMemoryContextShort(word) && (
+          <p
+            className="text-xs truncate mt-0.5 italic"
+            style={{ color: "var(--text-muted)", opacity: 0.8 }}
+          >
+            {formatMemoryContextShort(word)}
+          </p>
+        )}
       </div>
 
       {/* Mastery badge */}

@@ -54,6 +54,7 @@ interface GamificationStoreState {
   }) => Promise<void>;
   emitSessionCompleted: (data: { wordsReviewed: number; correctCount: number }) => Promise<void>;
   emitWordMastered: (wordId: string) => Promise<void>;
+  emitWordCapturedWithContext: (wordId: string) => Promise<void>;
   dismissDailyGoalCelebration: () => void;
   dismissBingoCelebration: () => void;
   resetSession: () => void;
@@ -228,6 +229,28 @@ export const useGamificationStore = create<GamificationStoreState>((set, get) =>
     }
   },
 
+  /**
+   * Emit word_captured_with_context event
+   *
+   * Called when a word is captured with memory context (location, tags, note).
+   */
+  emitWordCapturedWithContext: async (wordId) => {
+    try {
+      await fetch('/api/gamification/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: {
+            type: 'word_captured_with_context',
+            data: { wordId },
+          },
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to emit word_captured_with_context event:', error);
+    }
+  },
+
   dismissDailyGoalCelebration: () => set({ showDailyGoalCelebration: false }),
 
   dismissBingoCelebration: () => set({ showBingoCelebration: false }),
@@ -241,7 +264,7 @@ export const useGamificationStore = create<GamificationStoreState>((set, get) =>
 function checkBingo(completedSquares: BingoSquareId[]): boolean {
   const squareOrder: BingoSquareId[] = [
     'review5', 'streak3', 'fillBlank',
-    'multipleChoice', 'typeTranslation', 'workWord',
+    'multipleChoice', 'addContext', 'workWord',
     'socialWord', 'masterWord', 'finishSession',
   ];
   const completedIndices = completedSquares.map(s => squareOrder.indexOf(s)).filter(i => i !== -1);

@@ -49,6 +49,13 @@ export const words = pgTable('words', {
     enum: ['learning', 'learned', 'ready_to_use']
   }).notNull().default('learning'),
 
+  // Memory Context (Personal Memory Journal)
+  // Optional fields that turn phrases into memories with WHERE and WHEN context
+  locationHint: text('location_hint'), // "at the bakery", "in the park"
+  timeOfDay: text('time_of_day', { enum: ['morning', 'afternoon', 'evening', 'night'] }), // Auto-detected from capture time
+  situationTags: text('situation_tags').array(), // ['alone', 'with_partner', 'nervous']
+  personalNote: text('personal_note'), // "My first time ordering alone!"
+
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
