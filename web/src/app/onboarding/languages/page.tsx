@@ -10,7 +10,7 @@ import { FlagStamp, type FlagCode } from "@/components/ui/flag-stamp";
 const TARGET_LANGUAGES: FlagCode[] = ["pt-PT", "sv", "es", "fr", "de", "nl"];
 
 // Native languages (what users might speak)
-const NATIVE_LANGUAGES: FlagCode[] = ["nl", "pt-PT", "de", "fr", "sv", "es"];
+const NATIVE_LANGUAGES: FlagCode[] = ["en", "nl", "pt-PT", "de", "fr", "sv", "es"];
 
 /**
  * Language Selection Page

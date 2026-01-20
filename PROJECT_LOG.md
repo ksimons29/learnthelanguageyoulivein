@@ -122,6 +122,24 @@ npm run build             # Production build
 | #51 | Review page misleading for unauth users | P2-normal |
 | #52 | Protected pages should redirect to sign-in | P3-low |
 
+**Bugs Found During E2E**
+| Bug | Severity | Status |
+|-----|----------|--------|
+| English missing from native languages | P0 | Fixed |
+| Review page shows "All caught up" for unauth | P2 | #51 |
+| Protected pages don't redirect to sign-in | P3 | #52 |
+
+**Additional Fixes**
+- Added 'en' to NATIVE_LANGUAGES array
+- Created test user provisioning script (`scripts/create-test-users.ts`)
+
+**Test Users Created**
+| Email | Password | Languages |
+|-------|----------|-----------|
+| test-en-pt@llyli.test | TestPassword123! | en→pt-PT |
+| test-en-sv@llyli.test | TestPassword123! | en→sv |
+| test-nl-en@llyli.test | TestPassword123! | nl→en |
+
 **Build**: ✅ Passed
 **Deployed**: ✅ Pushed to main (auto-deploy)
 

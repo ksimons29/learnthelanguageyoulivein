@@ -1,0 +1,166 @@
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+import { createClient } from '@supabase/supabase-js';
+import postgres from 'postgres';
+
+/**
+ * Create pre-confirmed test users for E2E testing
+ *
+ * Usage: npx tsx scripts/create-test-users.ts
+ */
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const databaseUrl = process.env.DATABASE_URL!;
+
+if (!supabaseServiceKey) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY is required');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+
+const db = postgres(databaseUrl);
+
+interface TestUser {
+  email: string;
+  password: string;
+  displayName: string;
+  nativeLanguage: string;
+  targetLanguage: string;
+}
+
+const TEST_USERS: TestUser[] = [
+  {
+    email: 'test-en-pt@llyli.test',
+    password: 'TestPassword123!',
+    displayName: 'Test EN→PT',
+    nativeLanguage: 'en',
+    targetLanguage: 'pt-PT',
+  },
+  {
+    email: 'test-en-sv@llyli.test',
+    password: 'TestPassword123!',
+    displayName: 'Test EN→SV',
+    nativeLanguage: 'en',
+    targetLanguage: 'sv',
+  },
+  {
+    email: 'test-nl-en@llyli.test',
+    password: 'TestPassword123!',
+    displayName: 'Test NL→EN',
+    nativeLanguage: 'nl',
+    targetLanguage: 'en',
+  },
+];
+
+// Note: These combinations match SUPPORTED_DIRECTIONS in languages.ts:
+// - en → pt-PT (English speakers learning Portuguese)
+// - en → sv (English speakers learning Swedish)
+// - nl → en (Dutch speakers learning English)
+
+async function createTestUser(user: TestUser) {
+  console.log(`\n Creating ${user.displayName} (${user.email})...`);
+
+  // Check if user already exists
+  const { data: existingUsers } = await supabase.auth.admin.listUsers();
+  const existing = existingUsers?.users?.find(u => u.email === user.email);
+
+  let userId: string;
+
+  if (existing) {
+    console.log(`  ⚠️  User already exists, updating...`);
+    userId = existing.id;
+
+    // Update password
+    await supabase.auth.admin.updateUserById(userId, {
+      password: user.password,
+      email_confirm: true,
+    });
+  } else {
+    // Create new user with email pre-confirmed
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: user.email,
+      password: user.password,
+      email_confirm: true,
+      user_metadata: {
+        display_name: user.displayName,
+      },
+    });
+
+    if (error) {
+      console.error(`  ❌ Failed to create user: ${error.message}`);
+      return null;
+    }
+
+    userId = data.user.id;
+    console.log(`  ✅ User created: ${userId}`);
+  }
+
+  // Create or update user profile
+  const existingProfile = await db`
+    SELECT user_id FROM user_profiles WHERE user_id = ${userId}
+  `;
+
+  if (existingProfile.length > 0) {
+    await db`
+      UPDATE user_profiles
+      SET native_language = ${user.nativeLanguage},
+          target_language = ${user.targetLanguage},
+          display_name = ${user.displayName},
+          onboarding_completed = false
+      WHERE user_id = ${userId}
+    `;
+    console.log(`  ✅ Profile updated`);
+  } else {
+    await db`
+      INSERT INTO user_profiles (user_id, native_language, target_language, display_name, onboarding_completed)
+      VALUES (${userId}, ${user.nativeLanguage}, ${user.targetLanguage}, ${user.displayName}, false)
+    `;
+    console.log(`  ✅ Profile created`);
+  }
+
+  // Delete any existing words for clean test state
+  const deleted = await db`
+    DELETE FROM words WHERE user_id = ${userId}
+    RETURNING id
+  `;
+  if (deleted.length > 0) {
+    console.log(`  🧹 Cleaned ${deleted.length} existing words`);
+  }
+
+  return { userId, ...user };
+}
+
+async function main() {
+  console.log('═══════════════════════════════════════════════');
+  console.log('  LLYLI Test User Provisioning');
+  console.log('═══════════════════════════════════════════════');
+
+  const results = [];
+
+  for (const user of TEST_USERS) {
+    const result = await createTestUser(user);
+    if (result) results.push(result);
+  }
+
+  console.log('\n═══════════════════════════════════════════════');
+  console.log('  Summary');
+  console.log('═══════════════════════════════════════════════\n');
+
+  console.log('Test Accounts Ready:\n');
+  console.log('| Email | Password | Languages |');
+  console.log('|-------|----------|-----------|');
+  for (const r of results) {
+    console.log(`| ${r.email} | ${r.password} | ${r.nativeLanguage}→${r.targetLanguage} |`);
+  }
+
+  console.log('\n✅ All test users ready for E2E testing');
+  console.log('   Onboarding is set to incomplete so you can test the full flow.\n');
+
+  await db.end();
+}
+
+main().catch(console.error);
