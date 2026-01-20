@@ -263,7 +263,7 @@ async function generatePresentation() {
 
     const bulletPoints = slideData.keyPoints.map(point => ({
       text: point,
-      options: { bullet: { type: 'bullet', color: COLORS.coral }, indentLevel: 0 },
+      options: { bullet: { type: 'bullet' as const, color: COLORS.coral }, indentLevel: 0 },
     }));
 
     slide.addText(bulletPoints, {

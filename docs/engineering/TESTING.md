@@ -75,6 +75,22 @@ Expected
 * No missing keys for the test you are running
 * If OPENAI_API_KEY is missing, translation and TTS should fail gracefully and show a user facing error. You will test this later as a negative case.
 
+### 2.1.1 Build verification (required before E2E tests)
+
+Always run a build before E2E testing to catch TypeScript errors early:
+
+```bash
+cd web
+npm run build
+```
+
+Expected: Build completes without errors.
+
+If build fails, common fixes:
+* **TypeScript literal type errors in scripts/**: Add `as const` to literal string values (e.g., `type: 'bullet' as const`)
+* **Missing imports**: Check for deleted files or moved exports
+* **Type mismatches**: Ensure API response types match component expectations
+
 ### 2.2 Test accounts
 
 Use the pre confirmed test users.

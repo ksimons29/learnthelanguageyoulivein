@@ -59,6 +59,7 @@ npm run build             # Production build
 | #20 | Open | Default categories |
 
 ### Closed This Session
+- ~~#52~~ **P3-low** - Fixed: Auth redirect - unauthenticated users now redirect to sign-in (Session 37)
 - ~~#43~~ **BLOCKER** - Fixed: Language filtering via shared helper in all word queries
 - ~~#50~~ **P0-critical** - Fixed: E2E User Flow Verification - all 3 test users pass (Session 30)
 
@@ -66,7 +67,6 @@ npm run build             # Production build
 | Issue | Feature | Priority |
 |-------|---------|----------|
 | #51 | Review page misleading for unauth users | P2-normal |
-| #52 | Protected pages auth redirect | P3-low |
 | #44 | Progress API 500 error | P1-high |
 | #23 | iOS App Store submission | P1-high |
 | #49 | PWA Install Banner | P2-normal |
@@ -83,6 +83,37 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 37 - 2026-01-20 - Auth Fix + Documentation Cleanup + E2E Testing
+
+**Focus**: Fix critical auth redirect bug, consolidate documentation, E2E testing with 3 users
+
+**Bug Fixed**
+- **#52 Auth redirect**: Unauthenticated users were seeing the homepage instead of being redirected to sign-in. Fixed by enabling route protection in middleware (was intentionally disabled during development).
+
+**Code Changes**
+| File | Change |
+|------|--------|
+| `web/src/lib/supabase/middleware.ts` | Enabled `protectedPaths` array for route protection |
+| `web/scripts/generate-presentation.ts` | Fixed TypeScript literal type error (`as const`) |
+
+**Documentation Cleanup**
+| Action | Files |
+|--------|-------|
+| Consolidated | `README.md` (217→102 lines), `web/README.md` (408→56 lines) |
+| Removed | `web/START_HERE.md` (outdated), `docs/active/` (empty templates) |
+| Archived | `docs/SESSION_SUMMARY_2026-01-16.md` → `docs/engineering/archive/` |
+| Updated | `docs/engineering/TESTING.md` - Added build verification section |
+| Added | `.gitignore` - Added `.playwright-mcp/` for test artifacts |
+
+**E2E Testing Results**
+| User | Language | Sign In | Capture | Review | Notebook | Progress |
+|------|----------|---------|---------|--------|----------|----------|
+| test-en-pt | EN→PT | ✅ | ✅ (saudade→longing) | ✅ | ✅ | ✅ |
+| test-en-sv | EN→SV | ✅ | ✅ (lagom→just right) | ✅ | ✅ | ✅ |
+| test-nl-en | NL→EN | Pending | - | - | - | - |
+
+---
 
 ### Session 36 - 2026-01-20 - Go-Live Preparation
 
