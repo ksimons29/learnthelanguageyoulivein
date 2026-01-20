@@ -279,7 +279,7 @@ export default function HomePage() {
             {/* Close button */}
             <button
               onClick={dismissDailyGoalCelebration}
-              className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-[var(--surface-elevated)] transition-colors"
             >
               <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
             </button>
@@ -294,7 +294,7 @@ export default function HomePage() {
             <div
               className="absolute left-1.5 top-4 bottom-4 w-0.5"
               style={{
-                backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, rgba(255,255,255,0.4) 6px, rgba(255,255,255,0.4) 10px)",
+                backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 6px, var(--notebook-stitch) 6px, var(--notebook-stitch) 10px)",
               }}
             />
 

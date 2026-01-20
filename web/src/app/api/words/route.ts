@@ -445,8 +445,16 @@ TRANSLATION GUIDELINES:
 - For idioms, slang, and colloquialisms: Find the equivalent expression in ${targetLangName} that conveys the same meaning and tone, rather than translating literally.
 - For single words: Provide the most common, natural translation.
 - For phrases: Translate naturally as a native speaker would say it.
-- If no direct equivalent exists, provide the closest natural expression.
-- Keep the same register (formal/informal) as the original.`;
+- If no direct equivalent exists, provide the closest natural expression or a brief explanation.
+- Keep the same register (formal/informal) as the original.
+
+CRITICAL: NEVER return the original word unchanged as the translation.
+- For culturally-specific or "untranslatable" words (like Dutch "gezellig", Swedish "lagom", Portuguese "saudade"):
+  - Provide the closest equivalent expression or a brief explanation in ${targetLangName}
+  - Example: "gezellig" → "cozy togetherness" or "warm and convivial"
+  - Example: "saudade" → "nostalgic longing" or "bittersweet yearning"
+  - Example: "lagom" → "just right" or "the perfect amount"
+- If truly no equivalent exists, provide a concise explanatory phrase (2-4 words max)`;
 
   // Build language-specific instructions
   let languageInstructions = '';

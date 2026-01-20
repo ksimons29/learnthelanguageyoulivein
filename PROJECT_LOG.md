@@ -90,6 +90,71 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 47 - 2026-01-20 - Dark Mode Fixes & Full E2E Testing
+
+**Focus**: Fix hardcoded colors breaking dark mode, comprehensive E2E testing of all 3 test users, verify gamification system.
+
+#### Dark Mode Fixes
+
+Fixed 13 hardcoded color values across 3 files that broke dark mode:
+
+| File | Issues Fixed |
+|------|--------------|
+| `words-overview-card.tsx` | bg-white, #e2e8f0, text-gray-* classes, hover:bg-gray-50 |
+| `boss-round.tsx` | hover:bg-gray-100 |
+| `page.tsx` (home) | hover:bg-gray-100, rgba(255,255,255,0.4) in stitch pattern |
+
+**Fix Pattern**: Replaced hardcoded colors with CSS variables:
+- `bg-white` → `var(--surface-page)`
+- `text-gray-*` → `var(--text-muted)`, `var(--text-heading)`, `var(--text-body)`
+- `hover:bg-gray-*` → `hover:bg-[var(--surface-elevated)]`
+- `#e2e8f0` → `var(--notebook-stitch)`
+
+#### E2E Testing Results
+
+| User | Languages | Auth | Capture | Notebook | Review | Progress | Dark Mode |
+|------|-----------|------|---------|----------|--------|----------|-----------|
+| test-en-pt | EN→PT | ✅ | ✅ bidirectional | ✅ 26 words | ✅ sentence mode | ✅ | ✅ |
+| test-en-sv | EN→SV | ✅ | ✅ "varsågod" | ✅ Swedish Journal | ✅ | ✅ | ✅ |
+| test-nl-en | NL→EN | ✅ | ✅ "thank you"→"hartelijk dank" | ✅ English Journal | ✅ | ✅ | ✅ |
+
+#### Gamification Verification
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Daily Goal Progress Ring | ✅ | Shows X/10, checkmark at completion |
+| Streak Display | ✅ | Flame icon, day count, celebration |
+| Bingo Board | ✅ | 9 squares, teal completion, 5/9 test user |
+| Celebration Modal | ✅ | PartyPopper, streak message |
+
+#### Untranslatable Words Fix
+
+Fixed GPT translation returning original word unchanged for culturally-specific words like "gezellig".
+
+| File | Change |
+|------|--------|
+| `api/words/route.ts` | Added CRITICAL instruction to NEVER return original word unchanged |
+
+**New Translation Rules**:
+- For untranslatable words (gezellig, saudade, lagom), always provide closest equivalent or brief explanation
+- Examples added: "gezellig" → "cozy togetherness", "saudade" → "nostalgic longing"
+- Max 2-4 word explanatory phrases when no equivalent exists
+
+#### Files Modified
+
+- `web/src/components/progress/words-overview-card.tsx` - 10 color fixes
+- `web/src/components/gamification/boss-round.tsx` - 1 color fix
+- `web/src/app/page.tsx` - 2 color fixes
+- `web/src/app/api/words/route.ts` - Untranslatable words handling
+
+#### Build & Testing
+
+- `npm run build` ✅ Passed
+- E2E via Playwright MCP: All 3 test users verified
+- Dark mode screenshots captured and verified
+
+---
+
 ### Session 46 - 2026-01-20 - Bug Fixes & Self-Healing Guardrails
 
 **Focus**: Add self-healing guardrail for orphaned sentences, add mastery progress explanation

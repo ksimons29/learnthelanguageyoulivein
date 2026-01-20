@@ -230,7 +230,7 @@ export function BossRoundGame({
             {/* Cancel */}
             <button
               onClick={onCancel}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-[var(--surface-elevated)] transition-colors"
             >
               <X className="h-5 w-5" style={{ color: "var(--text-muted)" }} />
             </button>

@@ -50,18 +50,18 @@ export function WordsOverviewCard({
       </div>
 
       {/* Content section */}
-      <div className="bg-white">
+      <div style={{ backgroundColor: "var(--surface-page)" }}>
         {/* New Cards Section */}
         {newCardsCount > 0 && (
-          <div className="px-5 py-4 border-b" style={{ borderColor: "#e2e8f0" }}>
+          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--notebook-stitch)" }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4" style={{ color: "#10b981" }} />
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
                   New Cards (Not Yet Studied)
                 </span>
               </div>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {newCardsCount} total
               </span>
             </div>
@@ -72,11 +72,11 @@ export function WordsOverviewCard({
                 <div
                   key={word.id}
                   className="flex items-center justify-between px-4 py-3 rounded-lg border"
-                  style={{ borderColor: "#d1fae5", backgroundColor: "#f0fdf4" }}
+                  style={{ borderColor: "var(--state-good-bg)", backgroundColor: "var(--surface-elevated)" }}
                 >
                   <div>
-                    <p className="font-medium text-gray-800">{word.originalText}</p>
-                    <p className="text-sm text-gray-500">{word.translation}</p>
+                    <p className="font-medium" style={{ color: "var(--text-heading)" }}>{word.originalText}</p>
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>{word.translation}</p>
                   </div>
                   <span
                     className="text-xs font-medium px-3 py-1 rounded-full text-white"
@@ -106,10 +106,10 @@ export function WordsOverviewCard({
         {masteredWords > 0 && (
           <Link
             href="/notebook?filter=mastered"
-            className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-between px-5 py-4 hover:bg-[var(--surface-page-aged)] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="text-gray-700">Ready to Use</span>
+              <span style={{ color: "var(--text-body)" }}>Ready to Use</span>
               <span
                 className="text-xs font-medium px-2 py-1 rounded-full text-white"
                 style={{ backgroundColor: "#0c6b70" }}
@@ -117,14 +117,14 @@ export function WordsOverviewCard({
                 {masteredWords}
               </span>
             </div>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
           </Link>
         )}
 
         {/* Empty state */}
         {newCardsCount === 0 && masteredWords === 0 && (
           <div className="px-5 py-8 text-center">
-            <p className="text-gray-500">No words yet. Start capturing!</p>
+            <p style={{ color: "var(--text-muted)" }}>No words yet. Start capturing!</p>
             <Link
               href="/capture"
               className="inline-block mt-3 px-6 py-2 rounded-lg text-white font-medium"
