@@ -401,6 +401,7 @@ Language codes: ${langNames.join(', ')}`,
  * Translate text using OpenAI GPT-4
  *
  * Takes explicit source and target language codes.
+ * Handles idioms, slang, and colloquialisms by finding equivalent expressions.
  * Enforces regional variants (e.g., pt-PT uses European Portuguese).
  */
 async function translateText(
@@ -411,14 +412,51 @@ async function translateText(
   const sourceLangName = getTranslationName(sourceLangCode);
   const targetLangName = getTranslationName(targetLangCode);
 
-  // Build additional instructions for regional variants
-  let regionalInstructions = '';
+  // Core instructions for handling idioms, slang, and expressions
+  const coreInstructions = `
+TRANSLATION GUIDELINES:
+- For idioms, slang, and colloquialisms: Find the equivalent expression in ${targetLangName} that conveys the same meaning and tone, rather than translating literally.
+- For single words: Provide the most common, natural translation.
+- For phrases: Translate naturally as a native speaker would say it.
+- If no direct equivalent exists, provide the closest natural expression.
+- Keep the same register (formal/informal) as the original.`;
+
+  // Build language-specific instructions
+  let languageInstructions = '';
+
   if (targetLangCode === 'pt-PT') {
-    regionalInstructions = `
-IMPORTANT: Use European Portuguese (Portugal) ONLY.
-- Never use Brazilian Portuguese vocabulary, spelling, or expressions
+    languageInstructions = `
+
+EUROPEAN PORTUGUESE RULES:
+- Use European Portuguese (Portugal) ONLY - never Brazilian Portuguese
 - Use "tu" forms instead of "você" where appropriate
-- Use European spelling (e.g., "facto" not "fato", "autocarro" not "ônibus")`;
+- Use European spelling (e.g., "facto" not "fato", "autocarro" not "ônibus", "comboio" not "trem")
+- Use European vocabulary (e.g., "pequeno-almoço" not "café da manhã", "telemóvel" not "celular")
+- For English slang/idioms, find Portuguese equivalents used in Portugal (e.g., "trainwreck" → "desastre", "piece of cake" → "canja")`;
+  } else if (targetLangCode === 'sv') {
+    languageInstructions = `
+
+SWEDISH RULES:
+- Use standard Swedish (rikssvenska)
+- For English slang/idioms, find Swedish equivalents (e.g., "piece of cake" → "lätt som en plätt", "raining cats and dogs" → "det öser ner")
+- Use natural Swedish word order and phrasing
+- Keep informal expressions informal (e.g., use "kul" for "fun" in casual contexts)`;
+  } else if (targetLangCode === 'en') {
+    languageInstructions = `
+
+ENGLISH RULES:
+- Use natural, conversational English
+- For Dutch idioms/expressions, find English equivalents (e.g., "Nu komt de aap uit de mouw" → "Now the cat's out of the bag")
+- Preserve the tone and register of the original
+- Use common expressions that native English speakers would actually use`;
+  } else if (targetLangCode === 'nl') {
+    languageInstructions = `
+
+DUTCH RULES:
+- Use standard Dutch (Nederlands)
+- For English slang/idioms, find Dutch equivalents where they exist
+- Use natural Dutch phrasing and word order
+- Keep informal expressions informal`;
   }
 
   const openai = getOpenAI();
@@ -428,7 +466,7 @@ IMPORTANT: Use European Portuguese (Portugal) ONLY.
     messages: [
       {
         role: 'system',
-        content: `You are a professional translator specializing in ${sourceLangName}. Translate the given text to ${targetLangName}. Provide ONLY the translation, no explanations or additional text.${regionalInstructions}`,
+        content: `You are a professional translator specializing in ${sourceLangName} to ${targetLangName}. Translate the given text. Provide ONLY the translation, no explanations or additional text.${coreInstructions}${languageInstructions}`,
       },
       {
         role: 'user',

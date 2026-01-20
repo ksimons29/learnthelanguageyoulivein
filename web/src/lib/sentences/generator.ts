@@ -61,7 +61,34 @@ export async function generateSentence(
   const nativeLangName = getTranslationName(request.nativeLanguage);
   const wordList = request.words.map((w) => w.originalText).join(', ');
 
+  // Build language-specific instructions
+  let languageInstructions = '';
+
+  if (request.targetLanguage === 'pt-PT') {
+    languageInstructions = `
+EUROPEAN PORTUGUESE RULES:
+- Use European Portuguese (Portugal) ONLY - never Brazilian Portuguese
+- Use "tu" forms instead of "você" where appropriate
+- Use European spelling and vocabulary (e.g., "autocarro" not "ônibus", "telemóvel" not "celular")`;
+  } else if (request.targetLanguage === 'sv') {
+    languageInstructions = `
+SWEDISH RULES:
+- Use standard Swedish (rikssvenska)
+- Use natural Swedish word order and phrasing`;
+  } else if (request.targetLanguage === 'en') {
+    languageInstructions = `
+ENGLISH RULES:
+- Use natural, conversational English
+- Use common expressions that native speakers would actually use`;
+  }
+
   const systemPrompt = `You are a language learning sentence generator. Create natural, conversational sentences in ${targetLangName}.
+
+PROFICIENCY LEVEL: B2 (Upper Intermediate)
+- Use vocabulary and grammar appropriate for B2 CEFR level
+- Sentences should be challenging but comprehensible for intermediate learners
+- Include some idiomatic expressions and natural phrasing
+- Avoid overly simple (A1-A2) or overly complex (C1-C2) constructions
 
 RULES:
 1. The sentence MUST contain ALL of these words exactly as written: ${wordList}
@@ -70,6 +97,7 @@ RULES:
 4. The sentence should sound natural to a native speaker
 5. Preserve the exact form of each target word (do not conjugate differently unless grammatically required)
 6. Context should be realistic daily situations (work, shopping, home, social)
+${languageInstructions}
 
 OUTPUT FORMAT (JSON only, no markdown code blocks):
 {
