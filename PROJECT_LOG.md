@@ -90,6 +90,34 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 46 - 2026-01-20 - Bug Fixes & Self-Healing Guardrails
+
+**Focus**: Add self-healing guardrail for orphaned sentences, add mastery progress explanation
+
+#### Changes
+
+**Self-Healing Guardrail for Orphaned Sentences**
+- **File**: `src/app/api/sentences/next/route.ts`
+- **Problem**: Orphaned sentences (referencing deleted words) caused confusing error messages
+- **Fix**: Auto-detect and delete orphaned sentences when encountered
+- **Result**: System self-heals over time, no manual database cleanup needed
+
+**Mastery Progress Explanation (Issue #8)**
+- **Files**: `src/app/review/page.tsx`, `src/app/science/page.tsx`
+- **Problem**: "1/3 correct sessions" was unclear to users
+- **Fix**:
+  - Added "Mastery Progress" section to /science page
+  - Made progress indicator tappable (links to /science#mastery)
+  - Shows help icon for discoverability
+- **Result**: Users can tap to learn what 3 correct sessions means
+
+#### Files Changed
+- `src/app/api/sentences/next/route.ts` - Self-healing orphan cleanup
+- `src/app/science/page.tsx` - Added Mastery Progress section
+- `src/app/review/page.tsx` - Made progress indicator tappable with Link
+
+---
+
 ### Session 45b - 2026-01-20 - Sentence Generation Language Filter Fix
 
 **Focus**: Fix bug where sentence generation picked words without language filter, causing orphaned sentences.

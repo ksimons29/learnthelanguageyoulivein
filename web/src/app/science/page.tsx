@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Brain, Sparkles, Clock, Layers, MapPin } from "lucide-react";
+import { ArrowLeft, Brain, Sparkles, Clock, Layers, MapPin, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { InfoButton } from "@/components/brand";
 import {
@@ -318,6 +318,76 @@ export default function SciencePage() {
               </p>
               <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                 novelty-learning correlation
+              </p>
+            </div>
+          </NotebookCardContent>
+        </NotebookCard>
+
+        {/* Section 6: Mastery System */}
+        <NotebookCard className="mb-6" withBinding={true} id="mastery">
+          <NotebookCardContent>
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: "var(--accent-nav-light)" }}
+              >
+                <Trophy className="h-5 w-5" style={{ color: "var(--accent-nav)" }} />
+              </div>
+              <NotebookCardTitle className="text-[18px]">
+                Mastery Progress
+              </NotebookCardTitle>
+            </div>
+
+            <p className="text-sm mb-3" style={{ color: "var(--text-body)" }}>
+              Each phrase needs <strong style={{ color: "var(--text-heading)" }}>3 consecutive correct sessions</strong> to be considered mastered.
+            </p>
+
+            <ul className="space-y-1.5">
+              {[
+                { label: "1/3", desc: "First correct answer — good start!" },
+                { label: "2/3", desc: "Second correct — building confidence" },
+                { label: "3/3", desc: "Mastered! — Ready to use in real life" },
+              ].map((item, i) => (
+                <li key={i} className="flex gap-2 text-sm" style={{ color: "var(--text-body)" }}>
+                  <span
+                    className="font-medium min-w-[32px]"
+                    style={{ color: "var(--accent-nav)" }}
+                  >
+                    {item.label}
+                  </span>
+                  <span>{item.desc}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* What happens after */}
+            <div
+              className="mt-4 p-3 rounded-lg text-sm"
+              style={{
+                backgroundColor: "var(--surface-page)",
+                borderLeft: "3px solid var(--state-easy)",
+              }}
+            >
+              <p style={{ color: "var(--text-body)" }}>
+                <strong style={{ color: "var(--text-heading)" }}>After Mastery:</strong>{" "}
+                Mastered phrases appear less often, with longer intervals between reviews.
+                If you get one wrong, the counter resets and FSRS schedules more practice.
+              </p>
+            </div>
+
+            {/* Stat Callout */}
+            <div
+              className="mt-5 p-4 rounded-lg text-center"
+              style={{ backgroundColor: "var(--state-easy)", opacity: 0.9 }}
+            >
+              <p
+                className="text-2xl font-bold heading-serif"
+                style={{ color: "white" }}
+              >
+                3 sessions
+              </p>
+              <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.9)" }}>
+                to confidently use a phrase
               </p>
             </div>
           </NotebookCardContent>

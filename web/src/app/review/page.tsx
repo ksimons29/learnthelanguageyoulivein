@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
+import { AlertTriangle, HelpCircle, Lightbulb, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   ReviewHeader,
@@ -715,8 +716,9 @@ export default function ReviewPage() {
 
           {/* Mastery Progress */}
           {reviewState === "feedback" && currentWord && (
-            <div
-              className="text-center text-sm"
+            <Link
+              href="/science#mastery"
+              className="flex items-center justify-center gap-1.5 text-sm transition-opacity hover:opacity-80"
               style={{ color: "var(--text-muted)" }}
             >
               <span>Progress: </span>
@@ -724,11 +726,11 @@ export default function ReviewPage() {
                 className="font-medium"
                 style={{ color: "var(--accent-nav)" }}
               >
-                {currentWord.consecutiveCorrectSessions || 0}/3 correct sessions
+                {currentWord.consecutiveCorrectSessions || 0}/3
               </span>
-              {currentWord.masteryStatus === "ready_to_use" && (
+              {currentWord.masteryStatus === "ready_to_use" ? (
                 <span
-                  className="ml-2 px-2 py-0.5 rounded-full text-xs"
+                  className="ml-1 px-2 py-0.5 rounded-full text-xs"
                   style={{
                     backgroundColor: "var(--state-easy)",
                     color: "white",
@@ -736,8 +738,13 @@ export default function ReviewPage() {
                 >
                   Mastered!
                 </span>
+              ) : (
+                <HelpCircle
+                  className="h-3.5 w-3.5 ml-0.5"
+                  style={{ color: "var(--text-muted)" }}
+                />
               )}
-            </div>
+            </Link>
           )}
 
           {/* Active Recall Input */}
