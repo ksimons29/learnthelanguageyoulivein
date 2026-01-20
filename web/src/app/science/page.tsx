@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Brain, Sparkles, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Brain, Sparkles, Clock, Layers, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { InfoButton } from "@/components/brand";
 import {
@@ -200,7 +200,62 @@ export default function SciencePage() {
           </NotebookCardContent>
         </NotebookCard>
 
-        {/* Section 4: Your Phrases */}
+        {/* Section 4: Words That Connect */}
+        <NotebookCard className="mb-6" withBinding={true}>
+          <NotebookCardContent>
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: "var(--accent-nav-light)" }}
+              >
+                <Layers className="h-5 w-5" style={{ color: "var(--accent-nav)" }} />
+              </div>
+              <NotebookCardTitle className="text-[18px]">
+                Words That Connect
+              </NotebookCardTitle>
+            </div>
+
+            <p className="text-sm mb-3" style={{ color: "var(--text-body)" }}>
+              Most apps show one word at a time. We combine 2-4 of your words in fresh sentences.
+            </p>
+            <p className="text-sm" style={{ color: "var(--text-body)" }}>
+              Each review = new context. The same sentence never repeats.
+            </p>
+
+            {/* Research Note */}
+            <div
+              className="mt-4 p-3 rounded-lg text-sm"
+              style={{
+                backgroundColor: "var(--surface-page)",
+                borderLeft: "3px solid var(--accent-nav)",
+              }}
+            >
+              <p style={{ color: "var(--text-body)" }}>
+                <strong style={{ color: "var(--text-heading)" }}>Interleaved Practice:</strong>{" "}
+                Mixing different words in varied contexts creates stronger neural connections
+                than studying each word in isolation.
+              </p>
+            </div>
+
+            {/* Stat Callout */}
+            <div
+              className="mt-5 p-4 rounded-lg text-center"
+              style={{ backgroundColor: "var(--accent-nav-light)" }}
+            >
+              <p
+                className="text-2xl font-bold heading-serif"
+                style={{ color: "var(--accent-nav)" }}
+              >
+                4-6× faster
+              </p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                acquisition from varied contexts
+              </p>
+            </div>
+          </NotebookCardContent>
+        </NotebookCard>
+
+        {/* Section 5: Your Phrases */}
         <NotebookCard className="mb-6" withBinding={true}>
           <NotebookCardContent>
             <div className="flex items-center gap-3 mb-4">

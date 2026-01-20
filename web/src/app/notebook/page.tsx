@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   SearchBar,
   InboxCard,
@@ -12,7 +12,16 @@ import {
 import { InfoButton } from "@/components/brand";
 import { useWordsStore } from "@/lib/store/words-store";
 import { getCategoryConfig } from "@/lib/config/categories";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Search, Loader2 } from "lucide-react";
+
+// Type for word search results
+interface SearchResultWord {
+  id: string;
+  originalText: string;
+  translation: string;
+  category: string;
+  audioUrl?: string | null;
+}
 
 /**
  * NotebookPage Component
@@ -25,6 +34,11 @@ import { BookOpen } from "lucide-react";
  */
 export default function NotebookPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResultWord[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<SearchResultWord | null>(
+    null
+  );
 
   const { categories, categoriesLoading, inboxCount, fetchCategories, error } =
     useWordsStore();
@@ -34,11 +48,47 @@ export default function NotebookPage() {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Filter categories by search query
+  // Debounced word search
+  useEffect(() => {
+    // Clear results if search is too short
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/words?search=${encodeURIComponent(searchQuery)}&limit=20`
+        );
+        if (response.ok) {
+          const { data } = await response.json();
+          setSearchResults(data?.words || []);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Filter categories by search query (only used when not showing word results)
   const filteredCategories = categories.filter((cat) => {
     const config = getCategoryConfig(cat.category);
     return config.label.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  // Determine if we should show word search results
+  const showWordResults = searchQuery.length >= 2;
 
   // Calculate total words across all categories
   const totalWords = categories.reduce((sum, cat) => sum + cat.totalWords, 0);
@@ -67,7 +117,7 @@ export default function NotebookPage() {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search categories..."
+            placeholder="Search words & categories..."
           />
         </div>
 
@@ -129,65 +179,173 @@ export default function NotebookPage() {
         {/* Content - Only show when loaded and not in error state */}
         {!categoriesLoading && !error && categories.length > 0 && (
           <>
-            {/* Attention Section - Words that need help */}
-            <AttentionSection className="mb-6" />
+            {/* Attention Section - Hide when searching */}
+            {!showWordResults && <AttentionSection className="mb-6" />}
 
-            {/* Inbox - Recently captured */}
-            {inboxCount > 0 && (
+            {/* Inbox - Hide when searching */}
+            {!showWordResults && inboxCount > 0 && (
               <div className="mb-6 page-stack-3d">
                 <InboxCard count={inboxCount} />
               </div>
             )}
 
-            {/* Categories */}
-            <section className="pb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-1 h-6 rounded-full"
-                    style={{ backgroundColor: "var(--accent-nav)" }}
-                  />
-                  <h2
-                    className="text-xl font-semibold heading-serif ink-text"
-                    style={{ color: "var(--text-heading)" }}
-                  >
-                    Categories
-                  </h2>
-                </div>
-                <span
-                  className="text-sm"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {totalWords} phrases
-                </span>
-              </div>
-
-              {/* No results from search */}
-              {filteredCategories.length === 0 && searchQuery && (
-                <div className="py-8 text-center">
-                  <p style={{ color: "var(--text-muted)" }}>
-                    No categories match &ldquo;{searchQuery}&rdquo;
-                  </p>
-                </div>
-              )}
-
-              {/* Category list */}
-              <div className="space-y-3">
-                {filteredCategories.map((cat) => {
-                  const config = getCategoryConfig(cat.category);
-                  return (
-                    <CategoryCard
-                      key={cat.category}
-                      icon={config.icon}
-                      name={config.label}
-                      totalPhrases={cat.totalWords}
-                      dueCount={cat.dueCount}
-                      href={`/notebook/${cat.category}`}
+            {/* Search Results - Show when searching */}
+            {showWordResults && (
+              <section className="pb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-1 h-6 rounded-full"
+                      style={{ backgroundColor: "var(--accent-ribbon)" }}
                     />
-                  );
-                })}
-              </div>
-            </section>
+                    <h2
+                      className="text-xl font-semibold heading-serif ink-text"
+                      style={{ color: "var(--text-heading)" }}
+                    >
+                      Search Results
+                    </h2>
+                  </div>
+                  {isSearching ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      style={{ color: "var(--text-muted)" }}
+                    />
+                  ) : (
+                    <span
+                      className="text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {searchResults.length} found
+                    </span>
+                  )}
+                </div>
+
+                {/* Search loading state */}
+                {isSearching && searchResults.length === 0 && (
+                  <div className="py-6 text-center">
+                    <Loader2
+                      className="h-6 w-6 animate-spin mx-auto mb-2"
+                      style={{ color: "var(--accent-nav)" }}
+                    />
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Searching...
+                    </p>
+                  </div>
+                )}
+
+                {/* No results */}
+                {!isSearching && searchResults.length === 0 && (
+                  <div className="py-8 text-center">
+                    <Search
+                      className="h-8 w-8 mx-auto mb-3"
+                      style={{ color: "var(--text-muted)", opacity: 0.5 }}
+                    />
+                    <p style={{ color: "var(--text-muted)" }}>
+                      No words match &ldquo;{searchQuery}&rdquo;
+                    </p>
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="mt-3 text-sm font-medium transition-opacity hover:opacity-80"
+                      style={{ color: "var(--accent-nav)" }}
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                )}
+
+                {/* Search results list */}
+                {searchResults.length > 0 && (
+                  <div className="space-y-2">
+                    {searchResults.map((word) => {
+                      const categoryConfig = getCategoryConfig(word.category);
+                      return (
+                        <a
+                          key={word.id}
+                          href={`/notebook/${word.category}?highlight=${word.id}`}
+                          className="block p-4 rounded-lg transition-all duration-200 hover:scale-[1.01]"
+                          style={{
+                            backgroundColor: "var(--surface-page)",
+                            border: "1px solid var(--border-subtle)",
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className="font-medium truncate"
+                                style={{ color: "var(--text-heading)" }}
+                              >
+                                {word.originalText}
+                              </p>
+                              <p
+                                className="text-sm truncate mt-0.5"
+                                style={{ color: "var(--text-muted)" }}
+                              >
+                                {word.translation}
+                              </p>
+                            </div>
+                            <span
+                              className="text-xs px-2 py-1 rounded-full flex-shrink-0"
+                              style={{
+                                backgroundColor: "var(--accent-nav-light)",
+                                color: "var(--accent-nav)",
+                              }}
+                            >
+                              {categoryConfig.label}
+                            </span>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Categories - Hide when showing search results */}
+            {!showWordResults && (
+              <section className="pb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-1 h-6 rounded-full"
+                      style={{ backgroundColor: "var(--accent-nav)" }}
+                    />
+                    <h2
+                      className="text-xl font-semibold heading-serif ink-text"
+                      style={{ color: "var(--text-heading)" }}
+                    >
+                      Categories
+                    </h2>
+                  </div>
+                  <span
+                    className="text-sm"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {totalWords} phrases
+                  </span>
+                </div>
+
+                {/* Category list */}
+                <div className="space-y-3">
+                  {filteredCategories.map((cat) => {
+                    const config = getCategoryConfig(cat.category);
+                    return (
+                      <CategoryCard
+                        key={cat.category}
+                        icon={config.icon}
+                        name={config.label}
+                        totalPhrases={cat.totalWords}
+                        dueCount={cat.dueCount}
+                        href={`/notebook/${cat.category}`}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>

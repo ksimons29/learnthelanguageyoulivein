@@ -452,7 +452,7 @@ async function generateAudioInBackground(
  */
 async function triggerSentenceGeneration(userId: string): Promise<void> {
   try {
-    const languagePreference = DEFAULT_LANGUAGE_PREFERENCE;
+    const languagePreference = await getUserLanguagePreference(userId);
 
     // Get a few unused word combinations
     const combinations = await getUnusedWordCombinations(

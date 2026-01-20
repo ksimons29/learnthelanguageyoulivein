@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/auth-store";
 import { PhraseInput } from "@/components/capture";
 import { InfoButton } from "@/components/brand";
 import {
@@ -41,6 +42,7 @@ import {
 
 export default function CapturePage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuthStore();
   const [phrase, setPhrase] = useState("");
   const [showContextFields, setShowContextFields] = useState(false);
   const [locationHint, setLocationHint] = useState("");
@@ -49,6 +51,13 @@ export default function CapturePage() {
   const { captureWord, isLoading } = useWordsStore();
   const { showToast } = useUIStore();
   const { emitWordCapturedWithContext } = useGamificationStore();
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth/sign-in");
+    }
+  }, [authLoading, user, router]);
 
   const handleTagToggle = (tagId: SituationTagId) => {
     setSelectedTags((prev) => {
@@ -109,6 +118,11 @@ export default function CapturePage() {
   const handleClose = () => {
     router.back();
   };
+
+  // Don't render while checking auth or redirecting
+  if (authLoading || !user) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col">

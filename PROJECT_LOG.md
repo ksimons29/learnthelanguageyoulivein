@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Pre-Launch Review** - Added notebook word search, "Words That Connect" science section, updated starter words messaging, D4-D6 test cases (Session 41)
 - [x] **Launch Plan Implementation** - Fixed 4 bugs, transformed notebook into personal journal, added audio timeout/retry, input validation (Session 40)
 - [x] **Global Feedback Button** - Coral ribbon-style feedback button visible on all main pages, removed from info menu (Session 38)
 - [x] **User Feedback Form** - In-app feedback form with bug reports, feature requests, and general feedback accessible via About sheet (Session 35)
@@ -83,6 +84,58 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 41 - 2026-01-20 - Pre-Launch Review: Search, Science, UX Polish
+
+**Focus**: Implement pre-launch review plan covering user journey, gamification verification, journal search, and theory presentation.
+
+#### Changes Made
+
+**1. Journal Search Enhancement (P1)** (`web/src/app/notebook/page.tsx`)
+- Added debounced word search (300ms delay, min 2 chars)
+- Search queries `/api/words?search=` which searches both `originalText` and `translation`
+- Shows "Search Results" section with match count when searching
+- Hides categories and attention sections during search
+- Results link to category page with `?highlight=wordId` param
+- Clear search button on no results
+- Updated search placeholder: "Search words & categories..."
+
+**2. Science Page Addition (P2)** (`web/src/app/science/page.tsx`)
+- Added new "Words That Connect" section between "Less Grinding" and "Your Life, Your Words"
+- Explains LLYLI's unique differentiator: combining 2-4 words in fresh sentences
+- Includes "Interleaved Practice" research note
+- Stat callout: "4-6× faster acquisition from varied contexts"
+
+**3. Onboarding Copy Update (P2)** (`web/src/app/onboarding/complete/page.tsx`)
+- Updated starter words message: "We've added 10 starter phrases – essentials like greetings, thanks, and common requests."
+
+**4. Testing Documentation (P1)** (`docs/engineering/TESTING.md`)
+- Added D4: Search within category
+- Added D5: Global notebook search
+- Added D6: Search no results
+
+#### Gamification Status Verified
+All MVP gamification features confirmed production-ready:
+- ✅ Daily goals (10 reviews/day with celebration)
+- ✅ Streak system (consecutive days + 1 free freeze)
+- ✅ Bingo board (3×3 with 9 squares, win detection)
+- ✅ Boss round (unlocks after daily goal, 5 hardest words, 90s timer)
+
+Post-MVP features scoped out: Story Run, Category Hunt, Real Life Missions
+
+#### Testing
+- `npm run build` ✓
+- `npm run test:run` ✓ (65 tests)
+- E2E via Playwright: Notebook search verified (3 results for "obrigado")
+- Science page "Words That Connect" section verified
+
+#### Files Modified
+- `web/src/app/notebook/page.tsx` - Word search functionality
+- `web/src/app/science/page.tsx` - New science section
+- `web/src/app/onboarding/complete/page.tsx` - Updated copy
+- `docs/engineering/TESTING.md` - D4, D5, D6 test cases
+
+---
 
 ### Session 40 - 2026-01-20 - Launch Plan Implementation: Bug Fixes + Notebook Journal
 

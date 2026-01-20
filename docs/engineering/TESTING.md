@@ -850,6 +850,48 @@ Expected
 
 * Words are not excluded based only on target_lang equals user target language
 
+### D4 Search within category
+
+Steps
+
+1. Go to `/notebook/social` (or any category with words)
+2. Enter search term matching a word's originalText
+3. Enter search term matching a word's translation
+
+Expected
+
+* Words matching search appear
+* Non-matching words hidden
+* Clear search returns all words
+
+### D5 Global notebook search
+
+Steps
+
+1. Go to `/notebook`
+2. Search for a word you know exists (e.g., "obrigado" for Portuguese learner)
+3. Search for a translation (e.g., "thank")
+
+Expected
+
+* Matching words appear in "Search Results" section
+* Categories section hides during search
+* Tapping a result navigates to the category page with word highlighted
+* Result count shows number found (e.g., "3 found")
+
+### D6 Search no results
+
+Steps
+
+1. Go to `/notebook`
+2. Search for "xyznonexistent123"
+
+Expected
+
+* Clear "No words match" message appears
+* "Clear search" button visible and functional
+* Clicking clear search returns to categories view
+
 ---
 
 ## 6E. Review and learning full coverage
