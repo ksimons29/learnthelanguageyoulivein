@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **User Feedback Form** - In-app feedback form with bug reports, feature requests, and general feedback accessible via About sheet (Session 35)
 - [x] **Personal Memory Journal** - Memory context feature lets users add WHERE/WHEN context to captures, with display in notebook and review (Session 34)
 - [x] **Science Page** - Added `/science` page explaining LLYLI's research-backed approach, accessible via InfoButton sheet (Session 33)
 - [x] **Sign Out + Bug Fixes** - Added Sign Out to About sheet, fixed Bingo labels, synced Progress streak with gamification (Session 32)
@@ -37,6 +38,7 @@ npm run build             # Production build
 | `docs/design/user_research_synthesis.md` | Survey analysis (24 respondents), personas, gap analysis |
 | `web/src/lib/config/languages.ts` | Language config, SUPPORTED_DIRECTIONS, validation |
 | `web/src/lib/config/memory-context.ts` | Memory context types, situation tags, helpers |
+| `web/src/lib/db/schema/user-feedback.ts` | User feedback schema for bug reports and feature requests |
 | `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
 | `web/src/lib/data/starter-vocabulary.ts` | Curated starter words for 6 target languages |
 | `web/src/app/api/onboarding/starter-words/route.ts` | API to inject starter words during onboarding |
@@ -79,6 +81,62 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 35 - 2026-01-20 - User Feedback Form
+
+**Focus**: Implement in-app feedback form for bug reports, feature requests, and general feedback
+
+**Feature Overview**
+Allow users to submit feedback directly within the app. Accessible via "Give Feedback" button in the About LLYLI sheet. Supports three feedback types: Bug Report, Feature Request, and General Feedback.
+
+**Schema Changes**
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | References Supabase auth user |
+| `type` | text enum | 'bug_report', 'feature_request', 'general_feedback' |
+| `message` | text | Feedback content (max 5000 chars) |
+| `page_context` | text | Auto-captured: which page user was on |
+| `created_at` | timestamp | When feedback was submitted |
+
+**Changes Made**
+| Change | Details |
+|--------|---------|
+| Database schema | Created `user_feedback` table with type enum and message |
+| API endpoint | `POST /api/feedback` with auth, validation, max length check |
+| Feedback sheet | Bottom sheet with type selector pills, textarea, character counter |
+| Info button | Added "Give Feedback" button between Science and Sign Out |
+| Success state | Checkmark animation with "Thank you!" message |
+
+**Files Created**
+| File | Purpose |
+|------|---------|
+| `web/src/lib/db/schema/user-feedback.ts` | Database schema + FEEDBACK_TYPES constant |
+| `web/src/app/api/feedback/route.ts` | POST endpoint with validation |
+| `web/src/components/feedback/feedback-sheet.tsx` | Bottom sheet UI component |
+| `web/src/components/feedback/index.ts` | Barrel export |
+
+**Files Modified**
+| File | Change |
+|------|--------|
+| `web/src/lib/db/schema/index.ts` | Export user-feedback schema |
+| `web/src/components/brand/info-button.tsx` | Added MessageSquare icon, feedback state, button |
+
+**Build & Tests**
+- `npm run build` ✅ Pass
+- `npm run test:run` ✅ Pass (65/65 tests)
+- `npm run db:push --force` ✅ Pass (table created)
+
+**E2E Verification** (Playwright MCP on localhost)
+| Step | Result |
+|------|--------|
+| Open About LLYLI sheet | ✅ "Give Feedback" button visible |
+| Click "Give Feedback" | ✅ Feedback sheet opens |
+| Select type (Feature Request) | ✅ Placeholder updates dynamically |
+| Enter message | ✅ Character counter shows 46/5000 |
+| Submit feedback | ✅ Success state: "Thank you!" with checkmark |
+
+---
 
 ### Session 34 - 2026-01-20 - Personal Memory Journal Feature
 

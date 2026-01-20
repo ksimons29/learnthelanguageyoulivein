@@ -3,13 +3,14 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical } from "lucide-react";
+import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/auth-store";
 import {
   Sheet,
   SheetContent,
 } from "@/components/ui/sheet";
+import { FeedbackSheet } from "@/components/feedback";
 
 interface InfoButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
@@ -29,6 +30,7 @@ interface InfoButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 function InfoButton({ className, ...props }: InfoButtonProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = React.useState(false);
   const router = useRouter();
   const signOut = useAuthStore((state) => state.signOut);
 
@@ -53,6 +55,11 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
   const handleScienceClick = () => {
     setIsOpen(false);
     router.push("/science");
+  };
+
+  const handleFeedbackClick = () => {
+    setIsOpen(false);
+    setIsFeedbackOpen(true);
   };
 
   return (
@@ -165,6 +172,19 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
             <span className="text-sm font-medium">The Science Behind LLYLI</span>
           </button>
 
+          {/* Give Feedback Button */}
+          <button
+            onClick={handleFeedbackClick}
+            className="w-full py-3 mb-2 rounded-lg flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+            style={{
+              backgroundColor: "var(--surface-page-aged)",
+              color: "var(--accent-nav)",
+            }}
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span className="text-sm font-medium">Give Feedback</span>
+          </button>
+
           {/* Sign Out Button */}
           <button
             onClick={handleSignOut}
@@ -195,6 +215,9 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Feedback Sheet */}
+      <FeedbackSheet open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
     </>
   );
 }
