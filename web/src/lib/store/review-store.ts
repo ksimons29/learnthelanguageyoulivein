@@ -290,23 +290,46 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
    *
    * Applies the same rating to all words in the sentence.
    * Each word's FSRS parameters are updated individually.
+   * Uses batched submission with validation to prevent silent failures.
    */
   submitSentenceReview: async (rating: 1 | 2 | 3 | 4) => {
     const { sessionId, sentenceTargetWords } = get();
     set({ isLoading: true, error: null });
 
     try {
-      // Submit review for each word in the sentence
-      for (const word of sentenceTargetWords) {
-        const response = await fetch('/api/reviews', {
+      // Submit all reviews in parallel using Promise.allSettled
+      const reviewPromises = sentenceTargetWords.map((word) =>
+        fetch('/api/reviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ wordId: word.id, rating, sessionId }),
-        });
+        }).then(async (response) => {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to submit review for word ${word.id}`);
+          }
+          return response.json();
+        })
+      );
 
-        if (!response.ok) {
-          console.error(`Failed to submit review for word ${word.id}`);
+      const results = await Promise.allSettled(reviewPromises);
+
+      // Check for failures
+      const failures = results.filter((r) => r.status === 'rejected');
+      const successes = results.filter((r) => r.status === 'fulfilled');
+
+      if (failures.length > 0) {
+        // Some reviews failed - only count successes
+        const failedCount = failures.length;
+        const successCount = successes.length;
+
+        if (successCount === 0) {
+          // All failed - show error
+          throw new Error(`Failed to submit review for all ${failedCount} words in sentence`);
         }
+
+        // Partial success - warn user but continue
+        console.error(`${failedCount} of ${sentenceTargetWords.length} word reviews failed`);
       }
 
       // Map numeric rating to string
@@ -317,16 +340,19 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
         4: 'easy',
       };
 
-      // Update stats (count each word in sentence as reviewed)
-      const wordsInSentence = sentenceTargetWords.length;
-      const correctWords = rating >= 3 ? wordsInSentence : 0;
+      // Update stats (only count successful submissions)
+      const wordsReviewedCount = successes.length;
+      const correctWords = rating >= 3 ? wordsReviewedCount : 0;
 
       set((state) => ({
         lastRating: ratingMap[rating],
-        wordsReviewed: state.wordsReviewed + wordsInSentence,
+        wordsReviewed: state.wordsReviewed + wordsReviewedCount,
         correctCount: state.correctCount + correctWords,
         reviewState: 'feedback',
         isLoading: false,
+        error: failures.length > 0
+          ? `${failures.length} word(s) failed to save. They will be reviewed again.`
+          : null,
       }));
     } catch (error) {
       set({

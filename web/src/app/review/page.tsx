@@ -357,8 +357,8 @@ export default function ReviewPage() {
     );
   }
 
-  // No words due
-  if (!dueWords.length) {
+  // No words due - only show when user is authenticated and session loaded
+  if (!dueWords.length && user && sessionId) {
     return (
       <div className="min-h-screen notebook-bg flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center px-6">

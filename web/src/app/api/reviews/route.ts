@@ -3,7 +3,7 @@ import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server
 import { db } from '@/lib/db';
 import { words, reviewSessions } from '@/lib/db/schema';
 import { isDue, processReview, getNextReviewText } from '@/lib/fsrs';
-import { eq, and, desc, lte, or, isNull } from 'drizzle-orm';
+import { eq, and, desc, lte, or, isNull, sql } from 'drizzle-orm';
 
 /**
  * Session boundary: 2 hours
@@ -183,15 +183,15 @@ export async function POST(request: NextRequest) {
       .where(eq(words.id, wordId))
       .returning();
 
-    // 7. Update session stats
+    // 7. Update session stats atomically (prevents race conditions)
     await db
       .update(reviewSessions)
       .set({
-        wordsReviewed: (await getSessionStats(sessionId)).wordsReviewed + 1,
+        wordsReviewed: sql`${reviewSessions.wordsReviewed} + 1`,
         correctCount:
           rating >= 3
-            ? (await getSessionStats(sessionId)).correctCount + 1
-            : (await getSessionStats(sessionId)).correctCount,
+            ? sql`${reviewSessions.correctCount} + 1`
+            : reviewSessions.correctCount,
       })
       .where(eq(reviewSessions.id, sessionId));
 

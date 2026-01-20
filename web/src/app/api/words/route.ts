@@ -17,7 +17,7 @@ import {
   determineExerciseType,
 } from '@/lib/sentences';
 import OpenAI from 'openai';
-import { eq, and, or, ilike, sql } from 'drizzle-orm';
+import { eq, and, or, ilike, sql, gte } from 'drizzle-orm';
 
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
@@ -67,6 +67,42 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // 2b. Enforce character limit (500 max)
+    const MAX_TEXT_LENGTH = 500;
+    if (text.trim().length > MAX_TEXT_LENGTH) {
+      return NextResponse.json(
+        {
+          error: `Text is too long. Maximum ${MAX_TEXT_LENGTH} characters allowed.`,
+          maxLength: MAX_TEXT_LENGTH,
+          currentLength: text.trim().length,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 2c. Check for duplicate within last 24 hours (warn, not block)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [existingWord] = await db
+      .select({ id: words.id, createdAt: words.createdAt })
+      .from(words)
+      .where(
+        and(
+          eq(words.userId, user.id),
+          ilike(words.originalText, text.trim()),
+          gte(words.createdAt, twentyFourHoursAgo)
+        )
+      )
+      .limit(1);
+
+    // Include duplicate warning in response but don't block
+    const duplicateWarning = existingWord
+      ? {
+          isDuplicate: true,
+          message: 'You captured this phrase recently. It will be added anyway.',
+          existingWordId: existingWord.id,
+        }
+      : null;
 
     // 3. Get user language preferences from database
     const languagePreference = await getUserLanguagePreference(user.id);
@@ -148,6 +184,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       data: {
         word: { ...newWord, audioUrl: null, audioGenerating: true },
+        ...(duplicateWarning && { duplicateWarning }),
       },
     });
 

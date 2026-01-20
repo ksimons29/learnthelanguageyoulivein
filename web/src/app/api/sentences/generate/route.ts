@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { generatedSentences } from '@/lib/db/schema';
 import {
@@ -10,7 +10,6 @@ import {
 } from '@/lib/sentences';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadSentenceAudio } from '@/lib/audio/storage';
-import { DEFAULT_LANGUAGE_PREFERENCE } from '@/lib/config/languages';
 
 /**
  * POST /api/sentences/generate
@@ -59,9 +58,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Get language preference (default for now)
-    // TODO: Fetch from user profile
-    const languagePreference = DEFAULT_LANGUAGE_PREFERENCE;
+    // 4. Get user's language preference
+    const languagePreference = await getUserLanguagePreference(user.id);
 
     // 5. Generate sentences for each combination
     let sentencesGenerated = 0;

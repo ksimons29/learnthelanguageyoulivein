@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SearchBar, InboxCard, CategoryCard, NotebookSkeleton } from "@/components/notebook";
+import {
+  SearchBar,
+  InboxCard,
+  CategoryCard,
+  NotebookSkeleton,
+  JournalHeader,
+  AttentionSection,
+} from "@/components/notebook";
 import { InfoButton } from "@/components/brand";
 import { useWordsStore } from "@/lib/store/words-store";
 import { getCategoryConfig } from "@/lib/config/categories";
@@ -11,7 +18,8 @@ import { BookOpen } from "lucide-react";
  * NotebookPage Component
  *
  * Main notebook view showing the user's word collection organized by category.
- * Fetches real data from the API and displays category statistics.
+ * Now features a personal "Journal Header" with stats and an "Attention Section"
+ * for struggling words, making it feel like YOUR language journal.
  *
  * Design: Moleskine aesthetic with ribbon bookmark and elastic band.
  */
@@ -44,27 +52,18 @@ export default function NotebookPage() {
       <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
       <div className="mx-auto max-w-md px-5 py-6">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1
-              className="text-4xl heading-serif ink-text tracking-tight"
-              style={{ color: "var(--text-heading)" }}
-            >
-              Notebook
-            </h1>
-            <p
-              className="text-sm mt-1 handwritten"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Your phrase collection
-            </p>
-          </div>
+        {/* Info Button - top right */}
+        <div className="flex justify-end mb-4">
           <InfoButton />
         </div>
 
+        {/* Journal Header - Personal stats */}
+        <div className="mb-6">
+          <JournalHeader />
+        </div>
+
         {/* Search */}
-        <div className="mb-8">
+        <div className="mb-6">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -130,10 +129,15 @@ export default function NotebookPage() {
         {/* Content - Only show when loaded and not in error state */}
         {!categoriesLoading && !error && categories.length > 0 && (
           <>
-            {/* Inbox - Featured */}
-            <div className="mb-8 page-stack-3d">
-              <InboxCard count={inboxCount} />
-            </div>
+            {/* Attention Section - Words that need help */}
+            <AttentionSection className="mb-6" />
+
+            {/* Inbox - Recently captured */}
+            {inboxCount > 0 && (
+              <div className="mb-6 page-stack-3d">
+                <InboxCard count={inboxCount} />
+              </div>
+            )}
 
             {/* Categories */}
             <section className="pb-8">

@@ -11,6 +11,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Launch Plan Implementation** - Fixed 4 bugs, transformed notebook into personal journal, added audio timeout/retry, input validation (Session 40)
 - [x] **Global Feedback Button** - Coral ribbon-style feedback button visible on all main pages, removed from info menu (Session 38)
 - [x] **User Feedback Form** - In-app feedback form with bug reports, feature requests, and general feedback accessible via About sheet (Session 35)
 - [x] **Personal Memory Journal** - Memory context feature lets users add WHERE/WHEN context to captures, with display in notebook and review (Session 34)
@@ -20,11 +21,9 @@ npm run build             # Production build
 - [x] **Language Filtering + E2E Testing** - Fixed OR logic for word queries, added English to target languages, verified all 3 test users (Session 30)
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 - [x] **Auth Bug Fix + Starter Words** - Email confirmation UI, improved sign-in errors, 10 starter words per language (Session 28)
-- [x] **User Research Synthesis** - Analyzed 24 survey responses, created product guide (Session 27)
-- [x] **Language Filtering Fix** - Fixed #43 BLOCKER via shared helper function (Session 26)
 
 ### In Progress
-- [ ] **Sentence generation** - Pre-gen works, review integration WIP
+- [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission
 
@@ -84,6 +83,83 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 40 - 2026-01-20 - Launch Plan Implementation: Bug Fixes + Notebook Journal
+
+**Focus**: Implement the LLYLI Launch Plan - fix 4 critical bugs and transform notebook into a personal language journal
+
+#### Phase 1: Bug Fixes (4 ship-blocking bugs)
+
+**Bug 1: Race Condition in Review Stats** (`web/src/app/api/reviews/route.ts`)
+- Problem: Multiple async calls to `getSessionStats()` could interleave, corrupting `wordsReviewed` count
+- Fix: Atomic SQL increment using `sql` template: `sql\`${reviewSessions.wordsReviewed} + 1\``
+
+**Bug 2: Wrong Language Sentences** (`web/src/app/api/sentences/generate/route.ts`)
+- Problem: Hardcoded `DEFAULT_LANGUAGE_PREFERENCE` meant Swedish learners got Portuguese sentences
+- Fix: Use `getUserLanguagePreference(user.id)` like other routes
+
+**Bug 3: Silent Review Failures** (`web/src/lib/store/review-store.ts`)
+- Problem: Sentence review submitted words one-by-one; if word 2 failed, user saw success but stats were wrong
+- Fix: `Promise.allSettled()` batches all submissions, validates all succeed before updating store
+
+**Bug 4: Auth State on Review Page** (`web/src/app/review/page.tsx`)
+- Problem: Showed "All caught up!" to logged-out users
+- Fix: Only show completion when `user && sessionId` are present
+
+#### Phase 3: Notebook as Personal Journal
+
+**New Components:**
+| Component | File | Purpose |
+|-----------|------|---------|
+| `JournalHeader` | `web/src/components/notebook/journal-header.tsx` | "Your Portuguese Journal" with personal stats |
+| `AttentionSection` | `web/src/components/notebook/attention-section.tsx` | Words with 3+ lapses that need extra help |
+| `StatusBadge` | `web/src/components/notebook/mastery-badge.tsx` | NEW/LEARNING/DUE/MASTERED/STRUGGLING badges |
+
+**New APIs:**
+| Endpoint | Purpose |
+|----------|---------|
+| `/api/words/stats` | Total words, mastered count, due today, needs attention |
+| `/api/words/attention` | Struggling words (3+ lapses) with sentence context |
+
+**Updated:**
+- `WordCard` - Now expandable with sentence, memory context, audio, review stats
+- `NotebookPage` - JournalHeader + AttentionSection + categories
+
+#### Phase 4: Polish
+
+**Audio Timeout** (`web/src/lib/store/words-store.ts`)
+- Added `audioFailedIds` tracking for words that timeout
+- `retryAudioGeneration()` method to retry via `/api/words/[id]/regenerate-audio`
+- UI can now show error state with retry button
+
+**Input Limits** (`web/src/app/api/words/route.ts`)
+- Max 500 characters (hard limit, blocks submission)
+- Duplicate warning within 24h (soft warning, allows but notifies)
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `web/src/app/api/reviews/route.ts` | Atomic SQL increment for stats |
+| `web/src/app/api/sentences/generate/route.ts` | Use user's language preference |
+| `web/src/lib/store/review-store.ts` | Batch sentence review with Promise.allSettled |
+| `web/src/app/review/page.tsx` | Auth state check for completion |
+| `web/src/app/api/words/stats/route.ts` | NEW - Journal stats endpoint |
+| `web/src/app/api/words/attention/route.ts` | NEW - Struggling words endpoint |
+| `web/src/app/api/words/[id]/regenerate-audio/route.ts` | NEW - Audio retry endpoint |
+| `web/src/components/notebook/journal-header.tsx` | NEW - Personal stats header |
+| `web/src/components/notebook/attention-section.tsx` | NEW - Struggling words section |
+| `web/src/components/notebook/mastery-badge.tsx` | Added StatusBadge component |
+| `web/src/components/notebook/word-card.tsx` | Expandable cards with context |
+| `web/src/components/notebook/index.ts` | Export new components |
+| `web/src/app/notebook/page.tsx` | Integrated new components |
+| `web/src/lib/store/words-store.ts` | Audio failure tracking + retry |
+| `web/src/app/api/words/route.ts` | Input limits (500 chars, duplicate check) |
+
+**Build:** ✓ Passed
+**Tests:** ✓ 65 tests passed
+
+---
 
 ### Session 39 - 2026-01-20 - Bug Fixes: Capture Speed, Bingo Navigation, Sentence Translations
 

@@ -31,6 +31,7 @@ interface WordsState {
 
   // Audio generation tracking
   audioGeneratingIds: Set<string>;
+  audioFailedIds: Set<string>;
 
   // Categories State
   categories: CategoryStats[];
@@ -65,6 +66,9 @@ interface WordsState {
   deleteWord: (id: string) => Promise<void>;
   pollForAudio: (wordId: string) => void;
   isAudioGenerating: (wordId: string) => boolean;
+  isAudioFailed: (wordId: string) => boolean;
+  retryAudioGeneration: (wordId: string) => Promise<void>;
+  clearAudioFailed: (wordId: string) => void;
 }
 
 export const useWordsStore = create<WordsState>((set, get) => ({
@@ -76,6 +80,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
   // Audio generation tracking
   audioGeneratingIds: new Set<string>(),
+  audioFailedIds: new Set<string>(),
 
   // Categories Initial State
   categories: [],
@@ -277,19 +282,30 @@ export const useWordsStore = create<WordsState>((set, get) => ({
         if (attempts < maxAttempts) {
           setTimeout(poll, 1000);
         } else {
-          // Give up after max attempts
+          // Give up after max attempts - mark as failed
+          console.warn(`Audio generation timed out for word ${wordId} after ${maxAttempts} seconds`);
           set((state) => {
-            const newSet = new Set(state.audioGeneratingIds);
-            newSet.delete(wordId);
-            return { audioGeneratingIds: newSet };
+            const generatingSet = new Set(state.audioGeneratingIds);
+            generatingSet.delete(wordId);
+            const failedSet = new Set(state.audioFailedIds);
+            failedSet.add(wordId);
+            return {
+              audioGeneratingIds: generatingSet,
+              audioFailedIds: failedSet,
+            };
           });
         }
       } catch (error) {
         console.error('Audio polling error:', error);
         set((state) => {
-          const newSet = new Set(state.audioGeneratingIds);
-          newSet.delete(wordId);
-          return { audioGeneratingIds: newSet };
+          const generatingSet = new Set(state.audioGeneratingIds);
+          generatingSet.delete(wordId);
+          const failedSet = new Set(state.audioFailedIds);
+          failedSet.add(wordId);
+          return {
+            audioGeneratingIds: generatingSet,
+            audioFailedIds: failedSet,
+          };
         });
       }
     };
@@ -300,5 +316,44 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
   isAudioGenerating: (wordId: string) => {
     return get().audioGeneratingIds.has(wordId);
+  },
+
+  isAudioFailed: (wordId: string) => {
+    return get().audioFailedIds.has(wordId);
+  },
+
+  clearAudioFailed: (wordId: string) => {
+    set((state) => {
+      const failedSet = new Set(state.audioFailedIds);
+      failedSet.delete(wordId);
+      return { audioFailedIds: failedSet };
+    });
+  },
+
+  retryAudioGeneration: async (wordId: string) => {
+    // Clear failed status
+    get().clearAudioFailed(wordId);
+
+    // Trigger audio regeneration via API
+    try {
+      const response = await fetch(`/api/words/${wordId}/regenerate-audio`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to regenerate audio');
+      }
+
+      // Start polling again
+      get().pollForAudio(wordId);
+    } catch (error) {
+      console.error('Audio regeneration error:', error);
+      // Mark as failed again
+      set((state) => {
+        const failedSet = new Set(state.audioFailedIds);
+        failedSet.add(wordId);
+        return { audioFailedIds: failedSet };
+      });
+    }
   },
 }));
