@@ -31,7 +31,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { userId, lookaheadDays = 30, maxSentences = 5, skipAudio = true } = body;
+    const {
+      userId,
+      targetLanguage = 'pt-PT', // Default to Portuguese for testing
+      lookaheadDays = 30,
+      maxSentences = 5,
+      skipAudio = true
+    } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
@@ -57,9 +63,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Words by category:', categoryStats);
 
-    // Get unused word combinations
+    // Get unused word combinations (filtered by target language)
     const unusedCombinations = await getUnusedWordCombinations(
       userId,
+      targetLanguage,
       {
         minWordsPerSentence: 2,
         maxWordsPerSentence: 4,

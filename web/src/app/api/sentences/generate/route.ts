@@ -36,9 +36,15 @@ export async function POST(request: NextRequest) {
     const lookaheadDays = body.lookaheadDays || 7;
     const maxSentences = Math.min(body.maxSentences || 20, 50); // Cap at 50
 
-    // 3. Get unused word combinations
+    // 3. Get user's language preference (needed for word filtering)
+    const languagePreference = await getUserLanguagePreference(user.id);
+
+    // 4. Get unused word combinations (filtered by target language)
+    // IMPORTANT: This filter ensures sentences only contain words that
+    // will be retrievable by sentences/next API (which uses same filter)
     const unusedCombinations = await getUnusedWordCombinations(
       user.id,
+      languagePreference.targetLanguage,
       {
         minWordsPerSentence: 2,
         maxWordsPerSentence: 4,
@@ -57,9 +63,6 @@ export async function POST(request: NextRequest) {
         },
       });
     }
-
-    // 4. Get user's language preference
-    const languagePreference = await getUserLanguagePreference(user.id);
 
     // 5. Generate sentences for each combination
     let sentencesGenerated = 0;

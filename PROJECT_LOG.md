@@ -90,6 +90,25 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 45b - 2026-01-20 - Sentence Generation Language Filter Fix
+
+**Focus**: Fix bug where sentence generation picked words without language filter, causing orphaned sentences.
+
+#### Bug Fixed
+
+**Sentence Generation Language Mismatch**
+- **Root Cause**: `getDueWordsGroupedByCategory()` didn't filter by language, but `sentences/next` API did
+- **Symptom**: "Pre-generated sentences exist but their words may have been deleted"
+- **Fix**: Added `targetLanguage` parameter to word matcher, same filter as retrieval
+
+#### Files Changed
+- `src/lib/sentences/word-matcher.ts` - Added targetLanguage filter to getDueWordsGroupedByCategory
+- `src/app/api/sentences/generate/route.ts` - Pass targetLanguage to word matcher
+- `src/app/api/words/route.ts` - Pass targetLanguage in triggerSentenceGeneration
+- `src/app/api/dev/test-sentences/route.ts` - Updated test endpoint
+
+---
+
 ### Session 45 - 2026-01-20 - Critical Review System Bug Fixes
 
 **Focus**: Fix 6 critical issues with the review system discovered during manual testing. Test-driven approach with verification after each fix.

@@ -603,9 +603,10 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
   try {
     const languagePreference = await getUserLanguagePreference(userId);
 
-    // Get a few unused word combinations
+    // Get a few unused word combinations (filtered by target language)
     const combinations = await getUnusedWordCombinations(
       userId,
+      languagePreference.targetLanguage,
       {
         minWordsPerSentence: 2,
         maxWordsPerSentence: 4,

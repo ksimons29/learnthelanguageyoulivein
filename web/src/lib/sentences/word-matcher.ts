@@ -10,7 +10,7 @@
 
 import { db } from '@/lib/db';
 import { words, generatedSentences, type Word } from '@/lib/db/schema';
-import { eq, and, lte, inArray } from 'drizzle-orm';
+import { eq, and, lte, inArray, or } from 'drizzle-orm';
 
 /**
  * Configuration for word matching algorithm
@@ -32,24 +32,36 @@ export const DEFAULT_WORD_MATCHING_CONFIG: WordMatchingConfig = {
 /**
  * Get due words grouped by category
  *
- * Queries all user words with nextReviewDate within the lookahead window
- * and groups them by category for semantic sentence generation.
+ * Queries user words with nextReviewDate within the lookahead window,
+ * filtered by target language, and groups them by category for semantic
+ * sentence generation.
+ *
+ * IMPORTANT: The targetLanguage filter matches the same logic used in
+ * sentences/next API to ensure generated sentences can be retrieved.
+ * Words are included if their sourceLang OR targetLang matches the
+ * user's target language (handles bidirectional capture).
  */
 export async function getDueWordsGroupedByCategory(
   userId: string,
+  targetLanguage: string,
   lookaheadDays: number = 7
 ): Promise<Map<string, Word[]>> {
   const now = new Date();
   const lookaheadDate = new Date(now.getTime() + lookaheadDays * 24 * 60 * 60 * 1000);
 
-  // Query all user words with nextReviewDate within lookahead window
+  // Query user words with nextReviewDate within lookahead window
+  // Filter by target language (either sourceLang or targetLang must match)
   const dueWords = await db
     .select()
     .from(words)
     .where(
       and(
         eq(words.userId, userId),
-        lte(words.nextReviewDate, lookaheadDate)
+        lte(words.nextReviewDate, lookaheadDate),
+        or(
+          eq(words.sourceLang, targetLanguage),
+          eq(words.targetLang, targetLanguage)
+        )
       )
     );
 
@@ -242,15 +254,22 @@ export async function filterUsedCombinations(
  *
  * Main entry point - combines category grouping, combination generation,
  * and deduplication filtering.
+ *
+ * @param userId - The user's ID
+ * @param targetLanguage - The user's target language (for filtering words)
+ * @param config - Word matching configuration
+ * @param maxCombinations - Maximum combinations to return
  */
 export async function getUnusedWordCombinations(
   userId: string,
+  targetLanguage: string,
   config: WordMatchingConfig = DEFAULT_WORD_MATCHING_CONFIG,
   maxCombinations: number = 50
 ): Promise<Word[][]> {
-  // 1. Get due words grouped by category
+  // 1. Get due words grouped by category (filtered by target language)
   const categoryGroups = await getDueWordsGroupedByCategory(
     userId,
+    targetLanguage,
     config.dueDateWindowDays
   );
 
