@@ -1,491 +1,255 @@
-# LLYLI Testing Guide
+# LLYLI End to End Testing Guide
 
-This document describes how to test the LLYLI application to ensure it works correctly.
+This file is the single source of truth for how to test the full LLYLI application end to end.
 
-## Table of Contents
+Goal
 
-1. [Quick Start](#quick-start)
-2. [Test After Every Feature Change](#test-after-every-feature-change)
-3. [Test Accounts](#test-accounts)
-4. [Unit Tests](#unit-tests)
-5. [E2E Testing with Playwright](#e2e-testing-with-playwright)
-6. [Manual QA Testing](#manual-qa-testing)
-7. [Database Validation](#database-validation)
-8. [API Testing](#api-testing)
-9. [Troubleshooting](#troubleshooting)
+* Catch regressions across auth, onboarding, capture, review, FSRS, notebook, progress, gamification, offline mode, and the iOS wrapper
+* Make it easy for Claude Code to run manual QA using Playwright MCP plus quick database checks
 
----
+Scope
 
-## Quick Start
+* Web app on local dev, local production build, and Vercel production
+* Supabase Auth and database integrity
+* OpenAI translation and TTS behavior
+* Capacitor iOS wrapper basic sanity
 
-```bash
-# Run unit tests
-cd web && npm test
+Non goals
 
-# Run tests once (CI mode)
-npm run test:run
-
-# Run with coverage
-npm run test:coverage
-
-# Build check (catches type errors)
-npm run build
-
-# Start dev server for manual testing
-npm run dev
-# Then open http://localhost:3000
-```
+* Full automated test suite design
+* Performance benchmarking beyond basic sanity
 
 ---
 
-## Test After Every Feature Change
+## 1. Environments
 
-**MANDATORY**: After implementing any feature, run this checklist:
+You will test in three environments.
 
-### 1. Build Verification
-```bash
-cd web && npm run build
-```
-Must pass with no errors. Catches TypeScript and import issues.
+A. Local dev
 
-### 2. Unit Tests
-```bash
-npm run test:run
-```
-All tests must pass. Add tests for new functionality.
+* URL: [http://localhost:3000](http://localhost:3000)
+* Command: `cd web && npm run dev`
 
-### 3. Critical Path E2E (via Playwright MCP)
-Test these flows on production (https://web-eta-gold.vercel.app):
+B. Local production build
 
-| Flow | Test Steps |
-|------|------------|
-| **Sign In** | Navigate to `/auth/sign-in` → Enter test credentials → Verify redirect |
-| **Onboarding** | Fresh user → Language selection → Capture words → Complete |
-| **Word Capture** | `/capture` → Enter word → Verify translation + audio |
-| **Review** | `/review` → Complete 3 reviews → Verify FSRS updates |
-| **Notebook** | `/notebook` → Verify categories show → Click category → See words |
+* Command:
 
-### 4. Database Spot Check
-Run Query 1.1 (Health Check) after changes to data layer:
-```sql
-SELECT 'words' as table_name, COUNT(*) FROM words
-UNION ALL SELECT 'user_profiles', COUNT(*) FROM user_profiles;
-```
+  * `cd web && npm run build`
+  * `cd web && npm start`
+* URL: [http://localhost:3000](http://localhost:3000)
+
+C. Production
+
+* URL: [https://web-eta-gold.vercel.app](https://web-eta-gold.vercel.app)
+
+Rule
+
+* Run the full Smoke Test in all three environments
+* Run the Full Functional Suite at least on local production build and production
 
 ---
 
-## Test Accounts
+## 2. Preconditions and setup
 
-Pre-provisioned test accounts for E2E testing. All have email pre-confirmed.
+### 2.1 Required environment variables
 
-| Account | Email | Password | Languages | Purpose |
-|---------|-------|----------|-----------|---------|
-| EN→PT | `test-en-pt@llyli.test` | `TestPassword123!` | English → Portuguese | Primary test account |
-| EN→SV | `test-en-sv@llyli.test` | `TestPassword123!` | English → Swedish | Multi-language testing |
-| NL→EN | `test-nl-en@llyli.test` | `TestPassword123!` | Dutch → English | Reverse direction testing |
-| Claude Test | `claudetest20260119@gmail.com` | `testpass123` | en → pt-PT | Legacy test account |
+Confirm `web/.env.local` exists and includes:
 
-### Provisioning Test Users
+* NEXT_PUBLIC_SUPABASE_URL
+* NEXT_PUBLIC_SUPABASE_ANON_KEY
+* SUPABASE_SERVICE_KEY
+* OPENAI_API_KEY
+* DATABASE_URL
 
-```bash
-# Reset and create test users (onboarding_completed = false)
-cd web && npx tsx scripts/create-test-users.ts
-```
-
-This script:
-- Creates users if they don't exist (email pre-confirmed via Admin API)
-- Resets `onboarding_completed = false` for full flow testing
-- Deletes existing words for clean state
-
----
-
-## E2E Testing with Playwright
-
-Use Claude Code's Playwright MCP server for automated browser testing.
-
-### Basic Flow: Sign In + Verify
-
-```
-1. browser_navigate to https://web-eta-gold.vercel.app/auth/sign-in
-2. browser_snapshot to see page state
-3. browser_fill_form with test credentials
-4. browser_click "Sign In" button
-5. browser_wait_for navigation
-6. browser_snapshot to verify landing page
-```
-
-### Critical E2E Scenarios
-
-#### Scenario 1: Fresh User Onboarding
-```
-1. Sign in with test-en-pt@llyli.test (onboarding incomplete)
-2. Verify redirect to /onboarding/languages
-3. Select Portuguese (target) → English (native)
-4. Verify redirect to /onboarding/capture
-5. Add 3 words
-6. Complete onboarding
-7. Verify starter words + captured words in notebook
-```
-
-#### Scenario 2: Word Capture Flow
-```
-1. Sign in → Navigate to /capture
-2. Enter "obrigado" in text field
-3. Click capture button
-4. Verify: Translation appears, Category assigned, Audio button works
-5. Navigate to /notebook → Verify word appears
-```
-
-#### Scenario 3: Review Session
-```
-1. Sign in → Navigate to /review
-2. If "All caught up" → User needs words due (check database)
-3. Complete fill-blank exercise → Verify green/red feedback
-4. Complete multiple-choice exercise → Verify options work
-5. Rate recall → Verify next card appears
-6. Complete session → Verify celebration page
-```
-
-### Capturing Screenshots
-
-```
-browser_take_screenshot with descriptive filename
-# Saves to .playwright-mcp/ directory
-```
-
----
-
-## Unit Tests
-
-### Test Files Location
-
-```
-web/src/__tests__/
-├── setup.tsx                          # Test setup (jsdom, React Testing Library)
-└── lib/
-    ├── categories.test.ts             # Category configuration tests
-    ├── categories-cognitive.test.ts   # Miller's Law compliance tests
-    ├── distractors.test.ts            # Multiple choice distractor tests
-    └── exercise-type.test.ts          # Exercise type selection tests
-```
-
-### Running Tests
+Preflight commands
 
 ```bash
 cd web
-
-# Watch mode (re-runs on file changes)
-npm test
-
-# Single run
-npm run test:run
-
-# With coverage report
-npm run test:coverage
+node -v
+npm -v
+cat .env.local | sed -n '1,200p'
 ```
 
-### Test Coverage Areas
+Expected
 
-| Area | Tests | Purpose |
-|------|-------|---------|
-| Categories | 26 | Category config, migration, normalization |
-| Cognitive Load | 17 | Miller's Law (7±2 categories) |
-| Distractors | 8 | Multiple choice option generation |
-| Exercise Types | 14 | Mastery-based exercise selection |
+* No missing keys for the test you are running
+* If OPENAI_API_KEY is missing, translation and TTS should fail gracefully and show a user facing error. You will test this later as a negative case.
 
-### Writing New Tests
+### 2.2 Test accounts
 
-```typescript
-// web/src/__tests__/lib/example.test.ts
-import { describe, it, expect } from 'vitest';
-import { myFunction } from '@/lib/example';
+Use the pre confirmed test users.
 
-describe('myFunction', () => {
-  it('should return expected result', () => {
-    expect(myFunction('input')).toBe('expected');
-  });
-});
+* test en to pt
+
+  * Email: [test-en-pt@llyli.test](mailto:test-en-pt@llyli.test)
+  * Password: TestPassword123!
+* test en to sv
+
+  * Email: [test-en-sv@llyli.test](mailto:test-en-sv@llyli.test)
+  * Password: TestPassword123!
+* test nl to en
+
+  * Email: [test-nl-en@llyli.test](mailto:test-nl-en@llyli.test)
+  * Password: TestPassword123!
+
+Provisioning script
+
+```bash
+cd web
+npx tsx scripts/create-test-users.ts
 ```
 
----
+Warning
 
-## Manual QA Testing
+* This script resets onboarding and deletes existing words for those users.
+* Do not run it against a production Supabase project unless you are 100 percent sure these are isolated test accounts.
 
-### Prerequisites
 
-1. Dev server running: `cd web && npm run dev`
-2. Test account logged in (see [Test Accounts](#test-accounts) above)
-3. Database has words (import from Anki or capture manually)
+## 2.3 Required coverage: 3 user types by target language
 
----
+You must test the core flows with 3 different user types. The user type is defined by the language they want to learn (their target language).
 
-### Test Case 1: Authentication Flow
+### User types and accounts
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 1.1 | Go to `/auth/sign-in` | Sign in page loads with LLYLI logo |
-| 1.2 | Enter invalid email | Error message shown |
-| 1.3 | Enter valid credentials | Redirect to home page |
-| 1.4 | Click sign out | Redirect to sign-in page |
-| 1.5 | Go to protected route when signed out | Redirect to sign-in |
+| User type (target language) | Test account                                          | Native language | Target language    | Why this user type exists                               |
+| --------------------------- | ----------------------------------------------------- | --------------- | ------------------ | ------------------------------------------------------- |
+| Portuguese learner          | [test-en-pt@llyli.test](mailto:test-en-pt@llyli.test) | English         | Portuguese (pt-PT) | Primary path and highest product focus                  |
+| Swedish learner             | [test-en-sv@llyli.test](mailto:test-en-sv@llyli.test) | English         | Swedish (sv)       | Second language path and supported direction            |
+| English learner             | [test-nl-en@llyli.test](mailto:test-nl-en@llyli.test) | Dutch           | English (en)       | Catches edge cases where English is the target language |
 
----
+### 2.3 Coverage gate for each user type
 
-### Test Case 2: Word Capture
+For each user type above, run all items below and record PASS or FAIL.
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 2.1 | Go to `/capture` | Capture page loads |
-| 2.2 | Enter Portuguese word (e.g., "obrigado") | - |
-| 2.3 | Click "Add Word" | Loading state shown |
-| 2.4 | Wait for completion | ✅ Translation appears |
-| 2.5 | - | ✅ Category assigned |
-| 2.6 | - | ✅ Audio button appears |
-| 2.7 | Click audio button | Audio plays |
-| 2.8 | Check database (Query 2.6) | Word saved with all fields |
+A Auth
 
----
+1. Sign in
+2. Refresh page, still signed in
+3. Sign out
 
-### Test Case 3: Review Session - Fill in the Blank
+B Onboarding
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 3.1 | Go to `/review` | Review page loads |
-| 3.2 | Find fill_blank exercise | One word shows as `_____` |
-| 3.3 | Type correct answer | ✅ Green border |
-| 3.4 | - | ✅ "Correct!" feedback |
-| 3.5 | Type wrong answer | ✅ Red border |
-| 3.6 | - | ✅ "Not quite. The answer was: X" |
-| 3.7 | Click "Rate Your Recall" | Grading buttons appear |
-| 3.8 | After wrong answer | "Hard" button pre-highlighted |
+1. Reset onboarding with the provisioning script if needed
+2. Complete onboarding for that user type
 
----
+   * Portuguese learner: target Portuguese, native English
+   * Swedish learner: target Swedish, native English
+   * English learner: target English, native Dutch
 
-### Test Case 4: Review Session - Multiple Choice
+C Capture in both directions (this is critical)
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 4.1 | Find multiple_choice exercise | 4 option buttons shown |
-| 4.2 | Options show translations | Not original text |
-| 4.3 | Select correct option | ✅ Green highlight |
-| 4.4 | Select wrong option | ✅ Red highlight |
-| 4.5 | - | ✅ Correct answer shown in green |
-| 4.6 | After selection | All buttons disabled |
+1. Capture one word in the target language
 
----
+   * Portuguese learner: capture “obrigado”
+   * Swedish learner: capture “tack”
+   * English learner: capture “thank you”
+2. Capture one word in the native language
 
-### Test Case 5: Review Session - Type Translation
+   * Portuguese learner: capture “thanks”
+   * Swedish learner: capture “thanks”
+   * English learner: capture “dankjewel”
+3. Confirm both appear in notebook and can become due in review
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 5.1 | Find type_translation exercise | "Recall the meaning:" prompt |
-| 5.2 | Click "Reveal" | Translations shown below |
-| 5.3 | Grade recall | FSRS values updated |
+D Notebook
 
----
+1. Category grid loads
+2. Word appears in correct category
+3. Word detail audio plays
+4. Delete one word, counts update
 
-### Test Case 6: FSRS Algorithm
+E Review
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 6.1 | Complete a review | - |
-| 6.2 | Run Query 3.1 | FSRS params updated |
-| 6.3 | Rate "Again" on a word | `lapse_count` increments |
-| 6.4 | Rate "Good" 3 sessions | `mastery_status` → 'ready_to_use' |
-| 6.5 | Check `next_review_date` | Future date based on stability |
+1. Start a review session with due words present
+2. Complete 3 reviews
+3. Confirm scheduling updates and next review dates move forward
 
----
+### Why capture both directions is mandatory
 
-### Test Case 7: Notebook / Vocabulary
+Users can enter words in either language. A user learning Portuguese can capture a Portuguese word and get an English translation, which means sourceLang equals pt-PT and targetLang equals en. Your word queries must include both sourceLang and targetLang logic, otherwise words vanish from notebook and review. This is a known failure mode and must be tested for each user type.
 
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 7.1 | Go to `/notebook` | Category grid loads |
-| 7.2 | Each category shows | Word count and due count |
-| 7.3 | Click a category | Word list loads |
-| 7.4 | Click a word | Detail sheet opens |
-| 7.5 | Play audio | Audio plays |
-| 7.6 | Delete word | Word removed, list updates |
+### 2.4 Make sure you have due words for review
 
----
+If review shows all caught up, force due words for the test user:
 
-### Test Case 8: Onboarding Flow
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 8.1 | New user signs up | Redirect to `/onboarding` |
-| 8.2 | Select target language | Proceed to native language |
-| 8.3 | Select native language | Proceed to word capture |
-| 8.4 | Add 3+ words | "Continue" button enabled |
-| 8.5 | Complete onboarding | Celebration page with sentence |
-| 8.6 | Check `user_profiles` | `onboarding_completed = true` |
-
----
-
-### Test Case 9: Offline Mode (PWA)
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 9.1 | Build and serve: `npm run build && npm start` | - |
-| 9.2 | DevTools → Network → Offline | - |
-| 9.3 | Refresh page | Offline page or cached content |
-| 9.4 | Start a review | Works with cached data |
-| 9.5 | Complete review | Queued in IndexedDB |
-| 9.6 | Go back online | Reviews sync automatically |
-| 9.7 | Check "Back online! Syncing..." banner | Shows briefly |
-
----
-
-### Test Case 10: Progress Dashboard
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 10.1 | Go to `/progress` | Dashboard loads |
-| 10.2 | Check "Words Due" card | Matches Query 2.4 count |
-| 10.3 | Check mastery breakdown | Matches Query 2.3 |
-| 10.4 | Check streak display | Current streak shown |
-
----
-
-### Test Case 11: Gamification - Daily Goal (Added Session 22)
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 11.1 | Go to home page `/` | Daily Goal shows "0/10" |
-| 11.2 | Complete 5 reviews | Daily Goal shows "5/10" |
-| 11.3 | Complete 5 more reviews | Daily Goal shows "10/10 Goal Complete!" |
-| 11.4 | Check streak | Incremented by 1 |
-| 11.5 | Navigate to home (during review) | Celebration modal appears |
-
-**Database Verification:**
-```sql
-SELECT completed_reviews, target_reviews, completed_at
-FROM daily_progress
-WHERE user_id = 'YOUR_USER_ID' AND date = CURRENT_DATE;
-```
-
----
-
-### Test Case 12: Gamification - Bingo Board (Added Session 22)
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 12.1 | Go to home page `/` | Bingo shows "0/9 completed" |
-| 12.2 | Complete 5 reviews | "Review 5 words" square checks |
-| 12.3 | Get 3 correct in a row | "3 correct in a row" square checks |
-| 12.4 | Complete daily goal | "Finish daily session" square checks |
-| 12.5 | Click bingo preview | Full board modal opens |
-
-**Bingo Squares:**
-- `review5` - Review 5 words
-- `streak3` - 3 correct in a row
-- `fillBlank` - Complete a fill-blank
-- `multipleChoice` - Complete a multiple choice
-- `typeTranslation` - Type a translation
-- `workWord` - Review a work word
-- `socialWord` - Review a social word
-- `masterWord` - Master a word
-- `finishSession` - Complete daily goal
-
----
-
-### Test Case 13: Gamification - Boss Round (Added Session 22)
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 13.1 | Complete daily goal (10 reviews) | - |
-| 13.2 | Go to review complete page | "Boss Round Challenge" prompt appears |
-| 13.3 | Click "Let's go!" | 90-second timer starts |
-| 13.4 | See 5 flashcards | Words with highest lapse_count |
-| 13.5 | Reveal answer | Translation shown |
-| 13.6 | Grade yourself | "Got it!" or "Didn't know" |
-| 13.7 | Complete all 5 | Results modal shows score |
-| 13.8 | Perfect score (5/5) | "Perfect!" celebration |
-
-**Word Selection Query:**
-```sql
-SELECT original_text, translation, lapse_count
-FROM words WHERE user_id = 'YOUR_USER_ID'
-ORDER BY lapse_count DESC, retrievability ASC
-LIMIT 5;
-```
-
----
-
-### Test Case 14: Gamification - Streak Freeze (Edge Case)
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 14.1 | Complete daily goal today | Streak = N |
-| 14.2 | Skip tomorrow (don't complete goal) | - |
-| 14.3 | Complete goal day after | Streak = N+1 (freeze auto-applied) |
-| 14.4 | Check streak_freeze_count | Decremented by 1 |
-
-**Verification Query:**
-```sql
-SELECT current_streak, streak_freeze_count, last_freeze_used_date
-FROM streak_state WHERE user_id = 'YOUR_USER_ID';
-```
-
----
-
-### Test Case 15: Multi-Language Support
-
-| Step | Action | Expected Result |
-|------|--------|-----------------|
-| 15.1 | Go to `/capture` | Language selector visible showing "en → pt-PT" |
-| 15.2 | Enter "hello" | - |
-| 15.3 | Click Save | Word captured with Portuguese translation |
-| 15.4 | Check database | `source_lang='en'`, `target_lang='pt-PT'` |
-| 15.5 | Change source to "Dutch" | Target auto-switches to "English" |
-| 15.6 | Enter "hallo" | - |
-| 15.7 | Click Save | Word captured with English translation |
-| 15.8 | Check database | `source_lang='nl'`, `target_lang='en'` |
-| 15.9 | Change source to "English", target to "Swedish" | - |
-| 15.10 | Enter "thank you" | - |
-| 15.11 | Click Save | Word captured with Swedish translation |
-| 15.12 | Check database | `source_lang='en'`, `target_lang='sv'` |
-
-**Verification Query:**
-```sql
-SELECT original_text, translation, source_lang, target_lang, translation_provider
-FROM words
-WHERE user_id = 'YOUR_USER_ID'
-ORDER BY created_at DESC
-LIMIT 5;
-```
-
-**Expected Results:**
-- en→pt-PT: "hello" → "olá" (European Portuguese spelling)
-- nl→en: "hallo" → "hello"
-- en→sv: "thank you" → "tack"
-
-**Regional Variant Check (pt-PT):**
-- Should NOT use Brazilian Portuguese (e.g., "ônibus" ❌, "autocarro" ✅)
-- Should use European spelling conventions
-
----
-
-## Database Validation
-
-### How to Run Queries
-
-1. Go to **https://supabase.com/dashboard**
-2. Select your **LLYLI project**
-3. Click **SQL Editor** in left sidebar
-4. Copy query from below → Click **Run**
-
-Full query file: [`/scripts/database-queries.sql`](/scripts/database-queries.sql)
-
----
-
-### Essential Queries
-
-#### Query 1.1: Health Check (Run First!)
+Supabase SQL
 
 ```sql
-SELECT
-  'words' as table_name, COUNT(*) as row_count FROM words
+UPDATE words
+SET next_review_date = NOW() - INTERVAL '1 day'
+WHERE user_id = 'YOUR-USER-ID';
+```
+
+---
+
+## 3. How to run this as a Claude Code manual QA run
+
+Recommended flow for Claude Code
+
+1. Start a fresh session
+2. Open this file and run the tests top to bottom
+3. Use Playwright MCP for browser steps
+4. Use terminal commands only for build and unit tests
+5. For each failure, capture:
+
+   * screenshot
+   * console error
+   * network request details
+   * the SQL query result if relevant
+
+Result logging
+
+* Create a test run note in your PR or in PROJECT_LOG with this format:
+
+```text
+Test Run: YYYY-MM-DD
+Environment: local dev or local prod or production
+Tester: name
+Result: PASS or FAIL
+
+Failures
+1. title
+   Repro steps
+   Expected
+   Actual
+   Screenshot path
+   Logs
+
+Notes
+* anything odd
+```
+
+---
+
+## 4. Mandatory checks after every code change
+
+Run these before any manual QA.
+
+### 4.1 Build
+
+```bash
+cd web && npm run build
+```
+
+Expected
+
+* Passes with no TypeScript errors
+
+### 4.2 Unit tests
+
+```bash
+cd web && npm run test:run
+```
+
+Expected
+
+* All tests pass
+
+### 4.3 Quick database health check
+
+Supabase SQL
+
+```sql
+SELECT 'words' as table_name, COUNT(*) as row_count FROM words
 UNION ALL
 SELECT 'user_profiles', COUNT(*) FROM user_profiles
 UNION ALL
@@ -494,82 +258,739 @@ UNION ALL
 SELECT 'generated_sentences', COUNT(*) FROM generated_sentences;
 ```
 
-**Expected**: Non-zero counts for words and user_profiles.
+Expected
+
+* user_profiles non zero
+* words non zero for active test accounts
+* no sudden drop to zero unless you intentionally reset test users
 
 ---
 
-#### Query 2.3: Mastery Distribution
+## 5. Smoke Test
+
+Run this in local dev, local production build, and production.
+
+### 5.1 Page load sanity
+
+Steps
+
+1. Open home `/`
+2. Open sign in `/auth/sign-in`
+3. Open capture `/capture` while signed out
+4. Open review `/review` while signed out
+5. Open notebook `/notebook` while signed out
+6. Open progress `/progress` while signed out
+
+Expected
+
+* No blank screens
+* Clear signed out state
+* No misleading all caught up state for signed out users
+
+  * If this still occurs, log it as a regression or as a known open issue
+
+### 5.2 Auth sanity
+
+Steps
+
+1. Sign in using test en to pt
+2. Confirm redirect to home
+3. Confirm user is still signed in after refresh
+4. Sign out
+5. Confirm redirected to sign in
+
+Expected
+
+* Clean sign in and sign out behavior
+* Session persists across refresh
+
+### 5.3 Capture sanity
+
+Steps
+
+1. Sign in
+2. Go to `/capture`
+3. Capture one word: obrigado
+4. Confirm translation appears
+5. Confirm audio plays
+
+Expected
+
+* Capture completes within a few seconds
+* Audio button present and plays
+
+### 5.4 Review sanity
+
+Steps
+
+1. Ensure at least 3 due words exist
+2. Go to `/review`
+3. Complete 3 review items
+4. Finish session
+
+Expected
+
+* Feedback on correctness works
+* Rating step works
+* Session completes and shows done for today
+
+---
+
+## 6. Full Functional Suite
+
+Run this fully at least on local production build and production.
+
+---
+
+## 6A. Authentication full coverage
+
+### A1 Sign up and email confirmation UI
+
+Two ways to test depending on whether you want real email delivery.
+
+Option 1 UI only plus manual confirm in Supabase
+Steps
+
+1. Go to `/auth/sign-up`
+2. Create a new user with a unique email you control
+3. Confirm you see the check email UI state
+4. In Supabase dashboard, manually confirm the user email
+5. Return to sign in and sign in successfully
+
+Expected
+
+* If Supabase returns user without session, you show a clear check email UI
+* After confirmation, sign in succeeds
+
+Option 2 Full email delivery
+Steps
+
+1. Use a dedicated test inbox provider
+2. Sign up
+3. Open the confirmation link
+4. Confirm you land in the correct app state
+
+Expected
+
+* Confirmation link works
+* App redirects correctly
+
+### A2 Sign in failures and messaging
+
+Steps
+
+1. Try wrong password
+2. Try non existing email
+3. Try unconfirmed user if you can reproduce
+
+Expected
+
+* User friendly error messages
+* Unconfirmed user shows specific guidance
+
+### A3 Password reset
+
+Steps
+
+1. Go to password reset page if available
+2. Request reset
+3. Complete reset via email link or via Supabase flow
+4. Sign in with new password
+
+Expected
+
+* No dead links
+* Reset results in successful sign in
+
+### A4 Protected routes behavior
+
+Steps
+
+1. Sign out
+2. Visit `/capture`, `/review`, `/notebook`, `/progress`
+
+Expected
+
+* Either redirect to sign in or show a clear sign in required state
+* No leakage of another user data
+* No misleading success states while signed out
+
+---
+
+## 6B. Onboarding full coverage
+
+### B1 Fresh onboarding flow
+
+Precondition
+
+* test user has onboarding_completed false
+
+Steps
+
+1. Sign in with test user
+2. Confirm redirect to `/onboarding/languages`
+3. Select target language
+4. Select native language
+5. Confirm redirect to `/onboarding/capture`
+6. Add at least 3 captures
+7. Continue to completion
+8. Confirm onboarding_completed true in user_profiles
+
+Expected
+
+* Continue button disabled until minimum captures met
+* Completion screen shows success state
+* User sees starter words plus captured words if starter injection is enabled
+
+Supabase verification SQL
 
 ```sql
-SELECT
-  mastery_status,
-  COUNT(*) as count,
-  ROUND(AVG(review_count), 1) as avg_reviews,
-  ROUND(AVG(consecutive_correct_sessions), 1) as avg_correct_sessions
-FROM words
-GROUP BY mastery_status;
+SELECT onboarding_completed, target_language, native_language
+FROM user_profiles
+WHERE user_id = 'YOUR-USER-ID';
 ```
 
-**Expected**: Most words in 'learning', some in 'learned', few in 'ready_to_use'.
+### B2 Onboarding recovery scenarios
+
+Steps
+
+1. Refresh on each onboarding page
+2. Use back button between steps
+3. Close tab and reopen after sign in
+
+Expected
+
+* Flow remains consistent
+* No loops
+* No ability to skip required capture step unless intentionally allowed
+
+### B3 Unsupported language pairs
+
+Steps
+
+1. Open language selection
+2. Attempt to select any combination not in supported directions
+
+Expected
+
+* Unsupported options show coming soon messaging
+* No ability to proceed into invalid pair
 
 ---
 
-#### Query 2.4: Words Due for Review
+## 6C. Capture full coverage
+
+### C1 Capture a word in target language
+
+Example for en to pt user
+Steps
+
+1. On `/capture`, enter Portuguese word: aquecimento
+2. Save
+3. Confirm translation is in English
+4. Confirm source_lang is pt-PT and target_lang is en or the expected mapping
+
+Expected
+
+* The app supports capturing in either language
+* The word appears in notebook and review for the user
+
+Verification SQL
 
 ```sql
-SELECT
-  original_text,
-  translation,
-  category,
-  next_review_date
+SELECT original_text, translation, source_lang, target_lang, audio_url, category
 FROM words
-WHERE next_review_date <= NOW()
-ORDER BY next_review_date ASC
+WHERE user_id = 'YOUR-USER-ID'
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+### C2 Capture a word in native language
+
+Steps
+
+1. Enter English word: heating
+2. Save
+3. Confirm translation is Portuguese
+
+Expected
+
+* Correct direction based on user profile
+
+### C3 Capture a multi word phrase
+
+Steps
+
+1. Enter phrase: preciso de assinar o recibo
+2. Save
+
+Expected
+
+* Saved successfully if phrases are allowed
+* Category assigned
+* Audio generated
+
+If phrases are not supported, expected
+
+* Clear validation message
+
+### C4 Input cleanup and validation
+
+Test each input below:
+
+* leading and trailing spaces
+* uppercase
+* punctuation
+* diacritics
+* very long input
+
+Expected
+
+* Clean handling
+* Clear error for invalid input
+* No crashes
+
+### C5 Duplicate capture
+
+Steps
+
+1. Capture the same original_text twice
+
+Expected
+
+* Either prevents duplicates or handles them consistently
+* No broken notebook counts
+
+### C6 Failure modes
+
+Do each failure test once.
+
+OpenAI failure
+Steps
+
+1. Temporarily remove OPENAI_API_KEY locally
+2. Attempt capture
+
+Expected
+
+* User sees a clear error
+* No partial corrupted word rows
+
+Network failure mid capture
+Steps
+
+1. Toggle browser offline right after pressing save
+
+Expected
+
+* User sees failure state
+* No double insert on retry
+
+---
+
+## 6D. Notebook full coverage
+
+### D1 Category grid and counts
+
+Steps
+
+1. Go to `/notebook`
+2. Confirm category grid loads
+3. Confirm each category shows a word count and due count
+
+Expected
+
+* Counts match database
+
+Verification SQL example
+
+```sql
+SELECT category, COUNT(*) as count
+FROM words
+WHERE user_id = 'YOUR-USER-ID'
+GROUP BY category
+ORDER BY count DESC;
+```
+
+### D2 Category detail and word detail
+
+Steps
+
+1. Open a category
+2. Open a word detail
+3. Play audio
+4. Delete the word
+
+Expected
+
+* Audio plays
+* Delete removes word and updates counts
+
+### D3 Language filtering regression test
+
+This is critical because of the prior bug.
+
+Steps
+
+1. For a user learning Portuguese, capture a Portuguese word so source_lang equals pt-PT and target_lang equals en
+2. Confirm it appears in notebook and review queues
+
+Expected
+
+* Words are not excluded based only on target_lang equals user target language
+
+---
+
+## 6E. Review and learning full coverage
+
+### E1 Review session starts only when due
+
+Steps
+
+1. Ensure due words exist
+2. Go to `/review`
+
+Expected
+
+* Session starts with a due item
+* If no due words, all caught up UI appears only when signed in and truly no due items
+
+### E2 Exercise type coverage
+
+You must see at least one of each:
+
+* multiple choice
+* fill blank
+* type translation
+
+Expected
+
+* Multiple choice options are translations, not original text
+* Correct answer shows green, wrong shows red
+* After answering, options lock
+* Rating step updates scheduling
+
+### E3 Dynamic sentence generation
+
+Steps
+
+1. During review, capture the sentence shown and the words included
+2. Complete several items
+
+Expected
+
+* Sentences vary across reviews
+* Sentences include 2 to 4 due words if designed that way
+* Sentence length stays reasonable and not overwhelming
+
+Negative test
+
+* Force sentence generation to fail by removing OPENAI_API_KEY locally
+
+Expected
+
+* Graceful fallback UI
+* No broken session loop
+
+### E4 FSRS updates and mastery rule
+
+Steps
+
+1. Review the same word across three separate sessions with correct answers
+2. Confirm it becomes ready to use or the equivalent final state
+
+Verification SQL
+
+```sql
+SELECT original_text, mastery_status, review_count, consecutive_correct_sessions,
+       stability, difficulty, retrievability, next_review_date, lapse_count
+FROM words
+WHERE user_id = 'YOUR-USER-ID'
+ORDER BY updated_at DESC
 LIMIT 20;
 ```
 
-**Expected**: Should match what the app shows in review queue.
+Expected
+
+* lapse_count increments after Again or after wrong answer depending on design
+* next_review_date moves forward based on stability
+* After three correct sessions, status becomes ready to use
+
+### E5 Session completion behavior
+
+Steps
+
+1. Finish daily goal of 10 reviews
+2. Confirm completion screen
+3. Confirm boss round prompt appears
+
+Expected
+
+* Done for today screen shows correct stats
+* Boss round prompt appears only after goal completion
 
 ---
 
-#### Query 3.1: FSRS Health Check
+## 6F. Gamification full coverage
+
+### F1 Daily goal increments correctly
+
+Steps
+
+1. Start at 0 of 10
+2. Complete 10 reviews
+
+Expected
+
+* Counter increments
+* Completion triggers celebration
+
+Verify SQL
 
 ```sql
-SELECT
-  mastery_status,
-  COUNT(*) as count,
-  ROUND(AVG(difficulty)::numeric, 2) as avg_difficulty,
-  ROUND(AVG(stability)::numeric, 2) as avg_stability,
-  ROUND(AVG(retrievability)::numeric, 2) as avg_retrievability
+SELECT completed_reviews, target_reviews, completed_at
+FROM daily_progress
+WHERE user_id = 'YOUR_USER_ID' AND date = CURRENT_DATE;
+```
+
+### F2 Bingo squares
+
+Steps
+
+1. Complete actions that trigger squares:
+
+   * review 5 words
+   * 3 correct in a row
+   * complete each exercise type
+   * review category specific words if implemented
+   * master a word
+   * finish session
+
+Expected
+
+* Correct squares tick
+* Full board view matches preview
+
+### F3 Boss round
+
+Steps
+
+1. Start boss round
+2. Confirm timer
+3. Confirm selection of 5 hardest words
+
+Expected
+
+* Words chosen from highest lapse_count then low retrievability
+* Results modal appears
+
+Verification SQL
+
+```sql
+SELECT original_text, translation, lapse_count, retrievability
 FROM words
+WHERE user_id = 'YOUR_USER_ID'
+ORDER BY lapse_count DESC, retrievability ASC
+LIMIT 5;
+```
+
+### F4 Freeze behavior
+
+Steps
+
+1. Complete daily goal today
+2. Skip tomorrow
+3. Complete day after
+
+Expected
+
+* Streak continues if freeze available
+* Freeze count decrements
+
+Verification SQL
+
+```sql
+SELECT current_streak, streak_freeze_count, last_freeze_used_date
+FROM streak_state
+WHERE user_id = 'YOUR_USER_ID';
+```
+
+---
+
+## 6G. Progress dashboard full coverage
+
+Steps
+
+1. Go to `/progress`
+2. Validate each metric appears
+3. Compare key counts to database
+
+Expected
+
+* No 500 errors
+* Counts match words table breakdown
+
+Mastery distribution SQL
+
+```sql
+SELECT mastery_status, COUNT(*) as count
+FROM words
+WHERE user_id = 'YOUR-USER-ID'
 GROUP BY mastery_status;
 ```
 
-**Expected**:
-- `difficulty`: 3-7 range (5 is default)
-- `stability`: Increases with mastery
-- `retrievability`: 0.0-1.0 range
+---
+
+## 6H. Multi language directions full coverage
+
+Run at least one capture and one review per direction.
+
+### H1 en to pt-PT
+
+Steps
+
+1. Use test en to pt user
+2. Capture hello
+3. Confirm translation uses European Portuguese spellings
+
+Expected examples
+
+* autocarro preferred over onibus
+* spelling matches pt-PT conventions
+
+### H2 nl to en
+
+Steps
+
+1. Use test nl to en user
+2. Capture hallo
+3. Confirm English translation
+
+### H3 en to sv
+
+Steps
+
+1. Use test en to sv user
+2. Capture thank you
+3. Confirm Swedish translation
+
+Database check
+
+```sql
+SELECT original_text, translation, source_lang, target_lang
+FROM words
+WHERE user_id = 'YOUR-USER-ID'
+ORDER BY created_at DESC
+LIMIT 10;
+```
 
 ---
 
-#### Query 6.1-6.4: Data Integrity (All Should Return 0)
+## 6I. Offline mode and PWA
+
+Run this only on local production build, not dev.
+
+Steps
+
+1. `cd web && npm run build && npm start`
+2. Open app and sign in
+3. DevTools network offline
+4. Refresh
+5. Navigate to notebook
+6. Start review if cached data exists
+7. Go online again
+
+Expected
+
+* Offline page or cached content loads
+* No data corruption
+* When back online, sync occurs and UI reflects it
+
+---
+
+## 6J. iOS Capacitor wrapper sanity
+
+This is a basic checklist, not a full App Store readiness suite.
+
+Preconditions
+
+* iOS project exists under `ios/`
+* You can open in Xcode and run simulator
+
+Steps
+
+1. Build the web app
+2. Sync Capacitor if needed
+3. Run in iOS simulator
+4. Confirm:
+
+   * app boots to home
+   * sign in works
+   * capture works
+   * audio plays
+   * navigation works with safe area
+   * keyboard input works well in capture and review
+
+Expected
+
+* No blank white screen
+* No broken audio
+* No blocked navigation
+
+---
+
+## 7. Playwright MCP scripts for Claude Code
+
+Use these building blocks.
+
+Sign in
+
+1. browser_navigate to {BASE_URL}/auth/sign-in
+2. browser_snapshot
+3. browser_fill_form
+
+   * email
+   * password
+4. browser_click Sign In
+5. browser_wait_for navigation
+6. browser_snapshot
+
+Capture
+
+1. browser_navigate to {BASE_URL}/capture
+2. browser_fill input with a word
+3. browser_click Add Word
+4. browser_wait_for completion UI
+5. browser_take_screenshot capture_result
+
+Review
+
+1. browser_navigate to {BASE_URL}/review
+2. browser_snapshot
+3. complete one exercise
+4. proceed to next
+5. screenshot end state
+
+---
+
+## 8. Data integrity checks
+
+Run these after major changes.
+
+All should return 0.
 
 ```sql
--- Orphaned words
 SELECT COUNT(*) FROM words w
 LEFT JOIN user_profiles up ON w.user_id = up.user_id
 WHERE up.id IS NULL;
 
--- Orphaned sessions
 SELECT COUNT(*) FROM review_sessions rs
 LEFT JOIN user_profiles up ON rs.user_id = up.user_id
 WHERE up.id IS NULL;
 
--- Invalid mastery state
 SELECT COUNT(*) FROM words
-WHERE (mastery_status = 'ready_to_use' AND consecutive_correct_sessions < 3);
+WHERE mastery_status = 'ready_to_use' AND consecutive_correct_sessions < 3;
 
--- Duplicate words
 SELECT COUNT(*) FROM (
   SELECT user_id, original_text
   FROM words
@@ -578,116 +999,55 @@ SELECT COUNT(*) FROM (
 ) duplicates;
 ```
 
-**Expected**: All queries return 0.
+---
+
+## 9. Bug report template
+
+Title
+
+* Short and specific
+
+Environment
+
+* local dev or local production build or production
+* user email
+* browser and device
+
+Repro steps
+1.
+2.
+3.
+
+Expected
+
+* what should happen
+
+Actual
+
+* what happened
+
+Evidence
+
+* screenshot
+* console logs
+* network request payload and response
+* SQL query results if relevant
 
 ---
 
-## API Testing
+## 10. Release readiness checklist
 
-### Test Sentence Generation
+Before you call a release ready:
 
-```bash
-curl -X POST http://localhost:3000/api/dev/test-sentences \
-  -H "Content-Type: application/json" \
-  -d '{"userId": "YOUR-USER-ID", "maxSentences": 5}'
-```
+* Build passes
+* Unit tests pass
+* Smoke test passes in all environments
+* Full functional suite passes at least on local production build and production
+* No critical open issues in:
 
-### Test Distractor Fetching
-
-```bash
-curl "http://localhost:3000/api/words?category=food_dining&limit=3&excludeId=WORD-ID"
-```
-
-### Test Word Capture
-
-```bash
-curl -X POST http://localhost:3000/api/words \
-  -H "Content-Type: application/json" \
-  -H "Cookie: YOUR-AUTH-COOKIE" \
-  -d '{"text": "obrigado"}'
-```
-
----
-
-## Troubleshooting
-
-### Tests Failing
-
-```bash
-# Clear cache and reinstall
-rm -rf node_modules/.vitest
-npm test
-```
-
-### Database Connection Issues
-
-```bash
-# Check DATABASE_URL is set
-echo $DATABASE_URL
-
-# Or in .env.local
-cat .env.local | grep DATABASE
-```
-
-### Review Not Showing Words
-
-1. Run Query 2.4 - are there words due?
-2. Check `next_review_date` is in the past
-3. Reset for testing:
-
-```sql
-UPDATE words
-SET next_review_date = NOW() - INTERVAL '1 day'
-WHERE user_id = 'YOUR-USER-ID';
-```
-
-### Audio Not Playing
-
-1. Check `audio_url` is populated (Query 2.5)
-2. Check Supabase Storage bucket is public
-3. Check browser console for CORS errors
-
-### FSRS Not Updating
-
-1. Verify review is being submitted (Network tab)
-2. Check API response for errors
-3. Run Query 3.1 before and after review
-
----
-
-## Continuous Integration
-
-Future: Add GitHub Actions workflow for automated testing.
-
-```yaml
-# .github/workflows/test.yml (example)
-name: Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-      - run: cd web && npm ci
-      - run: cd web && npm run test:run
-```
-
----
-
-## QA Test Reports
-
-Automated QA test reports from Playwright browser testing:
-
-| Date | Report | Issues Found | Status |
-|------|--------|--------------|--------|
-| 2026-01-19 | [QA_REPORT_20260119](/docs/qa/QA_REPORT_20260119.md) | 7 bugs (#24-#30) | Critical bugs fixed |
-
----
-
-## Related Documentation
-
-- [Session Workflow](/docs/engineering/session-workflow.md) - Development workflow
-- [Implementation Plan](/docs/engineering/implementation_plan.md) - Architecture details
-- [Database Queries](/scripts/database-queries.sql) - Full query reference
-- [QA Reports](/docs/qa/) - Automated test reports
+  * auth and onboarding
+  * capture and review
+  * progress and gamification
+  * language direction correctness
+  * offline sanity
+  * iOS wrapper sanity if shipping iOS
