@@ -137,11 +137,25 @@ npx tsx scripts/test-comprehensive.ts # Major features
 
 ## Session Workflow
 
-**Start:** `/clear` → read PROJECT_LOG.md → use plan mode for complex work
+**Start:** `/clear` → read PROJECT_LOG.md → check learned preferences → use plan mode for complex work
 
 **End:** Update PROJECT_LOG.md → Commit with `fixes #N` → **Run tests**
 
 **Debug:** Copy server logs → paste to Claude with page context
+
+### Session Start Checklist (MANDATORY)
+
+Before starting work, read these files to understand current context and apply learned patterns:
+
+1. **`PROJECT_LOG.md`** - Current status, recent changes, open bugs
+2. **`~/.claude/skills/reflect/SKILL.md`** (section: "Learned Preferences") - Testing discipline, bug detection patterns, design rules accumulated from previous sessions
+
+Key learnings to apply:
+- Scale testing with 500+ records for data-heavy features
+- Bidirectional language testing (both capture directions)
+- Double verification: Claude (Playwright) + User (iPhone)
+- Self-healing guardrails for data integrity
+- Invariant assertions for critical metrics
 
 ### PROJECT_LOG.md Updates (MANDATORY)
 
