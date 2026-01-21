@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
       db.execute(sql`
         SELECT
           COUNT(DISTINCT user_id) as total_users,
-          COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo} THEN user_id END) as new_users_7d,
-          COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo} THEN user_id END) as new_users_30d
+          COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo}::timestamp THEN user_id END) as new_users_7d,
+          COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo}::timestamp THEN user_id END) as new_users_30d
         FROM words
       `),
 
@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
       db.execute(sql`
         SELECT
           COUNT(*) as total_words,
-          COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as words_today,
-          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as words_7d,
-          COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as words_30d,
+          COUNT(CASE WHEN created_at >= ${today}::timestamp THEN 1 END) as words_today,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo}::timestamp THEN 1 END) as words_7d,
+          COUNT(CASE WHEN created_at >= ${thirtyDaysAgo}::timestamp THEN 1 END) as words_30d,
           COUNT(CASE WHEN mastery_status = 'ready_to_use' THEN 1 END) as mastered_words,
           COUNT(CASE WHEN mastery_status = 'learned' THEN 1 END) as learned_words,
           COUNT(CASE WHEN mastery_status = 'learning' THEN 1 END) as learning_words,
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
             100.0 * COALESCE(SUM(correct_count), 0) / NULLIF(COALESCE(SUM(words_reviewed), 0), 0),
             1
           ) as accuracy_rate,
-          COUNT(CASE WHEN started_at >= ${sevenDaysAgo} THEN 1 END) as sessions_7d,
+          COUNT(CASE WHEN started_at >= ${sevenDaysAgo}::timestamp THEN 1 END) as sessions_7d,
           ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session
         FROM review_sessions
         WHERE ended_at IS NOT NULL
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
           COUNT(CASE WHEN type = 'bug_report' THEN 1 END) as bug_reports,
           COUNT(CASE WHEN type = 'feature_request' THEN 1 END) as feature_requests,
           COUNT(CASE WHEN type = 'general_feedback' THEN 1 END) as general_feedback,
-          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as feedback_7d
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo}::timestamp THEN 1 END) as feedback_7d
         FROM user_feedback
       `),
 
@@ -161,11 +161,11 @@ export async function GET(request: NextRequest) {
       db.execute(sql`
         SELECT
           -- Daily Active Users (reviewed today)
-          COUNT(DISTINCT CASE WHEN rs.started_at >= ${today} THEN rs.user_id END) as dau,
+          COUNT(DISTINCT CASE WHEN rs.started_at >= ${today}::timestamp THEN rs.user_id END) as dau,
           -- Weekly Active Users (reviewed in last 7 days)
-          COUNT(DISTINCT CASE WHEN rs.started_at >= ${sevenDaysAgo} THEN rs.user_id END) as wau,
+          COUNT(DISTINCT CASE WHEN rs.started_at >= ${sevenDaysAgo}::timestamp THEN rs.user_id END) as wau,
           -- Monthly Active Users
-          COUNT(DISTINCT CASE WHEN rs.started_at >= ${thirtyDaysAgo} THEN rs.user_id END) as mau,
+          COUNT(DISTINCT CASE WHEN rs.started_at >= ${thirtyDaysAgo}::timestamp THEN rs.user_id END) as mau,
           -- Session completion rate (sessions with ended_at vs total)
           ROUND(
             100.0 * COUNT(CASE WHEN rs.ended_at IS NOT NULL THEN 1 END) /
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
             AVG(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60)::numeric, 1
           ) as avg_session_minutes
         FROM review_sessions rs
-        WHERE rs.started_at >= ${thirtyDaysAgo}
+        WHERE rs.started_at >= ${thirtyDaysAgo}::timestamp
       `),
 
       // Retention cohorts (D1, D7, D30)
@@ -200,24 +200,24 @@ export async function GET(request: NextRequest) {
         SELECT
           -- D1 retention: users who returned day after signup (from users who signed up 2-30 days ago)
           ROUND(100.0 * COUNT(CASE
-            WHEN first_activity < ${oneDayAgo}
+            WHEN first_activity < ${oneDayAgo}::timestamp
             AND last_review >= first_activity + INTERVAL '1 day'
             THEN 1 END) /
-            NULLIF(COUNT(CASE WHEN first_activity < ${oneDayAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
+            NULLIF(COUNT(CASE WHEN first_activity < ${oneDayAgo}::timestamp AND first_activity >= ${thirtyDaysAgo}::timestamp THEN 1 END), 0), 1
           ) as d1_retention,
           -- D7 retention: users active 7 days after signup
           ROUND(100.0 * COUNT(CASE
-            WHEN first_activity < ${sevenDaysAgo}
+            WHEN first_activity < ${sevenDaysAgo}::timestamp
             AND last_review >= first_activity + INTERVAL '7 days'
             THEN 1 END) /
-            NULLIF(COUNT(CASE WHEN first_activity < ${sevenDaysAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
+            NULLIF(COUNT(CASE WHEN first_activity < ${sevenDaysAgo}::timestamp AND first_activity >= ${thirtyDaysAgo}::timestamp THEN 1 END), 0), 1
           ) as d7_retention,
           -- D30 retention: users still active 30 days after signup
           ROUND(100.0 * COUNT(CASE
-            WHEN first_activity < ${thirtyDaysAgo}
+            WHEN first_activity < ${thirtyDaysAgo}::timestamp
             AND last_review >= first_activity + INTERVAL '30 days'
             THEN 1 END) /
-            NULLIF(COUNT(CASE WHEN first_activity < ${thirtyDaysAgo} THEN 1 END), 0), 1
+            NULLIF(COUNT(CASE WHEN first_activity < ${thirtyDaysAgo}::timestamp THEN 1 END), 0), 1
           ) as d30_retention
         FROM user_returns
       `),
@@ -227,9 +227,9 @@ export async function GET(request: NextRequest) {
     const activeUsersResult = await db.execute(sql`
       SELECT COUNT(DISTINCT user_id) as active_users_7d
       FROM (
-        SELECT user_id FROM words WHERE created_at >= ${sevenDaysAgo}
+        SELECT user_id FROM words WHERE created_at >= ${sevenDaysAgo}::timestamp
         UNION
-        SELECT user_id FROM review_sessions WHERE started_at >= ${sevenDaysAgo}
+        SELECT user_id FROM review_sessions WHERE started_at >= ${sevenDaysAgo}::timestamp
       ) as active
     `);
 
