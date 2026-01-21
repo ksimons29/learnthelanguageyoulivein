@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Volume2, Check, Sparkles } from "lucide-react";
+import { Loader2, Plus, Check, Sparkles, ArrowRight } from "lucide-react";
 
 interface CapturedWord {
   id: string;
@@ -16,7 +16,8 @@ interface CapturedWord {
  * Guided Capture Page
  *
  * Step 2 of onboarding - users capture their first 3+ words.
- * Guides them toward same-category words for first sentence generation.
+ * Minimum 3 words required, but users are encouraged to add more.
+ * Guides them toward same-category words for better sentence generation.
  */
 export default function CapturePage() {
   const router = useRouter();
@@ -27,7 +28,6 @@ export default function CapturePage() {
   const [categoryHint, setCategoryHint] = useState<string | null>(null);
 
   const minWords = 3;
-  const targetWords = 4;
 
   // Determine if we have enough same-category words
   const categoryCounts = capturedWords.reduce((acc, word) => {
@@ -139,7 +139,7 @@ export default function CapturePage() {
           Add your first words
         </h1>
         <p
-          className="text-center mb-6"
+          className="text-center mb-4"
           style={{ color: "var(--text-muted)" }}
         >
           What words have you seen or heard recently?
@@ -149,21 +149,38 @@ export default function CapturePage() {
           </span>
         </p>
 
-        {/* Progress indicator */}
-        <div className="flex justify-center gap-2 mb-6">
-          {Array.from({ length: targetWords }).map((_, i) => (
-            <div
-              key={i}
-              className="w-3 h-3 rounded-full transition-all duration-300"
-              style={{
-                backgroundColor:
-                  i < capturedWords.length
-                    ? "var(--accent-ribbon)"
-                    : "var(--notebook-stitch)",
-                transform: i < capturedWords.length ? "scale(1.2)" : "scale(1)",
-              }}
-            />
-          ))}
+        {/* Progress indicator - shows count and minimum */}
+        <div className="flex justify-center mb-6">
+          <div
+            className="py-2 px-4 rounded-full inline-flex items-center gap-2"
+            style={{
+              backgroundColor: capturedWords.length >= minWords
+                ? "var(--accent-nav-light)"
+                : "var(--surface-page-aged)",
+            }}
+          >
+          <span
+            className="text-2xl font-bold"
+            style={{
+              color: capturedWords.length >= minWords
+                ? "var(--accent-nav)"
+                : "var(--text-heading)",
+            }}
+          >
+            {capturedWords.length}
+          </span>
+          <span
+            className="text-sm"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {capturedWords.length >= minWords
+              ? "words added"
+              : `of ${minWords} minimum`}
+          </span>
+          {capturedWords.length >= minWords && (
+            <Check className="h-4 w-4" style={{ color: "var(--accent-nav)" }} />
+          )}
+          </div>
         </div>
 
         {/* Error message */}
@@ -269,24 +286,61 @@ export default function CapturePage() {
           </div>
         )}
 
-        {/* Continue button */}
-        <button
-          onClick={handleContinue}
-          disabled={!canContinue}
-          className="w-full py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
-          style={{
-            backgroundColor: canContinue
-              ? "var(--accent-ribbon)"
-              : "var(--notebook-stitch)",
-            color: canContinue ? "var(--text-on-ribbon)" : "var(--text-muted)",
-          }}
-        >
-          {canContinue
-            ? `Continue with ${capturedWords.length} words →`
-            : `Add ${minWords - capturedWords.length} more word${
-                minWords - capturedWords.length > 1 ? "s" : ""
-              }`}
-        </button>
+        {/* Action buttons */}
+        {canContinue ? (
+          <div className="space-y-3">
+            {/* Encouragement message */}
+            <p
+              className="text-center text-sm flex items-center justify-center gap-1"
+              style={{ color: "var(--accent-nav)" }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              The more you add, the better your practice sessions!
+            </p>
+
+            {/* Dual buttons when minimum reached */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  // Focus the input to add more
+                  const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                  input?.focus();
+                }}
+                className="flex-1 py-3 rounded-lg font-medium transition-all duration-200"
+                style={{
+                  backgroundColor: "var(--surface-page-aged)",
+                  color: "var(--text-heading)",
+                  border: "2px solid var(--accent-nav)",
+                }}
+              >
+                <Plus className="h-4 w-4 inline mr-1" />
+                Add more
+              </button>
+              <button
+                onClick={handleContinue}
+                className="flex-1 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-1"
+                style={{
+                  backgroundColor: "var(--accent-ribbon)",
+                  color: "var(--text-on-ribbon)",
+                }}
+              >
+                I&apos;m done
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            disabled
+            className="w-full py-3 rounded-lg font-medium opacity-50"
+            style={{
+              backgroundColor: "var(--notebook-stitch)",
+              color: "var(--text-muted)",
+            }}
+          >
+            Add {minWords - capturedWords.length} more word{minWords - capturedWords.length > 1 ? "s" : ""} to continue
+          </button>
+        )}
       </div>
     </div>
   );
