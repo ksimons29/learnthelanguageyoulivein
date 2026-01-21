@@ -227,8 +227,12 @@ WHERE user_id NOT IN (
 - Guardrails panel that highlights anomalies in orange
 - Interval distribution breakdown
 
+**Bug Fixes Required:**
+- `next_review_at` → `next_review_date` (column didn't exist in schema)
+- Restructured `dataGuardrails` query: Original incorrectly referenced `stability` from `review_sessions` table (it's in `words`). Fixed with isolated scalar subqueries for each metric.
+
 **Files Changed:**
-- `web/src/app/api/admin/stats/route.ts` - 4 new science metric queries
+- `web/src/app/api/admin/stats/route.ts` - 4 new science metric queries + bug fixes
 - `web/src/app/admin/page.tsx` - Science Verification UI section
 - `docs/product/science.md` (new) - Research documentation
 - `README.md` - Added Science section
