@@ -67,20 +67,24 @@ npm run build             # Production build
 | `web/src/lib/sentences/generator.ts` | Sentence generation with Unicode validation |
 
 ## Open Bugs
-| Issue | Status | Notes |
-|-------|--------|-------|
-| #60 | **P0-1** | ~~Language direction bug - phrase vs translation~~ **FIXED** |
-| #61 | **P0-2** | ~~Sentence answer validation broken - wrong word highlighted~~ **FIXED** (Session 55) |
-| #62 | **P0-3** | ~~Multiple choice missing correct answer~~ **FIXED** (Session 55) |
-| #68 | **P0-5** | ~~Word review same word as answer for native→target~~ **FIXED** (Session 56) |
-| ~~#69~~ | **FIXED** | ~~Crash on close review (sourceLang undefined)~~ **FIXED** (Session 58) |
-| ~~#63~~ | **FIXED** | ~~Due count mismatch - Notebook shows 49, Today shows 0~~ **FIXED** (Session 57) |
-| ~~#64~~ | **FIXED** | ~~Duplicate words in review queue and no shuffling~~ **FIXED** (Session 59) |
-| ~~#65~~ | **VERIFIED** | ~~Captured Today section resets when navigating away~~ **WORKS** (Session 60) |
-| ~~#66~~ | **FIXED** | ~~Notebook Inbox shows items but none visible~~ **FIXED** (Session 60 - ffef140) |
-| #67 | P2 | Word selection capped at 2 words - too restrictive |
-| #23 | Open | iOS App Store submission |
-| #20 | Open | Default categories |
+**✅ ALL BUGS RESOLVED** as of Session 62 (2026-01-21)
+
+No open bugs. All P0 blockers fixed in Sessions 54-61.
+
+### Recently Closed Bugs
+| Issue | Description | Fixed In |
+|-------|-------------|----------|
+| #60-62 | Language direction, focus word, missing options | Sessions 54-55 |
+| #63-66 | Due count, duplicates, inbox, captured today | Sessions 57-60 |
+| #68-69 | Same-word answer, crash on close | Sessions 56, 58 |
+| #44 | Progress API 500 error | Session 20 (verified) |
+
+### Open Enhancements (Not Bugs)
+| Issue | Priority | Notes |
+|-------|----------|-------|
+| #67 | P2 | Word selection capped at 2 - enhancement |
+| #23 | P1-high | iOS App Store submission |
+| #20 | P2 | Default categories |
 
 ### Closed This Session (Session 60)
 - ~~#66~~ **P1-High** - Fixed: Notebook Inbox was passing 'inbox' as category filter but inbox isn't a DB category. Added special handling in /api/words to filter by reviewCount=0 + createdAt >= 24h ago
@@ -132,6 +136,84 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 63 - 2026-01-21 - Onboarding Capture UX Improvement (#74)
+
+**Focus:** Improve onboarding capture step UX to make 3-word minimum clearer and encourage adding more words.
+
+**Problem Identified:**
+- 4 fixed progress dots suggested users MUST add exactly 4 words (confusing)
+- Single "Continue" button after reaching minimum rushed users out
+- No encouragement to add more words beyond the minimum
+
+**Solution Implemented:**
+1. **Dynamic counter** replaces fixed dots: "0 of 3 minimum" → "5 words added ✓"
+2. **Dual buttons** after minimum reached: "Add more" + "I'm done →"
+3. **Encouragement message**: "The more you add, the better your practice sessions!"
+4. **"Add more" focuses input** for quick continuation
+
+**Testing:**
+- ✅ Build passes
+- ✅ 228 unit tests pass
+- ✅ E2E tested on production (all 3 MVP language pairs):
+
+| Account | Direction | Words Tested | Translations | Result |
+|---------|-----------|--------------|--------------|--------|
+| test-en-pt@llyli.test | EN→PT | olá, obrigado, café | hello, thank you, coffee | ✅ PASS |
+| test-en-sv@llyli.test | EN→SV | hej, tack, fika | hi, thank you, coffee break | ✅ PASS |
+| test-nl-en@llyli.test | NL→EN | breakfast, meeting, schedule | ontbijt, vergadering, schema | ✅ PASS |
+
+- Counter shows "X of 3 minimum" before threshold
+- Counter shows "X words added ✓" after threshold (teal background)
+- Dual buttons appear after 3 words
+- "Add more" focuses input field
+- "I'm done" navigates to /onboarding/complete
+
+**Also Documented:**
+- `docs/product/features/EXAMPLE_SENTENCE_AT_CAPTURE.md` - Future feature: show example sentence per word card
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/app/onboarding/capture/page.tsx` | New UX with dynamic counter and dual buttons |
+| `docs/product/features/EXAMPLE_SENTENCE_AT_CAPTURE.md` | Feature spec for future implementation |
+
+**GitHub:** Issue #74 created with full test scenarios for Claude
+
+---
+
+### Session 62 - 2026-01-21 - Project Status Audit & Documentation Update
+
+**Focus:** Audit project status, update MVP_AUDIT.md, close resolved issues, prepare for next work.
+
+**GitHub Issue Updates:**
+- Closed #71 (Memory Context E2E Tests) - completed in Session 61
+- Verified #44 (Progress API 500) - already fixed in Session 20
+
+**MVP_AUDIT.md Major Update:**
+- Updated 10 bug findings to reflect FIXED status (Sessions 54-61)
+- Added Flow 11: Gamification System (10 new verification steps)
+- Corrected summary: 10 passing, 0 failing, 1 known P2 issue, 59 untested
+- Added blocking issues resolution table
+
+**Current State:**
+- **0 open bugs** - All P0 blockers resolved
+- **228 unit tests passing**
+- **70 MVP feature steps** (10 pass, 59 untested)
+- **Gamification ready** for E2E testing (#59)
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `MVP_AUDIT.md` | Updated status for 10 fixed bugs, added gamification flow |
+| `PROJECT_LOG.md` | Updated Open Bugs section, added Session 62 |
+
+**Next Priority Options:**
+1. #59 - Gamification E2E Testing
+2. #67 - Word selection limit (quick win)
+3. #23 - iOS App Store submission
+
+---
 
 ### Session 61 - 2026-01-21 - Memory Context E2E & Sentence Display Feature (Issues #70, #71)
 
