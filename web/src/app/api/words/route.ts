@@ -358,15 +358,21 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const excludeId = searchParams.get('excludeId');
 
-    // 4. Build query with filters - ALWAYS filter by user's target language
-    // Match words where the user's target language appears as either:
-    // - sourceLang (they entered a word in their target language)
-    // - targetLang (they entered a word in their native language, translated to target)
+    // 4. Build query with filters - filter by BOTH native and target language
+    // This ensures only words from the user's configured language pair are included.
     const conditions = [
       eq(words.userId, user.id),
       or(
-        eq(words.sourceLang, languagePreference.targetLanguage),
-        eq(words.targetLang, languagePreference.targetLanguage)
+        // User captured in target language (sourceLang=target, targetLang=native)
+        and(
+          eq(words.sourceLang, languagePreference.targetLanguage),
+          eq(words.targetLang, languagePreference.nativeLanguage)
+        ),
+        // User captured in native language (sourceLang=native, targetLang=target)
+        and(
+          eq(words.sourceLang, languagePreference.nativeLanguage),
+          eq(words.targetLang, languagePreference.targetLanguage)
+        )
       )!,
     ];
 
@@ -696,9 +702,10 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
   try {
     const languagePreference = await getUserLanguagePreference(userId);
 
-    // Get a few unused word combinations (filtered by target language)
+    // Get a few unused word combinations (filtered by language pair)
     const combinations = await getUnusedWordCombinations(
       userId,
+      languagePreference.nativeLanguage,
       languagePreference.targetLanguage,
       {
         minWordsPerSentence: 2,

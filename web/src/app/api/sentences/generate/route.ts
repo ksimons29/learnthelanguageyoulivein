@@ -36,11 +36,12 @@ export async function POST(request: NextRequest) {
     // 3. Get user's language preference (needed for word filtering)
     const languagePreference = await getUserLanguagePreference(user.id);
 
-    // 4. Get unused word combinations (filtered by target language)
-    // IMPORTANT: This filter ensures sentences only contain words that
-    // will be retrievable by sentences/next API (which uses same filter)
+    // 4. Get unused word combinations (filtered by BOTH native and target language)
+    // IMPORTANT: This filter ensures sentences only contain words from the
+    // user's configured language pair, preventing mixing of different pairs.
     const unusedCombinations = await getUnusedWordCombinations(
       user.id,
+      languagePreference.nativeLanguage,
       languagePreference.targetLanguage,
       {
         minWordsPerSentence: 2,

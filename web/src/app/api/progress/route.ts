@@ -128,8 +128,14 @@ export async function GET() {
           and(
             eq(words.userId, user.id),
             or(
-              eq(words.sourceLang, languagePreference.targetLanguage),
-              eq(words.targetLang, languagePreference.targetLanguage)
+              and(
+                eq(words.sourceLang, languagePreference.targetLanguage),
+                eq(words.targetLang, languagePreference.nativeLanguage)
+              ),
+              and(
+                eq(words.sourceLang, languagePreference.nativeLanguage),
+                eq(words.targetLang, languagePreference.targetLanguage)
+              )
             )
           )
         ),
@@ -176,8 +182,14 @@ export async function GET() {
           and(
             eq(words.userId, user.id),
             or(
-              eq(words.sourceLang, languagePreference.targetLanguage),
-              eq(words.targetLang, languagePreference.targetLanguage)
+              and(
+                eq(words.sourceLang, languagePreference.targetLanguage),
+                eq(words.targetLang, languagePreference.nativeLanguage)
+              ),
+              and(
+                eq(words.sourceLang, languagePreference.nativeLanguage),
+                eq(words.targetLang, languagePreference.targetLanguage)
+              )
             ),
             lte(words.nextReviewDate, sevenDaysFromNow)
           )
@@ -209,8 +221,14 @@ export async function GET() {
           and(
             eq(words.userId, user.id),
             or(
-              eq(words.sourceLang, languagePreference.targetLanguage),
-              eq(words.targetLang, languagePreference.targetLanguage)
+              and(
+                eq(words.sourceLang, languagePreference.targetLanguage),
+                eq(words.targetLang, languagePreference.nativeLanguage)
+              ),
+              and(
+                eq(words.sourceLang, languagePreference.nativeLanguage),
+                eq(words.targetLang, languagePreference.targetLanguage)
+              )
             ),
             eq(words.masteryStatus, 'ready_to_use')
           )
@@ -227,8 +245,14 @@ export async function GET() {
           and(
             eq(words.userId, user.id),
             or(
-              eq(words.sourceLang, languagePreference.targetLanguage),
-              eq(words.targetLang, languagePreference.targetLanguage)
+              and(
+                eq(words.sourceLang, languagePreference.targetLanguage),
+                eq(words.targetLang, languagePreference.nativeLanguage)
+              ),
+              and(
+                eq(words.sourceLang, languagePreference.nativeLanguage),
+                eq(words.targetLang, languagePreference.targetLanguage)
+              )
             ),
             gte(words.lapseCount, 1)
           )
@@ -245,8 +269,14 @@ export async function GET() {
           and(
             eq(words.userId, user.id),
             or(
-              eq(words.sourceLang, languagePreference.targetLanguage),
-              eq(words.targetLang, languagePreference.targetLanguage)
+              and(
+                eq(words.sourceLang, languagePreference.targetLanguage),
+                eq(words.targetLang, languagePreference.nativeLanguage)
+              ),
+              and(
+                eq(words.sourceLang, languagePreference.nativeLanguage),
+                eq(words.targetLang, languagePreference.targetLanguage)
+              )
             ),
             eq(words.reviewCount, 0)
           )

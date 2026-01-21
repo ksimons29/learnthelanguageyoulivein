@@ -217,3 +217,35 @@ export function getSupportedLanguageCodes(): string[] {
 export function isLanguageSupported(code: string): boolean {
   return code in SUPPORTED_LANGUAGES;
 }
+
+/**
+ * Check if a word's language pair matches the user's configured languages.
+ *
+ * Words can be captured in either direction:
+ * - User types in target language → translation to native (sourceLang=target, targetLang=native)
+ * - User types in native language → translation to target (sourceLang=native, targetLang=target)
+ *
+ * Both directions should be included, but ONLY if BOTH languages match the user's pair.
+ * This prevents mixing words from different language pairs (e.g., PT words showing for EN→SV users).
+ *
+ * @param wordSourceLang - The word's sourceLang field
+ * @param wordTargetLang - The word's targetLang field
+ * @param userNativeLang - User's native language setting
+ * @param userTargetLang - User's target language setting
+ */
+export function isWordInUserLanguagePair(
+  wordSourceLang: string,
+  wordTargetLang: string,
+  userNativeLang: string,
+  userTargetLang: string
+): boolean {
+  // Direction 1: User captured in target language (sourceLang=target, targetLang=native)
+  const isTargetToNative =
+    wordSourceLang === userTargetLang && wordTargetLang === userNativeLang;
+
+  // Direction 2: User captured in native language (sourceLang=native, targetLang=target)
+  const isNativeToTarget =
+    wordSourceLang === userNativeLang && wordTargetLang === userTargetLang;
+
+  return isTargetToNative || isNativeToTarget;
+}

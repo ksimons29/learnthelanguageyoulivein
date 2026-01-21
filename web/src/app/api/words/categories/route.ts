@@ -55,12 +55,16 @@ export async function GET() {
       .where(
         and(
           eq(words.userId, user.id),
-          // Match words where the user's target language appears as either:
-          // - sourceLang (they entered a word in their target language)
-          // - targetLang (they entered a word in their native language, translated to target)
+          // Filter by BOTH native and target language to prevent mixing language pairs
           or(
-            eq(words.sourceLang, languagePreference.targetLanguage),
-            eq(words.targetLang, languagePreference.targetLanguage)
+            and(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.nativeLanguage)
+            ),
+            and(
+              eq(words.sourceLang, languagePreference.nativeLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            )
           )
         )
       )
@@ -101,7 +105,7 @@ export async function GET() {
 
     // 4. Count words without a category (inbox)
     // For MVP, we consider words created in the last 24 hours without review as "inbox"
-    // ALWAYS filter by user's target language
+    // Filter by BOTH native and target language to prevent mixing language pairs
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const twentyFourHoursAgoISO = twentyFourHoursAgo.toISOString();
     const [inboxResult] = await db
@@ -110,10 +114,15 @@ export async function GET() {
       .where(
         and(
           eq(words.userId, user.id),
-          // Match words where the user's target language appears as either sourceLang or targetLang
           or(
-            eq(words.sourceLang, languagePreference.targetLanguage),
-            eq(words.targetLang, languagePreference.targetLanguage)
+            and(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.nativeLanguage)
+            ),
+            and(
+              eq(words.sourceLang, languagePreference.nativeLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            )
           ),
           eq(words.reviewCount, 0),
           sql`${words.createdAt} >= ${twentyFourHoursAgoISO}::timestamp`

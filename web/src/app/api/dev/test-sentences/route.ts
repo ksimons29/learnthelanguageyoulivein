@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       userId,
+      nativeLanguage = 'en', // Default to English for testing
       targetLanguage = 'pt-PT', // Default to Portuguese for testing
       lookaheadDays = 30,
       maxSentences = 5,
@@ -60,9 +61,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Words by category:', categoryStats);
 
-    // Get unused word combinations (filtered by target language)
+    // Get unused word combinations (filtered by language pair)
     const unusedCombinations = await getUnusedWordCombinations(
       userId,
+      nativeLanguage,
       targetLanguage,
       {
         minWordsPerSentence: 2,

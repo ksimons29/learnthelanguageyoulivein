@@ -57,10 +57,11 @@ export async function GET(request: NextRequest) {
     // 4. Get or create review session
     const sessionId = await getOrCreateSession(user.id);
 
-    // 5. Get user's words filtered by target language
-    // Match words where the user's target language appears as either:
-    // - sourceLang (they entered a word in their target language)
-    // - targetLang (they entered a word in their native language, translated to target)
+    // 5. Get user's words filtered by BOTH native and target language
+    // This ensures only words from the user's configured language pair are included.
+    // Match words where:
+    // - sourceLang matches target AND targetLang matches native (user typed in target language)
+    // - sourceLang matches native AND targetLang matches target (user typed in native language)
     const userWords = await db
       .select()
       .from(words)
@@ -68,8 +69,16 @@ export async function GET(request: NextRequest) {
         and(
           eq(words.userId, user.id),
           or(
-            eq(words.sourceLang, languagePreference.targetLanguage),
-            eq(words.targetLang, languagePreference.targetLanguage)
+            // User captured in target language (e.g., typed Portuguese, got English translation)
+            and(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.nativeLanguage)
+            ),
+            // User captured in native language (e.g., typed English, got Portuguese translation)
+            and(
+              eq(words.sourceLang, languagePreference.nativeLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            )
           )
         )
       );

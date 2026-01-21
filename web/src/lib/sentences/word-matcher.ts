@@ -33,16 +33,18 @@ export const DEFAULT_WORD_MATCHING_CONFIG: WordMatchingConfig = {
  * Get due words grouped by category
  *
  * Queries user words with nextReviewDate within the lookahead window,
- * filtered by target language, and groups them by category for semantic
- * sentence generation.
+ * filtered by the user's language pair, and groups them by category for
+ * semantic sentence generation.
  *
- * IMPORTANT: The targetLanguage filter matches the same logic used in
- * sentences/next API to ensure generated sentences can be retrieved.
- * Words are included if their sourceLang OR targetLang matches the
- * user's target language (handles bidirectional capture).
+ * IMPORTANT: Words must match BOTH the user's native AND target language
+ * to prevent mixing words from different language pairs.
+ * Words are included if they match either direction:
+ * - sourceLang=target, targetLang=native (user captured in target language)
+ * - sourceLang=native, targetLang=target (user captured in native language)
  */
 export async function getDueWordsGroupedByCategory(
   userId: string,
+  nativeLanguage: string,
   targetLanguage: string,
   lookaheadDays: number = 7
 ): Promise<Map<string, Word[]>> {
@@ -50,26 +52,10 @@ export async function getDueWordsGroupedByCategory(
   const lookaheadDate = new Date(now.getTime() + lookaheadDays * 24 * 60 * 60 * 1000);
 
   // DEBUG: Log query parameters
-  console.log(`[DEBUG word-matcher] Query params: userId=${userId}, targetLanguage="${targetLanguage}", lookaheadDate=${lookaheadDate.toISOString()}`);
-
-  // First, get ALL user words to see what's in the database
-  const allUserWords = await db
-    .select()
-    .from(words)
-    .where(eq(words.userId, userId))
-    .limit(5);
-
-  console.log(`[DEBUG word-matcher] All user words sample (${allUserWords.length}):`,
-    allUserWords.map(w => ({
-      id: w.id.substring(0, 8),
-      text: w.originalText,
-      src: w.sourceLang,
-      tgt: w.targetLang,
-      nextReview: w.nextReviewDate?.toISOString()
-    })));
+  console.log(`[DEBUG word-matcher] Query params: userId=${userId}, nativeLanguage="${nativeLanguage}", targetLanguage="${targetLanguage}", lookaheadDate=${lookaheadDate.toISOString()}`);
 
   // Query user words with nextReviewDate within lookahead window
-  // Filter by target language (either sourceLang or targetLang must match)
+  // Filter by BOTH native and target language to prevent mixing language pairs
   const dueWords = await db
     .select()
     .from(words)
@@ -78,8 +64,16 @@ export async function getDueWordsGroupedByCategory(
         eq(words.userId, userId),
         lte(words.nextReviewDate, lookaheadDate),
         or(
-          eq(words.sourceLang, targetLanguage),
-          eq(words.targetLang, targetLanguage)
+          // User captured in target language (sourceLang=target, targetLang=native)
+          and(
+            eq(words.sourceLang, targetLanguage),
+            eq(words.targetLang, nativeLanguage)
+          ),
+          // User captured in native language (sourceLang=native, targetLang=target)
+          and(
+            eq(words.sourceLang, nativeLanguage),
+            eq(words.targetLang, targetLanguage)
+          )
         )
       )
     );
@@ -278,19 +272,22 @@ export async function filterUsedCombinations(
  * and deduplication filtering.
  *
  * @param userId - The user's ID
+ * @param nativeLanguage - The user's native language (for filtering words)
  * @param targetLanguage - The user's target language (for filtering words)
  * @param config - Word matching configuration
  * @param maxCombinations - Maximum combinations to return
  */
 export async function getUnusedWordCombinations(
   userId: string,
+  nativeLanguage: string,
   targetLanguage: string,
   config: WordMatchingConfig = DEFAULT_WORD_MATCHING_CONFIG,
   maxCombinations: number = 50
 ): Promise<Word[][]> {
-  // 1. Get due words grouped by category (filtered by target language)
+  // 1. Get due words grouped by category (filtered by language pair)
   const categoryGroups = await getDueWordsGroupedByCategory(
     userId,
+    nativeLanguage,
     targetLanguage,
     config.dueDateWindowDays
   );

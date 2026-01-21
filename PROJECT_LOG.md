@@ -117,10 +117,18 @@ npm run build             # Production build
    - Wrote failing tests first in `distractors.test.ts`
    - Fixed `review/page.tsx` to use `getTargetLanguageText()` and `getNativeLanguageText()`
    - All 189 tests pass
+6. **FIXED language mixing bug** - Words from wrong language pairs were appearing:
+   - Root cause: Filtering only checked ONE language field, not BOTH
+   - Fix: All word queries now filter by BOTH native AND target language
+   - Updated 12 files: reviews, sentences, words APIs, progress, word-matcher
+   - Added `isWordInUserLanguagePair()` helper to languages.ts
 
 **Root cause of #60:** Bidirectional capture means `originalText` isn't always in target language.
 Words can be captured EN→PT (user types English) or PT→EN (user types Portuguese).
 Fix: Use language-aware helpers that check `sourceLang`/`targetLang` fields.
+
+**Root cause of language mixing:** Word queries used `OR(sourceLang=target, targetLang=target)` which
+allowed words from other language pairs to slip through. Fix: Use `AND` to require BOTH languages match.
 
 **Files changed:**
 - `web/src/app/review/page.tsx` - Fixed 4 places using raw `originalText`

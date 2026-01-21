@@ -30,6 +30,7 @@ export async function GET() {
 
     // 3. Fetch struggling words (lapseCount >= 3)
     // ALWAYS filter by user's target language
+    // Filter by BOTH native and target language to prevent mixing language pairs
     const strugglingWords = await db
       .select()
       .from(words)
@@ -37,8 +38,14 @@ export async function GET() {
         and(
           eq(words.userId, user.id),
           or(
-            eq(words.sourceLang, languagePreference.targetLanguage),
-            eq(words.targetLang, languagePreference.targetLanguage)
+            and(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.nativeLanguage)
+            ),
+            and(
+              eq(words.sourceLang, languagePreference.nativeLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            )
           ),
           gte(words.lapseCount, 3)
         )

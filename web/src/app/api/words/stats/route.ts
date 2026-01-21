@@ -86,8 +86,16 @@ export async function GET() {
         and(
           eq(words.userId, user.id),
           or(
-            eq(words.sourceLang, languagePreference.targetLanguage),
-            eq(words.targetLang, languagePreference.targetLanguage)
+            // User captured in target language
+            and(
+              eq(words.sourceLang, languagePreference.targetLanguage),
+              eq(words.targetLang, languagePreference.nativeLanguage)
+            ),
+            // User captured in native language
+            and(
+              eq(words.sourceLang, languagePreference.nativeLanguage),
+              eq(words.targetLang, languagePreference.targetLanguage)
+            )
           )
         )
       );

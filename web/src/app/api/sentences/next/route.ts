@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch ALL words for all sentences in a single query
+    // Filter by BOTH native and target language to prevent mixing language pairs
     const allWords = allWordIds.size > 0
       ? await db
           .select()
@@ -100,8 +101,16 @@ export async function GET(request: NextRequest) {
             and(
               eq(words.userId, user.id),
               or(
-                eq(words.sourceLang, languagePreference.targetLanguage),
-                eq(words.targetLang, languagePreference.targetLanguage)
+                // User captured in target language (sourceLang=target, targetLang=native)
+                and(
+                  eq(words.sourceLang, languagePreference.targetLanguage),
+                  eq(words.targetLang, languagePreference.nativeLanguage)
+                ),
+                // User captured in native language (sourceLang=native, targetLang=target)
+                and(
+                  eq(words.sourceLang, languagePreference.nativeLanguage),
+                  eq(words.targetLang, languagePreference.targetLanguage)
+                )
               ),
               inArray(words.id, Array.from(allWordIds))
             )
