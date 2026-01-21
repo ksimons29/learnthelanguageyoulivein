@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { shuffleArray, buildMultipleChoiceOptions } from '@/lib/review/distractors'
+import { shuffleArray, buildMultipleChoiceOptions, getNativeLanguageText, getTargetLanguageText } from '@/lib/review/distractors'
 import type { Word } from '@/lib/db/schema'
 
 /**
@@ -176,5 +176,111 @@ describe('buildMultipleChoiceOptions', () => {
     // Should NOT show Portuguese text
     expect(options.some((o) => o.text === 'intemporal')).toBe(false)
     expect(options.some((o) => o.text === 'folgar')).toBe(false)
+  })
+})
+
+/**
+ * Translation Hint Formatting Tests
+ *
+ * BUG FOUND (Issue #60): The review page formats translation hints as:
+ *   `${word.originalText}: ${word.translation}`
+ *
+ * This is WRONG for bidirectional capture because:
+ * - For PT word: originalText='tampo', translation='lid' → shows "tampo: lid" ✓
+ * - For EN word: originalText='Battery', translation='bateria' → shows "Battery: bateria" ✗
+ *
+ * Expected format is always "TARGET: NATIVE" (e.g., "tampo: lid", "bateria: Battery")
+ * so users see the word they're learning followed by the meaning they know.
+ */
+describe('Translation hint formatting for bidirectional capture', () => {
+  const nativeLanguage = 'en'
+  const targetLanguage = 'pt-PT'
+
+  /**
+   * Helper function that CORRECTLY formats translation hints.
+   * This is what the review page SHOULD use.
+   */
+  function formatTranslationHint(word: Word, nativeLang: string, targetLang: string): string {
+    const targetText = getTargetLanguageText(word, targetLang)
+    const nativeText = getNativeLanguageText(word, nativeLang)
+    return `${targetText}: ${nativeText}`
+  }
+
+  /**
+   * The BUGGY function that the review page currently uses.
+   * This demonstrates the bug.
+   */
+  function formatTranslationHintBuggy(word: Word): string {
+    return `${word.originalText}: ${word.translation}`
+  }
+
+  it('BUGGY: shows wrong format for EN→PT capture', () => {
+    // User captured "Battery" in English
+    const wordCapturedInEnglish = createMockWord({
+      originalText: 'Battery',    // English (what user typed)
+      translation: 'bateria',     // Portuguese (translation)
+      sourceLang: 'en',
+      targetLang: 'pt-PT',
+    })
+
+    // The buggy function shows: "Battery: bateria"
+    // But we want: "bateria: Battery" (target: native)
+    const buggyResult = formatTranslationHintBuggy(wordCapturedInEnglish)
+
+    // This assertion PASSES because the buggy code produces wrong output
+    expect(buggyResult).toBe('Battery: bateria')  // WRONG FORMAT!
+
+    // The correct format should be target language first
+    // This test will FAIL with the buggy implementation
+    const correctResult = formatTranslationHint(wordCapturedInEnglish, nativeLanguage, targetLanguage)
+    expect(correctResult).toBe('bateria: Battery')  // CORRECT FORMAT
+  })
+
+  it('CORRECT: shows right format for PT→EN capture', () => {
+    // User captured "tampo" in Portuguese
+    const wordCapturedInPortuguese = createMockWord({
+      originalText: 'tampo',    // Portuguese (what user typed)
+      translation: 'lid',       // English (translation)
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    // Both should produce the same format for PT captures
+    const buggyResult = formatTranslationHintBuggy(wordCapturedInPortuguese)
+    const correctResult = formatTranslationHint(wordCapturedInPortuguese, nativeLanguage, targetLanguage)
+
+    // For PT word, the buggy format happens to be correct
+    expect(buggyResult).toBe('tampo: lid')
+    expect(correctResult).toBe('tampo: lid')
+  })
+
+  it('formats mixed capture directions consistently', () => {
+    const words = [
+      // PT capture
+      createMockWord({
+        originalText: 'tampo',
+        translation: 'lid',
+        sourceLang: 'pt-PT',
+        targetLang: 'en',
+      }),
+      // EN capture (this is where the bug shows)
+      createMockWord({
+        originalText: 'Trainwreck',
+        translation: 'desastre',
+        sourceLang: 'en',
+        targetLang: 'pt-PT',
+      }),
+    ]
+
+    // Format all words
+    const hints = words.map(w => formatTranslationHint(w, nativeLanguage, targetLanguage))
+
+    // All should be in "TARGET: NATIVE" format
+    expect(hints[0]).toBe('tampo: lid')           // PT word
+    expect(hints[1]).toBe('desastre: Trainwreck') // EN word (target lang first!)
+
+    // Joined hint should show consistent format
+    const joinedHint = hints.join(' | ')
+    expect(joinedHint).toBe('tampo: lid | desastre: Trainwreck')
   })
 })

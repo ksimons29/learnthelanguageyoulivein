@@ -28,6 +28,7 @@ import {
 import {
   prepareMultipleChoiceOptions,
   getNativeLanguageText,
+  getTargetLanguageText,
   type MultipleChoiceOption,
 } from "@/lib/review/distractors";
 import type { Word } from "@/lib/db/schema";
@@ -68,6 +69,7 @@ export default function ReviewPage() {
     submitSentenceReview,
     // Language preferences for exercise generation
     nativeLanguage,
+    targetLanguage,
   } = useReviewStore();
 
   const [showMastery, setShowMastery] = useState(false);
@@ -457,11 +459,17 @@ export default function ReviewPage() {
             {/* Sentence Card */}
             <SentenceCard
               sentence={currentSentence.text}
-              highlightedWords={sentenceTargetWords.map((w) => w.originalText)}
+              highlightedWords={sentenceTargetWords.map((w) =>
+                getTargetLanguageText(w, targetLanguage)
+              )}
               translation={
                 currentSentence.translation ||
                 sentenceTargetWords
-                  .map((w) => `${w.originalText}: ${w.translation}`)
+                  .map((w) => {
+                    const targetText = getTargetLanguageText(w, targetLanguage);
+                    const nativeText = getNativeLanguageText(w, nativeLanguage);
+                    return `${targetText}: ${nativeText}`;
+                  })
                   .join(" | ")
               }
               showTranslation={
@@ -471,7 +479,7 @@ export default function ReviewPage() {
               isPlayingAudio={isPlaying}
               isLoadingAudio={audioLoading}
               exerciseType={exerciseType}
-              blankedWord={blankedWord?.originalText}
+              blankedWord={blankedWord ? getTargetLanguageText(blankedWord, targetLanguage) : undefined}
             >
               {/* Fill-in-the-blank input */}
               {exerciseType === "fill_blank" &&
@@ -479,7 +487,7 @@ export default function ReviewPage() {
                 blankedWord &&
                 isAnswerCorrect === null && (
                   <FillBlankInput
-                    correctAnswer={blankedWord.originalText}
+                    correctAnswer={getTargetLanguageText(blankedWord, targetLanguage)}
                     onSubmit={handleFillBlankSubmit}
                   />
                 )}
