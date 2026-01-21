@@ -453,6 +453,24 @@ const dueCount = calculateDueCards(userId, today);
 // No separate implementations
 ```
 
+### Fix Applied (Commit 8ee1fbe)
+
+**Root Cause:** Today page calculated due count client-side (all words with `nextReviewDate <= now`), while Notebook fetched from `/api/words/stats` which applies FSRS scientific limits (max 15 new cards/day + review due).
+
+**The Fix:**
+1. Added server stats fetch to Today page (`/api/words/stats`)
+2. Use `serverStats.dueToday` as single source of truth
+3. Fall back to client-side calculation if API fails
+
+**Files Changed:**
+- `web/src/app/page.tsx` - Fetch due count from API
+- `web/src/__tests__/lib/due-count.test.ts` - Unit tests for FSRS formula
+
+**E2E Verification:**
+- ✅ test-en-pt (EN→PT): Today=7, Notebook=7 ✓
+- ✅ test-en-sv (EN→SV): Today=15, Notebook=15 ✓
+- ✅ test-nl-en (NL→EN): Today=5 (Notebook had separate 500 error)
+
 ---
 
 ## Findings Summary
@@ -677,8 +695,8 @@ A bug is NOT fixed until:
 | 1 | Language direction (phrase vs translation) | Fixes #1, #2, #5, #6a, #7b - one root cause | ✅ **FIXED** (commit e5a8897) |
 | 2 | Highlighted word ≠ answer | Fixes #4, #5a - makes exercises possible | ✅ **FIXED** (Session 55) |
 | 3 | Correct answer in options | Fixes #7 - makes exercises completable | ✅ **FIXED** (Session 55) |
-| 4 | Due count consistency | Fixes #10 - trust in data | ⬜ Pending |
-| 5 | Duplicates + shuffle | Fixes #3, #3a - better UX | ⬜ Pending |
+| 4 | Due count consistency | Fixes #10 - trust in data | ✅ **FIXED** (commit 8ee1fbe) |
+| 5 | Duplicates + shuffle | Fixes #3, #3a - better UX | ✅ **FIXED** (Session 59) |
 | 6 | Captured Today persistence | Fixes #8 - feedback loop | ⬜ Pending |
 | 7 | Inbox count | Fixes #9 - data consistency | ⬜ Pending |
 | 8 | Word limit | Fixes #6 - feature enhancement | ⬜ Pending |
@@ -864,8 +882,8 @@ const sourceLang = currentWord?.sourceLang;
 |---|-------|----------|--------|
 | 1 | Sentence page shows Portuguese instead of English translations | **P0 Critical** | ✅ Fixed (e5a8897) |
 | 2 | System knows translations but doesn't display them in word list | **P0 Critical** | ✅ Fixed (e5a8897) |
-| 3 | Duplicate words in review queue (apontado x2) | **P1 High** | Pending |
-| 3a | No shuffling - words appear in same order | **P1 High** | Pending |
+| 3 | Duplicate words in review queue (apontado x2) | **P1 High** | ✅ Fixed (Session 59) |
+| 3a | No shuffling - words appear in same order | **P1 High** | ✅ Fixed (Session 59) |
 | 4 | Fill-in-blank highlights WRONG word - answer mismatch | **P0 BLOCKER** | ✅ Fixed (fc34d0b) |
 | 5 | Multiple-choice options in Portuguese instead of English | **P0 BLOCKER** | ✅ Fixed (e5a8897) |
 | 5a | Wrong word marked as correct (excerto highlighted, além disso "correct") | **P0 BLOCKER** | ✅ Fixed (fc34d0b) |
@@ -876,7 +894,7 @@ const sourceLang = currentWord?.sourceLang;
 | 7b | Mixed languages in options (Trainwreck, Battery vs Portuguese) | **P0 Critical** | ✅ Fixed (e5a8897) |
 | 8 | "Captured Today" resets when navigating away | **P1 High** | Pending |
 | 9 | Inbox shows 4 items but none visible when opened | **P1 High** | Pending |
-| 10 | **Due count conflict: Notebook=49, Today=0** | **P0 Critical** | Pending |
+| 10 | **Due count conflict: Notebook=49, Today=0** | **P0 Critical** | ✅ Fixed (8ee1fbe) |
 | **11** | **Word review shows SAME word as answer (native→target)** | **P0 BLOCKER** | **NEW** |
 | **12** | **Crash on Close Review - sourceLang undefined** | **P0 Critical** | **NEW** |
 
@@ -888,4 +906,4 @@ const sourceLang = currentWord?.sourceLang;
 - **Finding count:** 17 issues (15 original + 2 new)
 - **P0/Blocker count:** 12 issues
 - **Status:** Ready for systematic fixing
-- **Last Updated:** Session 55 E2E Testing
+- **Last Updated:** Session 57 - Issue #63 Fixed

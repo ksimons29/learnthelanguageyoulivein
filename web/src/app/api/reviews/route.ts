@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { words, reviewSessions } from '@/lib/db/schema';
 import { isDue, processReview, getNextReviewText } from '@/lib/fsrs';
 import { eq, and, desc, lte, or, isNull, sql } from 'drizzle-orm';
+import { shuffleWithinPriorityBands } from '@/lib/review/shuffle';
 
 /**
  * Session boundary: 2 hours
@@ -98,15 +99,14 @@ export async function GET(request: NextRequest) {
       return isDue(word);
     });
 
-    // 6. Sort by next review date (most overdue first)
-    dueWords.sort((a, b) => {
-      const dateA = a.nextReviewDate?.getTime() || 0;
-      const dateB = b.nextReviewDate?.getTime() || 0;
-      return dateA - dateB;
-    });
+    // 6. Shuffle within priority bands (Issue #64)
+    // This maintains FSRS priority (overdue > due > new) while adding variety
+    // to prevent users from memorizing word order. Words are grouped into
+    // priority bands and shuffled within each band, then concatenated.
+    const shuffledWords = shuffleWithinPriorityBands(dueWords);
 
     // 7. Limit results
-    const limitedWords = dueWords.slice(0, limit);
+    const limitedWords = shuffledWords.slice(0, limit);
 
     return NextResponse.json({
       data: {

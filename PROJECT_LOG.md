@@ -70,18 +70,21 @@ npm run build             # Production build
 | #68 | **P0-5** | ~~Word review same word as answer for native→target~~ **FIXED** (Session 56) |
 | ~~#69~~ | **FIXED** | ~~Crash on close review (sourceLang undefined)~~ **FIXED** (Session 58) |
 | ~~#63~~ | **FIXED** | ~~Due count mismatch - Notebook shows 49, Today shows 0~~ **FIXED** (Session 57) |
-| #64 | P1 | Duplicate words in review queue and no shuffling |
+| ~~#64~~ | **FIXED** | ~~Duplicate words in review queue and no shuffling~~ **FIXED** (Session 59) |
 | #65 | P1 | Captured Today section resets when navigating away |
 | #66 | P1 | Notebook Inbox shows 4 items but none visible when opened |
 | #67 | P2 | Word selection capped at 2 words - too restrictive |
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
 
-### Closed This Session (Session 58)
+### Closed This Session (Session 59)
+- ~~#64~~ **P1-High** - Fixed: Review queue shuffle - added priority band shuffling for variety while maintaining FSRS priority
+
+### Closed Previous Session (Session 58)
 - ~~#69~~ **P0-Critical** - Fixed: Crash on close review - null guards + race condition fix
 - ~~#63~~ **Closed** - Due count mismatch (closed on GitHub this session, fixed Session 57)
 
-### Closed Previous Session (Session 57)
+### Previously Closed (Session 57)
 - ~~#63~~ **P0-Critical** - Fixed: Due count mismatch - Today page now fetches from `/api/words/stats` (same source as Notebook)
 
 ### Previously Closed (Session 56)
@@ -119,6 +122,44 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 59 - 2026-01-21 - Review Queue Shuffle Fix (Issue #64)
+
+**Focus:** Fix P1 bug where review queue had no shuffling, making word order predictable.
+
+**Investigation Findings:**
+1. **No true duplicates** - Database primary keys prevent duplicate word IDs
+2. **Perceived duplicates** - Same word appearing in multiple sentences back-to-back
+3. **No shuffling** - Words sorted strictly by `nextReviewDate` (most overdue first)
+
+**What Was Fixed:**
+Added "priority band shuffling" that maintains FSRS priority while adding variety:
+1. Words are grouped into priority bands: **overdue** (>7 days past due), **due** (past due), **new** (never reviewed)
+2. Each band is shuffled using Fisher-Yates algorithm
+3. Bands are concatenated in priority order: overdue → due → new
+
+This ensures overdue words still appear first (FSRS compliance) while preventing users from memorizing word positions.
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/lib/review/shuffle.ts` | **NEW** - Fisher-Yates shuffle, priority band logic |
+| `web/src/app/api/reviews/route.ts` | Import shuffle, replace sort with shuffleWithinPriorityBands |
+| `web/src/__tests__/lib/shuffle.test.ts` | **NEW** - 19 tests for shuffle utilities |
+| `findings.md` | Updated Finding #3, #3a status to FIXED |
+
+**Tests:**
+- Added 19 new tests for shuffle utilities
+- All 228 tests pass
+- Build passes
+
+**E2E Verification:**
+- ✅ Local dev server: Review page loads, shows 5 words
+- ✅ Review session starts successfully with shuffled queue
+
+**Closes:** #64
+
+---
 
 ### Session 58 - 2026-01-21 - Crash on Close Review Fix (Issue #69)
 
