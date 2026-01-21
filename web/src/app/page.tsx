@@ -63,6 +63,13 @@ export default function HomePage() {
   // Bingo modal state
   const [showBingoModal, setShowBingoModal] = useState(false);
 
+  // Server stats for authoritative due count (matches Notebook page)
+  const [serverStats, setServerStats] = useState<{
+    dueToday: number;
+    newCardsAvailable: number;
+    reviewDue: number;
+  } | null>(null);
+
   // Boss round state
   const [bossRoundState, setBossRoundState] = useState<'hidden' | 'prompt' | 'playing' | 'results'>('hidden');
   const [bossRoundWords, setBossRoundWords] = useState<Word[]>([]);
@@ -96,6 +103,29 @@ export default function HomePage() {
       fetchGamificationState();
     }
   }, [user, authLoading, fetchGamificationState]);
+
+  // Fetch authoritative stats from API (single source of truth for due count)
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch("/api/words/stats");
+        if (response.ok) {
+          const { data } = await response.json();
+          setServerStats({
+            dueToday: data.dueToday,
+            newCardsAvailable: data.newCardsAvailable,
+            reviewDue: data.reviewDue,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+        // Fallback to client-side calculation on error
+      }
+    }
+    if (user && !authLoading) {
+      fetchStats();
+    }
+  }, [user, authLoading]);
 
   // Fetch boss round data when daily goal is complete
   useEffect(() => {
@@ -162,10 +192,12 @@ export default function HomePage() {
     return {
       capturedToday,
       capturedCount: capturedToday.length,
-      dueCount: dueForReview.length,
+      // Use server's dueToday (FSRS scientific: capped new + review due)
+      // Fall back to client-side if API hasn't responded yet
+      dueCount: serverStats?.dueToday ?? dueForReview.length,
       reviewedCount: reviewedToday.length,
     };
-  }, [words]);
+  }, [words, serverStats]);
 
   // Map captured today to the format CapturedTodayList expects
   const capturedTodayPhrases = useMemo(() => {
