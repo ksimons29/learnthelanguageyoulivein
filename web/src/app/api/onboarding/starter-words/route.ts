@@ -79,28 +79,36 @@ export async function POST() {
     }
 
     // Insert starter words
+    // Words with initialLapseCount > 0 simulate "struggling" words for Boss Round
     const insertedWords = await db
       .insert(words)
       .values(
-        newStarterWords.map((word) => ({
-          userId: user.id,
-          originalText: word.text,
-          translation: getTranslation(word, nativeLanguage),
-          language: 'target' as const,
-          sourceLang: targetLanguage,
-          targetLang: nativeLanguage,
-          translationProvider: 'starter-vocabulary',
-          category: word.category,
-          categoryConfidence: 1.0, // Pre-curated, high confidence
-          difficulty: 5.0,
-          stability: 1.0,
-          retrievability: 1.0,
-          nextReviewDate: new Date(),
-          reviewCount: 0,
-          lapseCount: 0,
-          consecutiveCorrectSessions: 0,
-          masteryStatus: 'learning' as const,
-        }))
+        newStarterWords.map((word) => {
+          const lapseCount = word.initialLapseCount ?? 0;
+          // Words with lapses have lower stability (need more review)
+          const stability = lapseCount > 0 ? Math.max(1, 10 - lapseCount * 2) : 1.0;
+          const difficulty = lapseCount > 0 ? Math.min(10, 5 + lapseCount * 0.5) : 5.0;
+
+          return {
+            userId: user.id,
+            originalText: word.text,
+            translation: getTranslation(word, nativeLanguage),
+            language: 'target' as const,
+            sourceLang: targetLanguage,
+            targetLang: nativeLanguage,
+            translationProvider: 'starter-vocabulary',
+            category: word.category,
+            categoryConfidence: 1.0, // Pre-curated, high confidence
+            difficulty,
+            stability,
+            retrievability: 1.0,
+            nextReviewDate: new Date(),
+            reviewCount: lapseCount > 0 ? lapseCount + 1 : 0, // Simulate some reviews
+            lapseCount,
+            consecutiveCorrectSessions: 0,
+            masteryStatus: 'learning' as const,
+          };
+        })
       )
       .returning();
 

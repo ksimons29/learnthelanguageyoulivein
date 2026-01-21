@@ -12,7 +12,7 @@ export interface StarterWord {
   /** Word in the target language */
   text: string;
   /** Category for grouping */
-  category: 'social' | 'food_dining' | 'transport' | 'shopping' | 'daily_life';
+  category: 'social' | 'food_dining' | 'transport' | 'shopping' | 'daily_life' | 'work';
   /** Translations to supported native languages */
   translations: {
     en: string;
@@ -23,6 +23,12 @@ export interface StarterWord {
     es: string;
     'pt-PT': string;
   };
+  /**
+   * Initial lapse count for Boss Round testing
+   * Words with lapseCount > 0 simulate "struggling" words
+   * that need extra practice (used for Boss Round selection)
+   */
+  initialLapseCount?: number;
 }
 
 type TargetLanguage = 'pt-PT' | 'sv' | 'es' | 'fr' | 'de' | 'nl';
@@ -159,6 +165,35 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         'pt-PT': 'Até logo',
       },
     },
+    // Work category words for bingo squares
+    {
+      text: 'Reunião',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2, // Simulates a word user struggles with (Boss Round candidate)
+    },
+    {
+      text: 'Prazo',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3, // Higher lapse = higher Boss Round priority
+    },
   ],
 
   sv: [
@@ -291,6 +326,35 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         es: 'Adiós',
         'pt-PT': 'Adeus',
       },
+    },
+    // Work category words for bingo squares
+    {
+      text: 'Möte',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2,
+    },
+    {
+      text: 'Deadline',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3,
     },
   ],
 
@@ -425,6 +489,35 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         'pt-PT': 'Até logo',
       },
     },
+    // Work category words for bingo squares
+    {
+      text: 'Reunión',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2,
+    },
+    {
+      text: 'Plazo',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3,
+    },
   ],
 
   fr: [
@@ -557,6 +650,35 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         es: 'Adiós',
         'pt-PT': 'Adeus',
       },
+    },
+    // Work category words for bingo squares
+    {
+      text: 'Réunion',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2,
+    },
+    {
+      text: 'Délai',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3,
     },
   ],
 
@@ -691,6 +813,35 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         'pt-PT': 'Adeus',
       },
     },
+    // Work category words for bingo squares
+    {
+      text: 'Besprechung',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2,
+    },
+    {
+      text: 'Frist',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3,
+    },
   ],
 
   nl: [
@@ -823,6 +974,35 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         es: 'Adiós',
         'pt-PT': 'Adeus',
       },
+    },
+    // Work category words for bingo squares
+    {
+      text: 'Vergadering',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2,
+    },
+    {
+      text: 'Deadline',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3,
     },
   ],
 };

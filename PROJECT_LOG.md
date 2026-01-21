@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Gamification Automated Testing** - 186+ tests, work category starter words, Boss Round ready data (Session 50)
 - [x] **API 500 Error Fixes** - Safe destructuring, empty array guard, OpenAI retry logic, TOCTOU race conditions (Session 49)
 - [x] **UX Review Bug Fixes** - Duplicate MC options, untranslatable words, PROJECT_LOG archiving (Session 48)
 - [x] **Critical Review System Fixes** - 6 major bugs: due count, sentence priority, language consistency, active recall, session limits, UI polish (Session 45)
@@ -94,6 +95,39 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
+
+**Focus**: Create comprehensive automated tests for gamification and ensure new users have gamification-ready data from day one.
+
+**Changes**:
+- Added 120+ unit tests for gamification logic (bingo, streaks, Boss Round, user personas)
+- Added 79 tests for starter vocabulary gamification readiness
+- Added work category words to all 6 languages (Meeting/Deadline translations)
+- Added `initialLapseCount` to starter words for immediate Boss Round availability
+- Updated onboarding API to apply lapse counts from starter vocabulary
+- Created test data seeding script (`seed-gamification-test-data.ts`)
+- Created API integration test script (`test-gamification-api.ts`)
+- Added gamification testing section (6F-2) to TESTING.md
+- Created CHANGELOG.md to track project changes
+
+**Files Changed**:
+- `web/src/__tests__/lib/gamification.test.ts` (new)
+- `web/src/__tests__/lib/starter-vocabulary.test.ts` (new)
+- `web/scripts/seed-gamification-test-data.ts` (new)
+- `web/scripts/test-gamification-api.ts` (new)
+- `web/src/lib/data/starter-vocabulary.ts` (added work category, lapse counts)
+- `web/src/app/api/onboarding/starter-words/route.ts` (apply lapse counts)
+- `docs/engineering/TESTING.md` (added section 6F-2)
+- `docs/testing/GAMIFICATION_USER_TEST_PLAN.md` (new)
+- `CHANGELOG.md` (new)
+
+**Key Decisions**:
+- Added 2 work words per language to enable "Review work word" bingo square
+- Words with `initialLapseCount: 2-3` ensure Boss Round available immediately
+- Test suite covers user personas (Sofia, Ralf, Maria) from user research
+
+---
 
 ### Session 49 - 2026-01-21 - API 500 Error Fixes (Issue #58)
 

@@ -1,0 +1,189 @@
+import { describe, it, expect } from 'vitest';
+import {
+  STARTER_VOCABULARY,
+  getStarterWords,
+  getTranslation,
+  type StarterWord,
+} from '@/lib/data/starter-vocabulary';
+
+/**
+ * Starter Vocabulary Tests
+ *
+ * Tests that starter words are properly configured for:
+ * - All supported target languages
+ * - Work category words (for bingo squares)
+ * - Initial lapse counts (for Boss Round testing)
+ * - Complete translation coverage
+ *
+ * This ensures new users get a gamification-ready vocabulary set.
+ */
+
+describe('Starter Vocabulary', () => {
+  const supportedLanguages = ['pt-PT', 'sv', 'es', 'fr', 'de', 'nl'] as const;
+
+  describe('Language coverage', () => {
+    it.each(supportedLanguages)('has starter words for %s', (lang) => {
+      const words = getStarterWords(lang);
+      expect(words).toBeDefined();
+      expect(words!.length).toBeGreaterThan(0);
+    });
+
+    it('returns undefined for unsupported language', () => {
+      expect(getStarterWords('invalid')).toBeUndefined();
+    });
+
+    it('has at least 10 words per language', () => {
+      for (const lang of supportedLanguages) {
+        const words = getStarterWords(lang);
+        expect(words!.length).toBeGreaterThanOrEqual(10);
+      }
+    });
+  });
+
+  describe('Work category for bingo', () => {
+    it.each(supportedLanguages)('%s has work category words', (lang) => {
+      const words = getStarterWords(lang)!;
+      const workWords = words.filter((w) => w.category === 'work');
+      expect(workWords.length).toBeGreaterThan(0);
+    });
+
+    it.each(supportedLanguages)('%s has at least 2 work category words', (lang) => {
+      const words = getStarterWords(lang)!;
+      const workWords = words.filter((w) => w.category === 'work');
+      expect(workWords.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('Boss Round words (lapse counts)', () => {
+    it.each(supportedLanguages)('%s has words with initialLapseCount > 0', (lang) => {
+      const words = getStarterWords(lang)!;
+      const wordsWithLapses = words.filter((w) => (w.initialLapseCount ?? 0) > 0);
+      expect(wordsWithLapses.length).toBeGreaterThan(0);
+    });
+
+    it.each(supportedLanguages)('%s has at least 2 words suitable for Boss Round', (lang) => {
+      const words = getStarterWords(lang)!;
+      const bossRoundWords = words.filter((w) => (w.initialLapseCount ?? 0) >= 2);
+      expect(bossRoundWords.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('Portuguese has words with varying lapse counts', () => {
+      const words = getStarterWords('pt-PT')!;
+      const lapseCounts = words.map((w) => w.initialLapseCount ?? 0).filter((c) => c > 0);
+      const uniqueLapseCounts = new Set(lapseCounts);
+      expect(uniqueLapseCounts.size).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('Category distribution', () => {
+    const expectedCategories = ['social', 'food_dining', 'transport', 'shopping', 'work'];
+
+    it.each(supportedLanguages)('%s covers essential categories', (lang) => {
+      const words = getStarterWords(lang)!;
+      const categories = new Set(words.map((w) => w.category));
+
+      for (const expected of expectedCategories) {
+        expect(categories.has(expected as StarterWord['category'])).toBe(true);
+      }
+    });
+
+    it.each(supportedLanguages)('%s has social category words for bingo', (lang) => {
+      const words = getStarterWords(lang)!;
+      const socialWords = words.filter((w) => w.category === 'social');
+      expect(socialWords.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Translation coverage', () => {
+    const nativeLanguages = ['en', 'nl', 'de', 'fr', 'sv', 'es', 'pt-PT'] as const;
+
+    it.each(supportedLanguages)('%s words have all translations', (targetLang) => {
+      const words = getStarterWords(targetLang)!;
+
+      for (const word of words) {
+        for (const nativeLang of nativeLanguages) {
+          expect(word.translations[nativeLang]).toBeDefined();
+          expect(word.translations[nativeLang].length).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    it('getTranslation returns English fallback for unknown language', () => {
+      const words = getStarterWords('pt-PT')!;
+      const bomDia = words.find((w) => w.text === 'Bom dia')!;
+
+      const translation = getTranslation(bomDia, 'xx'); // Unknown language
+      expect(translation).toBe('Good morning'); // English fallback
+    });
+
+    it('getTranslation returns correct translation for known language', () => {
+      const words = getStarterWords('pt-PT')!;
+      const obrigado = words.find((w) => w.text === 'Obrigado')!;
+
+      expect(getTranslation(obrigado, 'en')).toBe('Thank you');
+      expect(getTranslation(obrigado, 'nl')).toBe('Dank je');
+      expect(getTranslation(obrigado, 'de')).toBe('Danke');
+    });
+  });
+
+  describe('Word uniqueness', () => {
+    it.each(supportedLanguages)('%s has no duplicate words', (lang) => {
+      const words = getStarterWords(lang)!;
+      const texts = words.map((w) => w.text.toLowerCase());
+      const uniqueTexts = new Set(texts);
+      expect(uniqueTexts.size).toBe(texts.length);
+    });
+  });
+
+  describe('Work words content verification', () => {
+    it('Portuguese work words have correct translations', () => {
+      const words = getStarterWords('pt-PT')!;
+      const workWords = words.filter((w) => w.category === 'work');
+
+      const meeting = workWords.find((w) => w.text.toLowerCase().includes('reunião'));
+      expect(meeting).toBeDefined();
+      expect(meeting!.translations.en.toLowerCase()).toContain('meeting');
+
+      const deadline = workWords.find((w) => w.text.toLowerCase().includes('prazo'));
+      expect(deadline).toBeDefined();
+      expect(deadline!.translations.en.toLowerCase()).toContain('deadline');
+    });
+
+    it('Swedish work words have correct translations', () => {
+      const words = getStarterWords('sv')!;
+      const workWords = words.filter((w) => w.category === 'work');
+
+      const meeting = workWords.find((w) => w.text.toLowerCase().includes('möte'));
+      expect(meeting).toBeDefined();
+
+      const deadline = workWords.find((w) => w.text.toLowerCase() === 'deadline');
+      expect(deadline).toBeDefined();
+    });
+  });
+
+  describe('Gamification readiness', () => {
+    it.each(supportedLanguages)('%s vocabulary enables all bingo squares', (lang) => {
+      const words = getStarterWords(lang)!;
+      const categories = new Set(words.map((w) => w.category));
+
+      // Bingo squares require these categories:
+      // - socialWord: needs 'social' category
+      // - workWord: needs 'work' category
+      expect(categories.has('social')).toBe(true);
+      expect(categories.has('work')).toBe(true);
+    });
+
+    it.each(supportedLanguages)('%s has enough words for Boss Round (5)', (lang) => {
+      const words = getStarterWords(lang)!;
+      // Boss Round needs at least 5 words
+      expect(words.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it.each(supportedLanguages)('%s has words with high lapses for priority Boss Round selection', (lang) => {
+      const words = getStarterWords(lang)!;
+      const highLapseWords = words.filter((w) => (w.initialLapseCount ?? 0) >= 3);
+      // Should have at least 1 word with lapse count 3+ for Boss Round variety
+      expect(highLapseWords.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+});

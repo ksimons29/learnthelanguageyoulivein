@@ -1214,6 +1214,116 @@ WHERE user_id = 'YOUR_USER_ID';
 
 ---
 
+## 6F-2. Gamification Automated Testing
+
+### Automated Test Scripts
+
+The gamification system has comprehensive automated tests covering bingo logic, streak calculations, Boss Round selection, and starter vocabulary.
+
+#### F5 Run gamification unit tests
+
+```bash
+cd web && npm run test:run
+```
+
+Expected
+
+* All tests pass (186+ tests)
+* Tests cover:
+  - Bingo board winning conditions (rows, columns, diagonals)
+  - Streak calculation logic
+  - Daily progress state management
+  - Consecutive correct tracking
+  - Boss Round word selection
+  - User persona scenarios (Sofia, Ralf, Maria)
+  - Starter vocabulary coverage
+
+#### F6 Seed gamification test data
+
+Use this script to create a test user with comprehensive gamification data:
+
+```bash
+cd web && npx tsx scripts/seed-gamification-test-data.ts
+```
+
+This creates:
+* Test account: `test-gamification@llyli.test` / `TestPassword123!`
+* 18 words with varied categories (work, social, travel, food)
+* Words with lapse counts 0-6 for Boss Round testing
+* 5-day streak with 1 freeze available
+* Fresh daily progress (0/10)
+* Empty bingo board
+* 3 historical Boss Round attempts
+
+#### F7 Run gamification integration tests
+
+After seeding test data, run integration tests:
+
+```bash
+cd web && npx tsx scripts/test-gamification-api.ts
+```
+
+Tests include:
+* Database state verification
+* Gamification state structure
+* Boss Round data and selection logic
+* Daily goal completion flow
+* Bingo square completion
+
+### F8 Starter vocabulary gamification readiness
+
+Each supported language (pt-PT, sv, es, fr, de, nl) now includes:
+* 12 starter words (10 original + 2 work category)
+* Work category words enable "Review work word" bingo square
+* Words with `initialLapseCount` (2-3) for Boss Round testing
+* Social category words for "Review social word" bingo square
+
+Verify with SQL:
+
+```sql
+-- Check work category exists for a user
+SELECT COUNT(*) as work_words
+FROM words
+WHERE user_id = 'YOUR-USER-ID' AND category = 'work';
+
+-- Check high lapse words exist for Boss Round
+SELECT COUNT(*) as boss_round_candidates
+FROM words
+WHERE user_id = 'YOUR-USER-ID' AND lapse_count >= 2;
+```
+
+Expected:
+* At least 2 work category words per user
+* At least 2 words with lapse_count >= 2
+
+### F9 Manual gamification testing checklist
+
+For comprehensive manual testing, verify:
+
+- [ ] Daily progress increments on each review answer
+- [ ] Daily goal completion triggers celebration modal
+- [ ] Streak increments after daily goal completion
+- [ ] Streak freeze protects against 1 missed day
+- [ ] Bingo squares complete correctly:
+  - [ ] review5: After reviewing 5 words
+  - [ ] streak3: After 3 correct answers in a row
+  - [ ] fillBlank: After completing fill-in-the-blank exercise
+  - [ ] multipleChoice: After completing multiple choice exercise
+  - [ ] addContext: After capturing a word with memory context
+  - [ ] workWord: After reviewing a work category word
+  - [ ] socialWord: After reviewing a social category word
+  - [ ] masterWord: After mastering a word (3 correct sessions)
+  - [ ] finishSession: After completing daily session
+- [ ] Bingo lines detected (rows, columns, diagonals)
+- [ ] Bingo celebration shows when line completed
+- [ ] Boss Round appears after daily goal completion
+- [ ] Boss Round selects 5 words with highest lapse counts
+- [ ] Boss Round timer works correctly (90 seconds)
+- [ ] Boss Round results show score and personal best
+- [ ] Boss Round history persists across sessions
+
+---
+
 ## 6G. Progress dashboard full coverage
 
 Steps
