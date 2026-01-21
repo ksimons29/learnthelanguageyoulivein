@@ -34,11 +34,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const oneDayAgo = new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000);
+    // Convert to ISO strings for PostgreSQL compatibility
+    const today = todayDate.toISOString();
+    const sevenDaysAgo = new Date(todayDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(todayDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const oneDayAgo = new Date(todayDate.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString();
 
     // Execute all queries in parallel for performance
     const [
