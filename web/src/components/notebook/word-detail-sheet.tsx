@@ -49,6 +49,7 @@ const SITUATION_ICONS: Record<string, React.ComponentType<{ className?: string }
   Frown,
   Trophy,
 };
+import { SentenceHistory } from "./sentence-history";
 import type { Word } from "@/lib/db/schema";
 
 interface WordDetailSheetProps {
@@ -270,6 +271,9 @@ export function WordDetailSheet({
             )}
           </div>
         )}
+
+        {/* Practice Sentences */}
+        <SentenceHistory wordId={word.id} />
 
         {/* Created date */}
         <p
