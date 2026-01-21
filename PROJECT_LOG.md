@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **API 500 Error Fixes** - Safe destructuring, empty array guard, OpenAI retry logic, TOCTOU race conditions (Session 49)
 - [x] **UX Review Bug Fixes** - Duplicate MC options, untranslatable words, PROJECT_LOG archiving (Session 48)
 - [x] **Critical Review System Fixes** - 6 major bugs: due count, sentence priority, language consistency, active recall, session limits, UI polish (Session 45)
 - [x] **Language Auto-Detection + B2 Level** - Smart language detection, idiom handling, B2-level sentences (Session 43)
@@ -93,6 +94,25 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 49 - 2026-01-21 - API 500 Error Fixes (Issue #58)
+
+**Focus**: Fix 5 API vulnerabilities causing intermittent 500 errors.
+
+**Changes:**
+1. **Safe destructuring** (`/api/words GET`) - `countResult[0]?.count ?? 0` prevents crash on empty results
+2. **Empty array guard** (`/api/sentences/next`) - Guard before `inArray()` prevents SQL crash on empty wordIds
+3. **OpenAI retry helper** (`/api/words POST`) - Exponential backoff (1s→2s→4s) for transient failures
+4. **TOCTOU race conditions** (`/api/gamification/state`) - Insert-first pattern eliminates race condition on dailyProgress, streakState, and bingoState creation
+
+**Files modified:**
+- `web/src/app/api/words/route.ts` - Safe destructuring, withRetry helper
+- `web/src/app/api/sentences/next/route.ts` - Empty array guard
+- `web/src/app/api/gamification/state/route.ts` - Race-safe insert-first pattern
+
+**Testing:** Build passes, all 66 tests pass.
+
+---
 
 ### Session 48 - 2026-01-20 - UX Review Bug Fixes & PROJECT_LOG Archiving
 

@@ -24,19 +24,10 @@ export async function GET() {
 
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
-    // 2. Fetch or create daily progress
-    let [daily] = await db
-      .select()
-      .from(dailyProgress)
-      .where(
-        and(
-          eq(dailyProgress.userId, user.id),
-          eq(dailyProgress.date, today)
-        )
-      );
-
-    if (!daily) {
-      // Create today's daily progress record
+    // 2. Fetch or create daily progress (race-condition safe: try insert first)
+    let daily: typeof dailyProgress.$inferSelect;
+    try {
+      // Attempt to insert - will fail if record already exists (unique constraint)
       const [newDaily] = await db
         .insert(dailyProgress)
         .values({
@@ -45,16 +36,25 @@ export async function GET() {
         })
         .returning();
       daily = newDaily;
+    } catch (error) {
+      // Race condition: another request created it first, fetch the existing record
+      const [existing] = await db
+        .select()
+        .from(dailyProgress)
+        .where(
+          and(
+            eq(dailyProgress.userId, user.id),
+            eq(dailyProgress.date, today)
+          )
+        );
+      if (!existing) throw error; // Re-throw if it's a different error
+      daily = existing;
     }
 
-    // 3. Fetch or create streak state
-    let [streak] = await db
-      .select()
-      .from(streakState)
-      .where(eq(streakState.userId, user.id));
-
-    if (!streak) {
-      // Create streak state for new user
+    // 3. Fetch or create streak state (race-condition safe: try insert first)
+    let streak: typeof streakState.$inferSelect;
+    try {
+      // Attempt to insert - will fail if record already exists (unique constraint on userId)
       const [newStreak] = await db
         .insert(streakState)
         .values({
@@ -62,6 +62,14 @@ export async function GET() {
         })
         .returning();
       streak = newStreak;
+    } catch (error) {
+      // Race condition: another request created it first, fetch the existing record
+      const [existing] = await db
+        .select()
+        .from(streakState)
+        .where(eq(streakState.userId, user.id));
+      if (!existing) throw error; // Re-throw if it's a different error
+      streak = existing;
     }
 
     // 4. Check if streak needs to be updated or reset
@@ -80,19 +88,10 @@ export async function GET() {
       streak = updatedStreak;
     }
 
-    // 5. Fetch or create bingo state
-    let [bingo] = await db
-      .select()
-      .from(bingoState)
-      .where(
-        and(
-          eq(bingoState.userId, user.id),
-          eq(bingoState.date, today)
-        )
-      );
-
-    if (!bingo) {
-      // Create today's bingo board
+    // 5. Fetch or create bingo state (race-condition safe: try insert first)
+    let bingo: typeof bingoState.$inferSelect;
+    try {
+      // Attempt to insert - will fail if record already exists (unique constraint)
       const [newBingo] = await db
         .insert(bingoState)
         .values({
@@ -102,6 +101,19 @@ export async function GET() {
         })
         .returning();
       bingo = newBingo;
+    } catch (error) {
+      // Race condition: another request created it first, fetch the existing record
+      const [existing] = await db
+        .select()
+        .from(bingoState)
+        .where(
+          and(
+            eq(bingoState.userId, user.id),
+            eq(bingoState.date, today)
+          )
+        );
+      if (!existing) throw error; // Re-throw if it's a different error
+      bingo = existing;
     }
 
     // 6. Return combined state

@@ -64,6 +64,15 @@ export async function GET(request: NextRequest) {
     const orphanedSentenceIds: string[] = [];
 
     for (const sentence of unusedSentences) {
+      // Guard against empty/null wordIds - inArray() crashes with empty arrays
+      if (!sentence.wordIds || sentence.wordIds.length === 0) {
+        console.warn(
+          `[GUARDRAIL] Sentence ${sentence.id} has empty wordIds. Marking for deletion.`
+        );
+        orphanedSentenceIds.push(sentence.id);
+        continue;
+      }
+
       // Get the words for this sentence (filtered by target language)
       // Match words where the user's target language appears as either sourceLang or targetLang
       const sentenceWords = await db

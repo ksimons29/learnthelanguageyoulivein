@@ -31,6 +31,28 @@ function getOpenAI() {
 }
 
 /**
+ * Retry helper with exponential backoff for transient API failures.
+ * Handles OpenAI rate limits and temporary network issues.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 1000
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);
+      console.warn(`OpenAI retry ${attempt}/${maxRetries} after ${delay}ms:`, error instanceof Error ? error.message : error);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error('Retry exhausted'); // TypeScript: unreachable but satisfies return type
+}
+
+/**
  * POST /api/words
  *
  * Capture a new word/phrase with auto-translation, category assignment, and TTS audio.
@@ -170,9 +192,10 @@ export async function POST(request: NextRequest) {
 
     // 6. Auto-translate and auto-assign category in parallel
     // This saves 1-3 seconds compared to sequential calls
+    // Wrapped in withRetry for resilience against transient OpenAI failures
     let [translation, { category, confidence }] = await Promise.all([
-      translateText(text, sourceLang, targetLang),
-      assignCategory(text, context),
+      withRetry(() => translateText(text, sourceLang, targetLang)),
+      withRetry(() => assignCategory(text, context)),
     ]);
 
     // 6b. Safety check: If translation equals original, language detection was likely wrong
@@ -363,11 +386,12 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // 5. Count total for pagination
-    const [{ count }] = await db
+    // 5. Count total for pagination (safe destructuring to handle empty results)
+    const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(words)
       .where(and(...conditions));
+    const count = countResult[0]?.count ?? 0;
 
     return NextResponse.json({
       data: {
