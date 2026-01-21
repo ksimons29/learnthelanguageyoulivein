@@ -67,7 +67,9 @@ npm run build             # Production build
 | #60 | **P0-1** | ~~Language direction bug - phrase vs translation~~ **FIXED** |
 | #61 | **P0-2** | ~~Sentence answer validation broken - wrong word highlighted~~ **FIXED** (Session 55) |
 | #62 | **P0-3** | ~~Multiple choice missing correct answer~~ **FIXED** (Session 55) |
-| #63 | P0-4 | Due count mismatch - Notebook shows 49, Today shows 0 |
+| #68 | **P0-5** | ~~Word review same word as answer for native→target~~ **FIXED** (Session 56) |
+| #69 | **P0-6** | Crash on close review (sourceLang undefined) - partial fix |
+| #63 | P0-7 | Due count mismatch - Notebook shows 49, Today shows 0 |
 | #64 | P1 | Duplicate words in review queue and no shuffling |
 | #65 | P1 | Captured Today section resets when navigating away |
 | #66 | P1 | Notebook Inbox shows 4 items but none visible when opened |
@@ -75,7 +77,11 @@ npm run build             # Production build
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
 
-### Closed This Session (Session 55)
+### Closed This Session (Session 56)
+- ~~#68~~ **P0-BLOCKER** - Fixed: Word review showed same word as answer for native→target captures
+- **#69** **P0-Critical** - Partial fix: Added null checks to prevent crash on close review (full fix pending)
+
+### Closed Previous Session (Session 55)
 - ~~#61~~ **P0-BLOCKER** - Fixed: Focus word mismatch - created single source of truth for which word is being tested
 - ~~#62~~ **P0-BLOCKER** - Fixed: Correct answer missing from options - now loads distractors for focusWord
 
@@ -107,6 +113,44 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 56 - 2026-01-21 - Word Review Same-Word Bug Fix (Issue #68)
+
+**Focus:** Fix P0 BLOCKER where word review showed same word as expected answer for native→target captures.
+
+**Root Cause Identified:**
+For words captured in native→target direction (e.g., EN→PT user types "butterfly" → gets "borboleta"):
+- Display used `currentWord.originalText` directly = "butterfly"
+- Expected answer used `getNativeLanguageText()` = "butterfly"
+- Both were the same word, making the exercise impossible!
+
+**What Was Fixed:**
+1. Changed word mode display from `currentWord.originalText` → `getTargetLanguageText(currentWord, targetLanguage)`
+2. This ensures Portuguese is always shown (target language) for EN→PT users
+3. Expected answer remains `getNativeLanguageText()` = English (native language)
+4. Added null checks to prevent crash on close review (partial fix for #69)
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/app/review/page.tsx` | Fixed display to use target language, added null checks |
+| `web/src/__tests__/lib/distractors.test.ts` | Added 3 tests for display/answer invariant |
+| `findings.md` | Documented Finding #11 (same-word bug) and #12 (crash on close) |
+
+**Tests:**
+- Added 3 new tests verifying display ≠ expected answer for all capture directions
+- All 195 tests pass
+- Build passes
+
+**E2E Verification:**
+- ✅ EN→PT user: All reviews show Portuguese (target) and expect English (native)
+- ✅ Captured "butterfly" → "borboleta" to test native→target direction
+- ✅ Screenshots captured: `e2e-word-review-fix-verified.png`
+
+**Closes:** #68
+**Created:** #68, #69 (new bugs discovered during E2E testing)
+
+---
 
 ### Session 55 - 2026-01-21 - Focus Word Selection Fix (Issues #61 & #62)
 

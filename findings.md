@@ -744,9 +744,148 @@ because array order from the database doesn't match display order or mastery pri
 
 ---
 
+---
+
+## Finding #11: Word Review Shows SAME Word as Expected Answer (Native→Target Direction)
+
+### Screenshot Evidence
+- **Location:** Review tab → Word review mode (llyli.vercel.app)
+- **Time:** Session 55 E2E Testing
+- **Screenshots:** `e2e-test-wrong-answer-feedback.png`, `e2e-word-review-bug-confirmed.png`
+
+### Observed Behavior
+1. EN→PT user has word captured as English→Portuguese (native→target direction)
+2. Word review shows: **"butterfly"** (English - target language display)
+3. User types: **"borboleta"** (Portuguese translation - correct answer!)
+4. **Feedback: "Not quite. The correct answer was: butterfly"**
+5. The app expects "butterfly" as the answer - THE SAME WORD IT'S SHOWING!
+
+### Why This Is Broken
+For words captured in **native→target direction** (user typed English word, got Portuguese translation):
+- The word is STORED with `sourceLang: 'en'` (English)
+- `getTargetLanguageText(word, 'pt')` returns `originalText` ("butterfly")
+- `getNativeLanguageText(word, 'en')` ALSO returns `originalText` ("butterfly")
+- Both display AND answer resolve to the same field!
+
+### The Pattern
+| Capture Direction | Stored sourceLang | Display (target) | Expected Answer (native) | Result |
+|-------------------|-------------------|------------------|--------------------------|--------|
+| Target→Native (PT→EN) | 'pt' | originalText (PT) | translation (EN) | ✅ Works |
+| Native→Target (EN→PT) | 'en' | translation (PT) | originalText (EN) | ❌ BUG - Same word! |
+
+### Root Cause
+The helper functions in `lib/text.ts`:
+```typescript
+// When sourceLang === nativeLanguage (native→target capture)
+getNativeLanguageText() → returns originalText (the word user typed)
+getTargetLanguageText() → returns translation (Portuguese)
+
+// But review/page.tsx line ~761:
+correctAnswer={getNativeLanguageText(currentWord, nativeLanguage)}
+// This returns "butterfly" when it should return "borboleta"
+```
+
+The current logic assumes users always capture in target→native direction. When they capture native→target, the "expected answer" is the same as the "question"!
+
+### Affected Users
+- **EN→PT users:** Any English words they captured (with Portuguese translations)
+- **EN→SV users:** Any English words they captured (with Swedish translations)
+- **NL→EN users:** Less affected - they're learning English so native→target is rare
+
+### Severity: **P0 BLOCKER**
+- Core word review is broken for a common capture direction
+- Users are marked wrong for CORRECT answers
+- Destroys trust and makes learning impossible
+
+### Required Fix
+For native→target captures, we need to INVERT the expected answer:
+```typescript
+// Current (broken):
+correctAnswer={getNativeLanguageText(currentWord, nativeLanguage)}
+
+// Fixed (need to detect capture direction):
+const isNativeToTargetCapture = currentWord.sourceLang === nativeLanguage;
+correctAnswer={isNativeToTargetCapture
+  ? getTargetLanguageText(currentWord, targetLanguage)  // Ask for translation
+  : getNativeLanguageText(currentWord, nativeLanguage)} // Ask for meaning
+```
+
+OR: Always show TARGET language, always ask for NATIVE language translation (consistent direction).
+
+---
+
+## Finding #12: Crash on Close Review - `sourceLang` Undefined
+
+### Screenshot Evidence
+- **Location:** Review tab → Click "Close review" button (llyli.vercel.app)
+- **Time:** Session 55 E2E Testing
+- **Screenshot:** `e2e-crash-on-close-review.png`
+
+### Observed Behavior
+1. User is mid-review session (word review mode)
+2. User clicks "Close review" button
+3. **App crashes with error:** `Cannot read properties of undefined (reading 'sourceLang')`
+4. White screen / error boundary shown
+
+### Root Cause Analysis
+When closing review mid-session:
+1. The review state is cleared (currentWord becomes null/undefined)
+2. Some code still tries to access `currentWord.sourceLang`
+3. No null check → crash
+
+Likely in the focus word calculation or text helper usage:
+```typescript
+// Crashes when currentWord is undefined
+const displayText = getTargetLanguageText(currentWord, targetLanguage);
+// Or
+const isNativeToTarget = currentWord.sourceLang === nativeLanguage;
+```
+
+### Severity: **P0 Critical**
+- Users cannot exit reviews cleanly
+- App requires refresh to recover
+- Poor UX and potential data loss
+
+### Required Fix
+Add null checks before accessing word properties:
+```typescript
+// Before any word access:
+if (!currentWord) return null; // or handle gracefully
+
+// Or use optional chaining:
+const sourceLang = currentWord?.sourceLang;
+```
+
+---
+
+## Updated Findings Summary
+
+| # | Issue | Severity | Status |
+|---|-------|----------|--------|
+| 1 | Sentence page shows Portuguese instead of English translations | **P0 Critical** | ✅ Fixed (e5a8897) |
+| 2 | System knows translations but doesn't display them in word list | **P0 Critical** | ✅ Fixed (e5a8897) |
+| 3 | Duplicate words in review queue (apontado x2) | **P1 High** | Pending |
+| 3a | No shuffling - words appear in same order | **P1 High** | Pending |
+| 4 | Fill-in-blank highlights WRONG word - answer mismatch | **P0 BLOCKER** | ✅ Fixed (fc34d0b) |
+| 5 | Multiple-choice options in Portuguese instead of English | **P0 BLOCKER** | ✅ Fixed (e5a8897) |
+| 5a | Wrong word marked as correct (excerto highlighted, além disso "correct") | **P0 BLOCKER** | ✅ Fixed (fc34d0b) |
+| 6 | Word selection capped at 2 words - too restrictive | **P2 Medium** | Pending |
+| 6a | Portuguese display in word selection (4th occurrence) | **P0 Critical** | ✅ Fixed (e5a8897) |
+| 7 | **Correct answer NOT in multiple choice options** | **P0 BLOCKER** | ✅ Fixed (fc34d0b) |
+| 7a | Options are user's other vocab, not related distractors | **P1 High** | Pending |
+| 7b | Mixed languages in options (Trainwreck, Battery vs Portuguese) | **P0 Critical** | ✅ Fixed (e5a8897) |
+| 8 | "Captured Today" resets when navigating away | **P1 High** | Pending |
+| 9 | Inbox shows 4 items but none visible when opened | **P1 High** | Pending |
+| 10 | **Due count conflict: Notebook=49, Today=0** | **P0 Critical** | Pending |
+| **11** | **Word review shows SAME word as answer (native→target)** | **P0 BLOCKER** | **NEW** |
+| **12** | **Crash on Close Review - sourceLang undefined** | **P0 Critical** | **NEW** |
+
+---
+
 ## Document Created
 - **Date:** 2026-01-21
 - **Session:** Bug documentation and assessment
-- **Finding count:** 15 issues
-- **P0/Blocker count:** 10 issues
+- **Finding count:** 17 issues (15 original + 2 new)
+- **P0/Blocker count:** 12 issues
 - **Status:** Ready for systematic fixing
+- **Last Updated:** Session 55 E2E Testing

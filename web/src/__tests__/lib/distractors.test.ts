@@ -454,3 +454,101 @@ describe('Focus word selection for sentence exercises - Issue #61 & #62', () => 
     expect(focusWord!.id).toBe('word-2')
   })
 })
+
+/**
+ * Word Review Display Tests - Issue #68
+ *
+ * BUG FOUND: In word review mode, for native→target captures (e.g., EN→PT user
+ * captured "butterfly" → "borboleta"), the display shows "butterfly" and the
+ * expected answer is ALSO "butterfly" - making the exercise impossible.
+ *
+ * ROOT CAUSE: The display used `currentWord.originalText` directly instead of
+ * `getTargetLanguageText()`. For native→target captures:
+ * - originalText = native word (e.g., "butterfly")
+ * - getNativeLanguageText() also returns native word
+ * - Both display and answer were the same!
+ *
+ * THE FIX: Always use getTargetLanguageText() for display and getNativeLanguageText()
+ * for expected answer. This ensures:
+ * - Display: The TARGET language word (what user is learning)
+ * - Answer: The NATIVE language word (what user should know)
+ */
+describe('Word review display vs answer - Issue #68', () => {
+  const nativeLanguage = 'en'
+  const targetLanguage = 'pt-PT'
+
+  /**
+   * CRITICAL INVARIANT: Display and expected answer must NEVER be the same word
+   *
+   * For any word in any capture direction, showing a word and expecting
+   * the SAME word as the answer makes the exercise pointless.
+   */
+  it('INVARIANT: display and expected answer are NEVER the same (target→native capture)', () => {
+    // User captured Portuguese word "borboleta" → got "butterfly" translation
+    const wordCapturedInPortuguese = createMockWord({
+      originalText: 'borboleta',  // Portuguese (target)
+      translation: 'butterfly',   // English (native)
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const display = getTargetLanguageText(wordCapturedInPortuguese, targetLanguage)
+    const expectedAnswer = getNativeLanguageText(wordCapturedInPortuguese, nativeLanguage)
+
+    // Display should show Portuguese (what user is learning)
+    expect(display).toBe('borboleta')
+    // Expected answer should be English (what user knows)
+    expect(expectedAnswer).toBe('butterfly')
+    // CRITICAL: These must NEVER be the same
+    expect(display).not.toBe(expectedAnswer)
+  })
+
+  it('INVARIANT: display and expected answer are NEVER the same (native→target capture)', () => {
+    // User captured English word "butterfly" → got "borboleta" translation
+    // This is the scenario that was BROKEN before the fix
+    const wordCapturedInEnglish = createMockWord({
+      originalText: 'butterfly',  // English (native) - what user typed
+      translation: 'borboleta',   // Portuguese (target) - translation
+      sourceLang: 'en',           // Source is native language
+      targetLang: 'pt-PT',        // Target is learning language
+    })
+
+    const display = getTargetLanguageText(wordCapturedInEnglish, targetLanguage)
+    const expectedAnswer = getNativeLanguageText(wordCapturedInEnglish, nativeLanguage)
+
+    // Display should show Portuguese (what user is learning)
+    // Even though user typed English, the TARGET language is Portuguese
+    expect(display).toBe('borboleta')
+    // Expected answer should be English (what user knows)
+    expect(expectedAnswer).toBe('butterfly')
+    // CRITICAL: These must NEVER be the same
+    // Before fix: both were 'butterfly' (BUG!)
+    expect(display).not.toBe(expectedAnswer)
+  })
+
+  it('works correctly for all language pairs', () => {
+    // Test EN→SV (English native, learning Swedish)
+    const enSvWord = createMockWord({
+      originalText: 'thank you',
+      translation: 'tack',
+      sourceLang: 'en',
+      targetLang: 'sv',
+    })
+
+    expect(getTargetLanguageText(enSvWord, 'sv')).toBe('tack')
+    expect(getNativeLanguageText(enSvWord, 'en')).toBe('thank you')
+    expect(getTargetLanguageText(enSvWord, 'sv')).not.toBe(getNativeLanguageText(enSvWord, 'en'))
+
+    // Test NL→EN (Dutch native, learning English)
+    const nlEnWord = createMockWord({
+      originalText: 'hartelijk dank',
+      translation: 'thank you very much',
+      sourceLang: 'nl',
+      targetLang: 'en',
+    })
+
+    expect(getTargetLanguageText(nlEnWord, 'en')).toBe('thank you very much')
+    expect(getNativeLanguageText(nlEnWord, 'nl')).toBe('hartelijk dank')
+    expect(getTargetLanguageText(nlEnWord, 'en')).not.toBe(getNativeLanguageText(nlEnWord, 'nl'))
+  })
+})

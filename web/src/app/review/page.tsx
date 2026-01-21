@@ -689,11 +689,13 @@ export default function ReviewPage() {
           )}
 
           {/* Word Card */}
+          {/* FIX for Issue #68: Display TARGET language (what user is learning), expect NATIVE language answer */}
+          {/* This ensures consistent behavior regardless of capture direction (target→native or native→target) */}
           {currentWord && (
             <SentenceCard
-              sentence={currentWord.originalText}
+              sentence={getTargetLanguageText(currentWord, targetLanguage)}
               highlightedWords={[]}
-              translation={currentWord.translation}
+              translation={getNativeLanguageText(currentWord, nativeLanguage)}
               showTranslation={reviewState !== "recall"}
               onPlayAudio={handlePlayAudio}
               isPlayingAudio={isPlaying}
@@ -786,7 +788,8 @@ export default function ReviewPage() {
           )}
 
           {/* Answer Feedback for word mode */}
-          {reviewState === "recall" && wordModeAnswerCorrect !== null && (
+          {/* FIX for Issue #69: Add null check to prevent crash when closing review mid-session */}
+          {reviewState === "recall" && wordModeAnswerCorrect !== null && currentWord && (
             <AnswerFeedback
               isCorrect={wordModeAnswerCorrect}
               correctAnswer={getNativeLanguageText(currentWord, nativeLanguage)}
@@ -794,7 +797,8 @@ export default function ReviewPage() {
           )}
 
           {/* Proceed to grading button (after answering) */}
-          {reviewState === "recall" && wordModeAnswerCorrect !== null && (
+          {/* FIX for Issue #69: Add null check to prevent crash when closing review mid-session */}
+          {reviewState === "recall" && wordModeAnswerCorrect !== null && currentWord && (
             <button
               onClick={handleReveal}
               className="w-full py-3 mt-2 text-base font-semibold rounded-lg text-white transition-all hover:shadow-md"
