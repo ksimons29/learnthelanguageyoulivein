@@ -169,3 +169,46 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * DELETE /api/dev/test-sentences
+ *
+ * DEVELOPMENT ONLY - Delete all unused sentences for a user.
+ * Use this to clean up sentences generated with bad language filtering.
+ */
+export async function DELETE(request: NextRequest) {
+  if (!IS_DEV) {
+    return NextResponse.json(
+      { error: 'This endpoint is only available in development' },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+    }
+
+    // Delete all unused sentences (usedAt IS NULL) for this user
+    const deleted = await db
+      .delete(generatedSentences)
+      .where(eq(generatedSentences.userId, userId))
+      .returning({ id: generatedSentences.id });
+
+    return NextResponse.json({
+      data: {
+        deletedCount: deleted.length,
+        message: `Deleted ${deleted.length} sentences for user ${userId}`,
+      },
+    });
+  } catch (error) {
+    console.error('Delete sentences error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to delete sentences' },
+      { status: 500 }
+    );
+  }
+}
