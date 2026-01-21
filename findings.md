@@ -489,9 +489,9 @@ const dueCount = calculateDueCards(userId, today);
 | 7 | **Correct answer NOT in multiple choice options** | **P0 BLOCKER** | Documenting |
 | 7a | Options are user's other vocab, not related distractors | **P1 High** | Documenting |
 | 7b | Mixed languages in options (Trainwreck, Battery vs Portuguese) | **P0 Critical** | Documenting |
-| 8 | "Captured Today" resets when navigating away | **P1 High** | Documenting |
-| 9 | Inbox shows 4 items but none visible when opened | **P1 High** | Documenting |
-| 10 | **Due count conflict: Notebook=49, Today=0** | **P0 Critical** | Documenting |
+| 8 | "Captured Today" resets when navigating away | **P1 High** | ✅ **VERIFIED WORKING** (Session 60) |
+| 9 | Inbox shows 4 items but none visible when opened | **P1 High** | ✅ **FIXED** (commit ffef140) |
+| 10 | **Due count conflict: Notebook=49, Today=0** | **P0 Critical** | ✅ Fixed (8ee1fbe) |
 
 ---
 
@@ -892,11 +892,11 @@ const sourceLang = currentWord?.sourceLang;
 | 7 | **Correct answer NOT in multiple choice options** | **P0 BLOCKER** | ✅ Fixed (fc34d0b) |
 | 7a | Options are user's other vocab, not related distractors | **P1 High** | Pending |
 | 7b | Mixed languages in options (Trainwreck, Battery vs Portuguese) | **P0 Critical** | ✅ Fixed (e5a8897) |
-| 8 | "Captured Today" resets when navigating away | **P1 High** | Pending |
-| 9 | Inbox shows 4 items but none visible when opened | **P1 High** | Pending |
+| 8 | "Captured Today" resets when navigating away | **P1 High** | ✅ Verified working (Session 60) |
+| 9 | Inbox shows 4 items but none visible when opened | **P1 High** | ✅ Fixed (ffef140) |
 | 10 | **Due count conflict: Notebook=49, Today=0** | **P0 Critical** | ✅ Fixed (8ee1fbe) |
-| **11** | **Word review shows SAME word as answer (native→target)** | **P0 BLOCKER** | **NEW** |
-| **12** | **Crash on Close Review - sourceLang undefined** | **P0 Critical** | **NEW** |
+| **11** | **Word review shows SAME word as answer (native→target)** | **P0 BLOCKER** | ✅ Fixed (Session 56) |
+| **12** | **Crash on Close Review - sourceLang undefined** | **P0 Critical** | ✅ Fixed (Session 58) |
 
 ---
 
@@ -904,6 +904,7 @@ const sourceLang = currentWord?.sourceLang;
 - **Date:** 2026-01-21
 - **Session:** Bug documentation and assessment
 - **Finding count:** 17 issues (15 original + 2 new)
-- **P0/Blocker count:** 12 issues
-- **Status:** Ready for systematic fixing
-- **Last Updated:** Session 57 - Issue #63 Fixed
+- **P0/Blocker count:** 0 remaining (all fixed!)
+- **P1/High count:** 1 remaining (#7a - distractor quality)
+- **Status:** MVP blockers resolved
+- **Last Updated:** Session 60 - Issues #65 verified, #66 fixed

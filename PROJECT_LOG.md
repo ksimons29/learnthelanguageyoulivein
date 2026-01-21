@@ -71,16 +71,20 @@ npm run build             # Production build
 | ~~#69~~ | **FIXED** | ~~Crash on close review (sourceLang undefined)~~ **FIXED** (Session 58) |
 | ~~#63~~ | **FIXED** | ~~Due count mismatch - Notebook shows 49, Today shows 0~~ **FIXED** (Session 57) |
 | ~~#64~~ | **FIXED** | ~~Duplicate words in review queue and no shuffling~~ **FIXED** (Session 59) |
-| #65 | P1 | Captured Today section resets when navigating away |
-| #66 | P1 | Notebook Inbox shows 4 items but none visible when opened |
+| ~~#65~~ | **VERIFIED** | ~~Captured Today section resets when navigating away~~ **WORKS** (Session 60) |
+| ~~#66~~ | **FIXED** | ~~Notebook Inbox shows items but none visible~~ **FIXED** (Session 60 - ffef140) |
 | #67 | P2 | Word selection capped at 2 words - too restrictive |
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
 
-### Closed This Session (Session 59)
+### Closed This Session (Session 60)
+- ~~#66~~ **P1-High** - Fixed: Notebook Inbox was passing 'inbox' as category filter but inbox isn't a DB category. Added special handling in /api/words to filter by reviewCount=0 + createdAt >= 24h ago
+- ~~#65~~ **P1-High** - Verified working: Captured Today persists correctly after navigation. No bug found during E2E testing
+
+### Closed Previous Session (Session 59)
 - ~~#64~~ **P1-High** - Fixed: Review queue shuffle - added priority band shuffling for variety while maintaining FSRS priority
 
-### Closed Previous Session (Session 58)
+### Closed Session 58
 - ~~#69~~ **P0-Critical** - Fixed: Crash on close review - null guards + race condition fix
 - ~~#63~~ **Closed** - Due count mismatch (closed on GitHub this session, fixed Session 57)
 
@@ -122,6 +126,33 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 60 - 2026-01-21 - Inbox Fix & Bug Verification (Issues #65, #66)
+
+**Focus:** Fix P1 bugs blocking MVP - Notebook Inbox and Captured Today persistence.
+
+**Investigation Findings:**
+- #65 (Captured Today): E2E testing showed this is actually working correctly. Captured words persist after navigation. The original report may have been a one-time issue or was fixed incidentally.
+- #66 (Notebook Inbox): Root cause found - `/notebook/inbox` route passes "inbox" as category, but "inbox" isn't a real DB category. The API was filtering by `category='inbox'` which returned 0 results.
+
+**Solution for #66:**
+1. Added special handling in GET `/api/words` for `category=inbox`
+2. When inbox requested, filter by: `reviewCount=0 AND createdAt >= 24 hours ago`
+3. Updated `[category]/page.tsx` to show "Inbox" label with correct icon
+
+**Files Changed:**
+- `web/src/app/api/words/route.ts` - inbox filter logic
+- `web/src/app/notebook/[category]/page.tsx` - inbox label/icon
+
+**E2E Verification:**
+- ✅ Inbox page shows 6 phrases correctly
+- ✅ All items display with "New" badge
+- ✅ Title shows "Inbox" (not "Other")
+- ✅ No 500 errors
+
+**Commit:** ffef140 - fix(notebook): handle inbox as special category in word fetching (#66)
+
+---
 
 ### Session 59 - 2026-01-21 - Review Queue Shuffle Fix (Issue #64)
 
