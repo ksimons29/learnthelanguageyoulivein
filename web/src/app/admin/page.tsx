@@ -41,6 +41,9 @@ interface AdminStats {
     withAudio: number;
     pendingAudio: number;
     failedAudio: number;
+    recentTotal: number;
+    recentWithAudio: number;
+    recentFailed: number;
     successRate: number;
   };
   reviews: {
@@ -84,9 +87,17 @@ interface AdminStats {
     mau: number;
     sessionCompletionRate: number;
     avgSessionMinutes: number;
+    medianSessionMinutes: number;
     d1Retention: number;
     d7Retention: number;
     d30Retention: number;
+  };
+  dataQualityNotes?: {
+    audioSuccessRate: string;
+    sessionDuration: string;
+    retention: string;
+    languagePairs: string;
+    userCounts: string;
   };
   masteryFunnel: {
     learning: number;
@@ -382,7 +393,7 @@ export default function AdminDashboard() {
                 <StatCard
                   title="Session Completion"
                   value={`${stats.productKpis.sessionCompletionRate}%`}
-                  subtitle={`Avg ${stats.productKpis.avgSessionMinutes || 0} min/session`}
+                  subtitle={`Median ${stats.productKpis.medianSessionMinutes || 0} min (avg ${stats.productKpis.avgSessionMinutes || 0})`}
                   icon={CheckCircle2}
                 />
               </div>
@@ -539,17 +550,21 @@ export default function AdminDashboard() {
             {/* Audio Health Section - KEY METRIC */}
             <section>
               <SectionHeader title="Audio Generation Health" icon={Volume2} />
+              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
+                Success rate based on last 7 days only (excludes bulk imports without audio).
+              </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
-                  title="Success Rate"
+                  title="Success Rate (7d)"
                   value={`${stats.audio.successRate}%`}
-                  subtitle={`${stats.audio.withAudio} of ${stats.audio.totalWords} words`}
+                  subtitle={`${stats.audio.recentWithAudio} of ${stats.audio.recentTotal} recent`}
                   icon={CheckCircle2}
-                  alert={stats.audio.successRate < 95}
+                  alert={stats.audio.successRate < 85}
                 />
                 <StatCard
                   title="With Audio"
                   value={stats.audio.withAudio.toLocaleString()}
+                  subtitle={`of ${stats.audio.totalWords.toLocaleString()} total`}
                   icon={Volume2}
                 />
                 <StatCard
@@ -559,11 +574,11 @@ export default function AdminDashboard() {
                   icon={Clock}
                 />
                 <StatCard
-                  title="Failed"
-                  value={stats.audio.failedAudio}
+                  title="Failed (7d)"
+                  value={stats.audio.recentFailed}
                   subtitle="Need retry"
                   icon={AlertCircle}
-                  alert={stats.audio.failedAudio > 0}
+                  alert={stats.audio.recentFailed > 0}
                 />
               </div>
             </section>
@@ -761,6 +776,28 @@ export default function AdminDashboard() {
                 </div>
               )}
             </section>
+
+            {/* Data Quality Notes - Help PMs understand the metrics */}
+            {stats.dataQualityNotes && (
+              <section>
+                <SectionHeader title="Understanding These Metrics" icon={AlertCircle} />
+                <div
+                  className="rounded-lg border p-4"
+                  style={{
+                    backgroundColor: "rgba(12, 107, 112, 0.03)",
+                    borderColor: "var(--accent-nav-light)",
+                  }}
+                >
+                  <ul className="space-y-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                    <li><strong>Audio Success Rate:</strong> {stats.dataQualityNotes.audioSuccessRate}</li>
+                    <li><strong>Session Duration:</strong> {stats.dataQualityNotes.sessionDuration}</li>
+                    <li><strong>Retention:</strong> {stats.dataQualityNotes.retention}</li>
+                    <li><strong>Language Pairs:</strong> {stats.dataQualityNotes.languagePairs}</li>
+                    <li><strong>User Counts:</strong> {stats.dataQualityNotes.userCounts}</li>
+                  </ul>
+                </div>
+              </section>
+            )}
           </div>
         )}
       </div>

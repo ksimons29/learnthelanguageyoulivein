@@ -69,17 +69,18 @@ export async function GET(request: NextRequest) {
       FROM words
     `);
 
-    // Audio generation statistics (key health metric!)
+    // Audio generation statistics - ONLY for recent captures (last 7 days)
+    // Bulk imports don't have audio, so we exclude them for meaningful metrics
     const audioStats = await db.execute(sql`
       SELECT
         COUNT(*) as total_words,
         COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) as with_audio,
         COUNT(CASE WHEN audio_url IS NULL AND audio_generation_failed = false THEN 1 END) as pending_audio,
         COUNT(CASE WHEN audio_generation_failed = true THEN 1 END) as failed_audio,
-        ROUND(
-          100.0 * COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) / NULLIF(COUNT(*), 0),
-          1
-        ) as audio_success_rate
+        -- Recent captures only (last 7 days) for accurate success rate
+        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as recent_total,
+        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_url IS NOT NULL THEN 1 END) as recent_with_audio,
+        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_generation_failed = true THEN 1 END) as recent_failed
       FROM words
     `);
 
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
       FROM user_feedback
     `);
 
-    // Language pair distribution
+    // Language pair distribution (filter out invalid same-language pairs)
     const languagePairStats = await db.execute(sql`
       SELECT
         source_lang,
@@ -129,6 +130,7 @@ export async function GET(request: NextRequest) {
         COUNT(*) as word_count,
         COUNT(DISTINCT user_id) as user_count
       FROM words
+      WHERE source_lang != target_lang
       GROUP BY source_lang, target_lang
       ORDER BY word_count DESC
       LIMIT 10
@@ -161,12 +163,19 @@ export async function GET(request: NextRequest) {
           100.0 * COUNT(CASE WHEN rs.ended_at IS NOT NULL THEN 1 END) /
           NULLIF(COUNT(*), 0), 1
         ) as session_completion_rate,
-        -- Average session duration (minutes)
+        -- Average session duration (minutes) - CAP at 30 min to exclude abandoned sessions
         ROUND(
-          AVG(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60)::numeric, 1
-        ) as avg_session_minutes
+          AVG(LEAST(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60, 30))::numeric, 1
+        ) as avg_session_minutes,
+        -- Median session duration (more accurate than mean)
+        ROUND(
+          PERCENTILE_CONT(0.5) WITHIN GROUP (
+            ORDER BY LEAST(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60, 30)
+          )::numeric, 1
+        ) as median_session_minutes
       FROM review_sessions rs
       WHERE rs.started_at >= ${thirtyDaysAgo}
+        AND rs.ended_at IS NOT NULL
     `);
 
     // Retention cohorts (D1, D7, D30)
@@ -246,11 +255,19 @@ export async function GET(request: NextRequest) {
         avgLapsesPerWord: Number(getRow(wordStats).avg_lapses_per_word || 0),
       },
       audio: {
+        // All-time totals (includes bulk imports without audio)
         totalWords: Number(getRow(audioStats).total_words || 0),
         withAudio: Number(getRow(audioStats).with_audio || 0),
         pendingAudio: Number(getRow(audioStats).pending_audio || 0),
         failedAudio: Number(getRow(audioStats).failed_audio || 0),
-        successRate: Number(getRow(audioStats).audio_success_rate || 0),
+        // Recent captures only (last 7 days) - meaningful success rate
+        recentTotal: Number(getRow(audioStats).recent_total || 0),
+        recentWithAudio: Number(getRow(audioStats).recent_with_audio || 0),
+        recentFailed: Number(getRow(audioStats).recent_failed || 0),
+        // Success rate based on recent captures (excludes bulk imports)
+        successRate: Number(getRow(audioStats).recent_total || 0) > 0
+          ? Math.round(100 * Number(getRow(audioStats).recent_with_audio || 0) / Number(getRow(audioStats).recent_total || 0))
+          : 0,
       },
       reviews: {
         totalSessions: Number(getRow(reviewStats).total_sessions || 0),
@@ -293,9 +310,10 @@ export async function GET(request: NextRequest) {
         dau: Number(getRow(productKpis).dau || 0),
         wau: Number(getRow(productKpis).wau || 0),
         mau: Number(getRow(productKpis).mau || 0),
-        // Session metrics
+        // Session metrics (capped at 30 min to exclude abandoned tabs)
         sessionCompletionRate: Number(getRow(productKpis).session_completion_rate || 0),
         avgSessionMinutes: Number(getRow(productKpis).avg_session_minutes || 0),
+        medianSessionMinutes: Number(getRow(productKpis).median_session_minutes || 0),
         // Retention (key growth metrics)
         d1Retention: Number(getRow(retentionStats).d1_retention || 0),
         d7Retention: Number(getRow(retentionStats).d7_retention || 0),
@@ -314,6 +332,14 @@ export async function GET(request: NextRequest) {
           ? Math.round(100 * Number(getRow(wordStats).mastered_words || 0) /
               (Number(getRow(wordStats).learning_words || 0) + Number(getRow(wordStats).learned_words || 0) + Number(getRow(wordStats).mastered_words || 0)))
           : 0,
+      },
+      // Data quality notes for interpreting metrics
+      dataQualityNotes: {
+        audioSuccessRate: 'Based on last 7 days only. Bulk imports (before audio feature) are excluded.',
+        sessionDuration: 'Capped at 30 min. Sessions longer than 30 min are counted as 30 min (abandoned tabs).',
+        retention: 'D1/D7/D30 calculated from users who signed up within relevant windows. May show 0% if insufficient data.',
+        languagePairs: 'Invalid same-language pairs (e.g., sv→sv) are filtered out.',
+        userCounts: 'Derived from word captures. Users who only reviewed but never captured are not counted as "new users".',
       },
     });
   } catch (error) {

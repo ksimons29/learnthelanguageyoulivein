@@ -151,6 +151,32 @@ npm run build             # Production build
 
 ---
 
+### Session 51c - 2026-01-21 - Admin Dashboard Data Quality Fixes
+
+**Problem:** Dashboard data was misleading and difficult for PMs to understand:
+- Session duration showing 467+ minutes (browser tabs left open)
+- Audio success rate 6.7% (bulk imports included)
+- Invalid language pair "sv → sv" showing in list
+- No explanation of metric methodology
+
+**Fixes Applied:**
+1. **Session duration capped at 30 min** - Uses PostgreSQL `LEAST()` function to cap outliers (abandoned tabs)
+2. **Added median session duration** - More accurate than mean for skewed data
+3. **Audio success rate based on last 7 days only** - Excludes bulk imports without audio
+4. **Filter invalid language pairs** - `WHERE source_lang != target_lang` removes data quality issues
+5. **"Understanding These Metrics" section** - Explains methodology at bottom of dashboard
+
+**Guardrails Added:**
+- Audio metrics now show `recent_total`, `recent_with_audio`, `recent_failed` separately
+- Data quality notes in API response (`dataQualityNotes` object)
+- UI explanations for each metric type
+
+**Files Changed:**
+- `web/src/app/api/admin/stats/route.ts` - Query fixes, data quality notes
+- `web/src/app/admin/page.tsx` - UI updates, metric explanations
+
+---
+
 ### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
 
 **Focus**: Create comprehensive automated tests for gamification and ensure new users have gamification-ready data from day one.
