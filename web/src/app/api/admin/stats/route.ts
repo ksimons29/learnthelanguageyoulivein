@@ -329,9 +329,14 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Admin stats error:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const err = error as Error & { code?: string; cause?: unknown };
     return NextResponse.json(
-      { error: 'Failed to fetch admin stats', details: message },
+      {
+        error: 'Failed to fetch admin stats',
+        details: err.message,
+        code: err.code,
+        cause: err.cause instanceof Error ? err.cause.message : String(err.cause || ''),
+      },
       { status: 500 }
     );
   }

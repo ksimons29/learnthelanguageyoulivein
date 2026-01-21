@@ -123,6 +123,30 @@ npm run build             # Production build
 
 **Closes:** #57
 
+### Session 51b - 2026-01-21 - Admin Dashboard & Vercel Cleanup
+
+**Focus:** Build admin dashboard for product analytics and clean up duplicate Vercel projects.
+
+**Admin Dashboard (`/admin`):**
+- Created admin stats API (`/api/admin/stats`) with secret-based auth (ADMIN_SECRET)
+- Aggregates: users, words, audio health, reviews, gamification, anonymous feedback
+- Product KPIs: DAU/WAU/MAU, D1/D7/D30 retention, session completion rate
+- Mastery funnel visualization (learning → learned → mastered)
+- Language pair distribution
+- Recent feedback (anonymous, no user_id exposed)
+
+**Vercel Cleanup:**
+- Deleted duplicate `learnthelanguageyoulivein` project (was deploying alongside `llyli`)
+- Root cause: `.vercel/project.json` existed in both root and `/web` directories
+- Fixed by removing root `.vercel/` directory (`.vercel` already in `.gitignore`)
+
+**Known Issue:** Admin stats API has database query issues with Drizzle ORM's parameter binding on Vercel (works locally). Investigating `sql.raw()` approach for timestamp comparisons.
+
+**Files Changed:**
+- `web/src/app/api/admin/stats/route.ts` (new)
+- `web/src/app/admin/page.tsx` (new)
+- Vercel env: Added `ADMIN_SECRET` production variable
+
 ---
 
 ### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
