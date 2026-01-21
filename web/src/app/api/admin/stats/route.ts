@@ -327,8 +327,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Admin stats error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to fetch admin stats' },
+      { error: 'Failed to fetch admin stats', details: message },
       { status: 500 }
     );
   }
