@@ -332,42 +332,44 @@ export async function GET(request: NextRequest) {
     `);
 
     // Data quality guardrails: Catch anomalies that indicate bugs
+    // Using separate subqueries since metrics come from different tables
     const dataGuardrails = await db.execute(sql`
       SELECT
-        -- Suspicious intervals (>365 days = likely bug)
-        COUNT(CASE WHEN stability > 365 THEN 1 END) as words_interval_over_year,
-        -- Zero accuracy users (potential bot or broken UI)
-        COUNT(DISTINCT CASE
-          WHEN rs.words_reviewed > 10 AND rs.correct_count = 0
-          THEN rs.user_id
-        END) as users_zero_accuracy,
-        -- Words never reviewed but old (capture without learning)
-        (SELECT COUNT(*) FROM words w2
-          WHERE w2.review_count = 0
-          AND w2.created_at < ${sevenDaysAgo}
-          AND w2.user_id NOT IN (
-            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
-          )
-        ) as old_words_never_reviewed,
-        -- Daily review overload (users with >50 due words)
-        COUNT(DISTINCT CASE
-          WHEN due_word_count > 50
-          THEN user_id
-        END) as users_overloaded
-      FROM review_sessions rs
-      LEFT JOIN (
-        SELECT user_id, COUNT(*) as due_word_count
-        FROM words
-        WHERE next_review_date <= NOW()
+        -- Suspicious intervals (>365 days = likely bug) - from words table
+        (SELECT COUNT(*) FROM words
+          WHERE stability > 365
           AND user_id NOT IN (
             SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
           )
-        GROUP BY user_id
-      ) due ON rs.user_id = due.user_id
-      WHERE rs.ended_at IS NOT NULL
-        AND rs.user_id NOT IN (
-          SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
-        )
+        ) as words_interval_over_year,
+        -- Zero accuracy users (potential bot or broken UI) - from review_sessions
+        (SELECT COUNT(DISTINCT user_id) FROM review_sessions
+          WHERE words_reviewed > 10
+          AND correct_count = 0
+          AND ended_at IS NOT NULL
+          AND user_id NOT IN (
+            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+          )
+        ) as users_zero_accuracy,
+        -- Words never reviewed but old (capture without learning) - from words table
+        (SELECT COUNT(*) FROM words
+          WHERE review_count = 0
+          AND created_at < ${sevenDaysAgo}
+          AND user_id NOT IN (
+            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+          )
+        ) as old_words_never_reviewed,
+        -- Daily review overload (users with >50 due words) - from words grouped
+        (SELECT COUNT(*) FROM (
+          SELECT user_id
+          FROM words
+          WHERE next_review_date <= NOW()
+            AND user_id NOT IN (
+              SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+            )
+          GROUP BY user_id
+          HAVING COUNT(*) > 50
+        ) overloaded) as users_overloaded
     `);
 
     // Type helper for raw SQL results (Drizzle returns array directly)
