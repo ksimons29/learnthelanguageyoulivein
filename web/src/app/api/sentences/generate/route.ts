@@ -2,12 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { generatedSentences } from '@/lib/db/schema';
-import {
-  getUnusedWordCombinations,
-  generateSentenceWithRetry,
-  generateWordIdsHash,
-  determineExerciseType,
-} from '@/lib/sentences';
+import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
+import { generateSentenceWithRetry } from '@/lib/sentences/generator';
+import { determineExerciseType } from '@/lib/sentences/exercise-type';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadSentenceAudio } from '@/lib/audio/storage';
 
@@ -64,67 +61,74 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 5. Generate sentences for each combination
+    // 5. Generate sentences for each combination in parallel
+    // Using Promise.allSettled to handle individual failures gracefully
+    // Process in batches of 5 to avoid overwhelming OpenAI rate limits
+    const BATCH_SIZE = 5;
     let sentencesGenerated = 0;
     const errors: string[] = [];
 
-    for (const wordGroup of unusedCombinations) {
+    const processSentence = async (wordGroup: typeof unusedCombinations[number]) => {
+      // 5a. Generate sentence with GPT
+      const result = await generateSentenceWithRetry({
+        words: wordGroup,
+        targetLanguage: languagePreference.targetLanguage,
+        nativeLanguage: languagePreference.nativeLanguage,
+      });
+
+      if (!result) {
+        throw new Error(`Failed to generate sentence for words: ${wordGroup.map((w) => w.originalText).join(', ')}`);
+      }
+
+      // 5b. Generate audio for sentence (non-fatal if fails)
+      let audioUrl: string | null = null;
       try {
-        // 5a. Generate sentence with GPT
-        const result = await generateSentenceWithRetry({
-          words: wordGroup,
-          targetLanguage: languagePreference.targetLanguage,
-          nativeLanguage: languagePreference.nativeLanguage,
+        const audioBuffer = await generateAudio({
+          text: result.text,
+          languageCode: languagePreference.targetLanguage,
         });
+        audioUrl = await uploadSentenceAudio(user.id, audioBuffer);
+      } catch (audioError) {
+        console.error('Sentence audio generation failed (non-fatal):', audioError);
+        // Continue without audio - sentence is still usable
+      }
 
-        if (!result) {
-          errors.push(`Failed to generate sentence for words: ${wordGroup.map((w) => w.originalText).join(', ')}`);
-          continue;
-        }
+      // 5c. Determine exercise type based on word mastery
+      const exerciseType = determineExerciseType(wordGroup);
 
-        // 5b. Generate audio for sentence (non-fatal if fails)
-        let audioUrl: string | null = null;
-        try {
-          const audioBuffer = await generateAudio({
-            text: result.text,
-            languageCode: languagePreference.targetLanguage,
-          });
-          audioUrl = await uploadSentenceAudio(user.id, audioBuffer);
-        } catch (audioError) {
-          console.error('Sentence audio generation failed (non-fatal):', audioError);
-          // Continue without audio - sentence is still usable
-        }
+      // 5d. Store generated sentence (use onConflictDoNothing to handle race conditions)
+      const wordIdsHash = generateWordIdsHash(wordGroup.map((w) => w.id));
+      const inserted = await db
+        .insert(generatedSentences)
+        .values({
+          userId: user.id,
+          text: result.text,
+          translation: result.translation,
+          audioUrl,
+          wordIds: wordGroup.map((w) => w.id),
+          wordIdsHash,
+          exerciseType,
+          usedAt: null, // Pre-generated, not yet shown
+        })
+        .onConflictDoNothing({ target: generatedSentences.wordIdsHash })
+        .returning({ id: generatedSentences.id });
 
-        // 5c. Determine exercise type based on word mastery
-        const exerciseType = determineExerciseType(wordGroup);
+      return inserted.length > 0;
+    };
 
-        // 5d. Store generated sentence (use onConflictDoNothing to handle race conditions)
-        // Race condition: another request may have inserted the same wordIdsHash between
-        // our filterUsedCombinations check and this insert. Handle gracefully.
-        const wordIdsHash = generateWordIdsHash(wordGroup.map((w) => w.id));
-        const inserted = await db
-          .insert(generatedSentences)
-          .values({
-            userId: user.id,
-            text: result.text,
-            translation: result.translation,
-            audioUrl,
-            wordIds: wordGroup.map((w) => w.id),
-            wordIdsHash,
-            exerciseType,
-            usedAt: null, // Pre-generated, not yet shown
-          })
-          .onConflictDoNothing({ target: generatedSentences.wordIdsHash })
-          .returning({ id: generatedSentences.id });
+    // Process in batches to respect rate limits while still parallelizing
+    for (let i = 0; i < unusedCombinations.length; i += BATCH_SIZE) {
+      const batch = unusedCombinations.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(batch.map(processSentence));
 
-        // Only count if actually inserted (not skipped due to conflict)
-        if (inserted.length > 0) {
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
           sentencesGenerated++;
+        } else if (result.status === 'rejected') {
+          const errorMsg = result.reason instanceof Error ? result.reason.message : 'Unknown error';
+          errors.push(`Error processing word group: ${errorMsg}`);
+          console.error('Sentence generation error:', result.reason);
         }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        errors.push(`Error processing word group: ${errorMsg}`);
-        console.error('Sentence generation error:', error);
       }
     }
 

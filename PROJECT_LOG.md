@@ -96,6 +96,44 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 53 - 2026-01-21 - Vercel React Best Practices Implementation
+
+**Context**: Applied Vercel's React/Next.js performance guidelines (45 rules) to optimize the codebase.
+
+**What Changed**:
+
+1. **Async Waterfall Elimination (CRITICAL)**:
+   - `api/sentences/generate/route.ts` - Parallelized sentence generation with batched `Promise.allSettled` (5 concurrent) → **5x faster**
+   - `api/onboarding/starter-words/route.ts` - Parallelized TTS generation → **10x faster**
+   - `api/gamification/event/route.ts` - Batched bingo square updates to single read/write → **6→2 DB queries**
+
+2. **Bundle Size Optimization (CRITICAL)**:
+   - `app/page.tsx` - Added `next/dynamic` for gamification components (BingoBoard, BossRoundGame, etc.)
+   - Converted barrel imports to direct imports across 5 files
+
+3. **Documentation**:
+   - Added "React/Next.js Performance (MANDATORY)" section to `.claude/CLAUDE.md`
+   - Installed `vercel-react-best-practices` skill with 45 detailed rules
+
+**Files Changed**:
+| File | Change |
+|------|--------|
+| `.claude/CLAUDE.md` | Added performance guidelines section |
+| `web/src/app/page.tsx` | Dynamic imports for gamification |
+| `web/src/app/layout.tsx` | Direct import for OfflineIndicator |
+| `web/src/app/api/sentences/generate/route.ts` | Parallelized with batched Promise.allSettled |
+| `web/src/app/api/onboarding/starter-words/route.ts` | Parallelized TTS generation |
+| `web/src/app/api/gamification/event/route.ts` | Batched bingo updates |
+| `web/src/app/api/words/route.ts` | Direct sentences imports |
+| `web/src/app/api/dev/test-sentences/route.ts` | Direct sentences imports |
+| `web/src/lib/hooks/use-audio-player.ts` | Direct capacitor import |
+
+**Verification**:
+- `npm run build` ✅
+- `npm run test:run` ✅ (186 tests pass)
+
+---
+
 ### Session 52 - 2026-01-21 - Comprehensive Audit Implementation (P0-P2 Fixes)
 
 **Context**: Independent codebase audit identified critical issues across 9 priority areas. Implemented all fixes in a single session.

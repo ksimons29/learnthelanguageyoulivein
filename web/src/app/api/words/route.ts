@@ -12,12 +12,9 @@ import {
 } from '@/lib/config/languages';
 import { checkWordCaptureLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
-import {
-  getUnusedWordCombinations,
-  generateSentenceWithRetry,
-  generateWordIdsHash,
-  determineExerciseType,
-} from '@/lib/sentences';
+import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
+import { generateSentenceWithRetry } from '@/lib/sentences/generator';
+import { determineExerciseType } from '@/lib/sentences/exercise-type';
 import OpenAI from 'openai';
 import { eq, and, or, ilike, sql, gte } from 'drizzle-orm';
 

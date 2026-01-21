@@ -283,7 +283,10 @@ async function updateStreakOnCompletion(userId: string, today: string) {
 }
 
 /**
- * Update bingo squares based on item answered event
+ * Update bingo squares based on item answered event (batched)
+ *
+ * Optimized to perform a single DB read and single DB write instead of
+ * N reads + N writes for N squares.
  */
 async function updateBingoSquares(
   userId: string,
@@ -317,16 +320,76 @@ async function updateBingoSquares(
     squaresToUpdate.push('socialWord');
   }
 
-  // Update each square
-  const completedSquares: BingoSquareId[] = [];
-  for (const squareId of squaresToUpdate) {
-    const completed = await updateBingoSquare(userId, today, squareId);
-    if (completed) {
-      completedSquares.push(squareId);
+  // Batch update: single read, single write
+  return await updateBingoSquaresBatch(userId, today, squaresToUpdate);
+}
+
+/**
+ * Batch update multiple bingo squares in a single operation
+ *
+ * Returns array of newly completed square IDs
+ */
+async function updateBingoSquaresBatch(
+  userId: string,
+  today: string,
+  squareIds: BingoSquareId[]
+): Promise<BingoSquareId[]> {
+  if (squareIds.length === 0) return [];
+
+  // Get or create bingo state (single read)
+  let [bingo] = await db
+    .select()
+    .from(bingoState)
+    .where(
+      and(
+        eq(bingoState.userId, userId),
+        eq(bingoState.date, today)
+      )
+    );
+
+  if (!bingo) {
+    const [newBingo] = await db
+      .insert(bingoState)
+      .values({
+        userId,
+        date: today,
+        squareDefinitions: DEFAULT_BINGO_SQUARES,
+      })
+      .returning();
+    bingo = newBingo;
+  }
+
+  // Calculate new completed squares
+  const currentCompleted = new Set(bingo.squaresCompleted as BingoSquareId[]);
+  const newlyCompleted: BingoSquareId[] = [];
+
+  for (const squareId of squareIds) {
+    if (!currentCompleted.has(squareId)) {
+      currentCompleted.add(squareId);
+      newlyCompleted.push(squareId);
     }
   }
 
-  return completedSquares;
+  // If nothing new to add, skip the write
+  if (newlyCompleted.length === 0) {
+    return [];
+  }
+
+  // Check for bingo and perform single write
+  const allCompleted = Array.from(currentCompleted);
+  const bingoAchieved = checkBingo(allCompleted);
+
+  await db
+    .update(bingoState)
+    .set({
+      squaresCompleted: allCompleted,
+      bingoAchieved,
+      bingoAchievedAt: bingoAchieved && !bingo.bingoAchieved ? new Date() : bingo.bingoAchievedAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(bingoState.id, bingo.id));
+
+  return newlyCompleted;
 }
 
 /**

@@ -45,6 +45,7 @@ vercel logs <deployment-url> --since 5m
 |----------|---------|
 | `/docs/design/design-system.md` | **★ Moleskine design tokens** - Always for UI |
 | `/docs/engineering/TESTING.md` | **★ Testing guide** - Run after every feature |
+| `~/.claude/skills/vercel-react-best-practices/` | **★ React/Next.js performance** - 45 rules |
 | `/docs/engineering/implementation_plan.md` | Architecture, data model, API routes |
 | `/docs/engineering/session-workflow.md` | Claude Code session best practices |
 | `/docs/engineering/CAPACITOR_IOS_SETUP.md` | iOS app setup, native plugins |
@@ -88,6 +89,91 @@ lib/audio-player/
 export function PhraseCard() { }
 export const useFsrs = () => { }
 ```
+
+## React/Next.js Performance (MANDATORY)
+
+Follow these Vercel best practices when writing React/Next.js code:
+
+### 1. Eliminate Async Waterfalls (CRITICAL)
+
+```typescript
+// ❌ BAD: Sequential awaits in loops
+for (const item of items) {
+  await processItem(item);      // Sequential!
+  await generateAudio(item);    // Waits for previous!
+}
+
+// ✅ GOOD: Parallel with Promise.allSettled
+const results = await Promise.allSettled(
+  items.map(item => processItem(item))
+);
+
+// ✅ GOOD: Batched parallelism (respects rate limits)
+const BATCH_SIZE = 5;
+for (let i = 0; i < items.length; i += BATCH_SIZE) {
+  const batch = items.slice(i, i + BATCH_SIZE);
+  await Promise.allSettled(batch.map(processItem));
+}
+```
+
+### 2. Direct Imports (No Barrels)
+
+```typescript
+// ❌ BAD: Barrel imports pull entire module
+import { Button } from "@/components/ui";
+import { isDue } from "@/lib/fsrs";
+
+// ✅ GOOD: Direct imports enable tree-shaking
+import { Button } from "@/components/ui/button";
+import { isDue } from "@/lib/fsrs/calculations";
+```
+
+### 3. Dynamic Imports for Conditional Components
+
+```typescript
+// ❌ BAD: Always loaded even if not rendered
+import { HeavyModal } from "@/components/heavy-modal";
+
+// ✅ GOOD: Lazy-loaded when needed
+const HeavyModal = dynamic(
+  () => import("@/components/heavy-modal").then(m => m.HeavyModal),
+  { ssr: false, loading: () => <Spinner /> }
+);
+```
+
+Use `next/dynamic` for:
+- Modals and sheets (loaded on open)
+- Gamification components (loaded when active)
+- Admin-only features (loaded for admins)
+- Heavy visualizations (charts, graphs)
+
+### 4. Batch Database Operations
+
+```typescript
+// ❌ BAD: N queries in a loop
+for (const id of ids) {
+  await db.update(table).set({ status }).where(eq(table.id, id));
+}
+
+// ✅ GOOD: Single batched query
+await db.update(table).set({ status }).where(inArray(table.id, ids));
+```
+
+### 5. Memoization Checklist
+
+- `useMemo`: Expensive computations derived from props/state
+- `useCallback`: Functions passed to child components or in dependency arrays
+- Keep dependencies minimal and primitive when possible
+
+### Quick Reference
+
+| Pattern | When to Use |
+|---------|-------------|
+| `Promise.all` | Independent async operations |
+| `Promise.allSettled` | Batch ops where individual failures are OK |
+| `next/dynamic` | Conditionally rendered heavy components |
+| Direct imports | Always (avoid barrel `index.ts` files) |
+| `useMemo`/`useCallback` | Expensive work or stable references needed |
 
 ## Design System (Moleskine)
 

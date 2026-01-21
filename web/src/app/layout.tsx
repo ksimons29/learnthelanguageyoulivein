@@ -3,7 +3,7 @@ import { Inter, Libre_Baskerville } from "next/font/google";
 import "./globals.css";
 import { BottomNav, FloatingActionButton, FeedbackButton } from "@/components/navigation";
 import { AuthProvider, ThemeProvider } from "@/components/providers";
-import { OfflineIndicator } from "@/components/ui";
+import { OfflineIndicator } from "@/components/ui/offline-indicator";
 
 const inter = Inter({
   subsets: ["latin"],

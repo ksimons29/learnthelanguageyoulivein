@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Loader2, PartyPopper, X } from "lucide-react";
 import {
   CaptureButton,
@@ -9,13 +10,39 @@ import {
   CapturedTodayList,
   TodaysProgress,
 } from "@/components/home";
-import { BingoBoard, BingoBoardModal, BossRoundPrompt, BossRoundGame, BossRoundResults } from "@/components/gamification";
 import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
 import { useOnboardingStatus } from "@/lib/hooks";
 import type { Word } from "@/lib/db/schema";
+
+// Dynamic imports for gamification components (code splitting)
+// These are conditionally rendered and can be lazy-loaded
+const BingoBoard = dynamic(
+  () => import("@/components/gamification/bingo-board").then((mod) => mod.BingoBoard),
+  { ssr: false }
+);
+const BingoBoardModal = dynamic(
+  () => import("@/components/gamification/bingo-board").then((mod) => mod.BingoBoardModal),
+  { ssr: false }
+);
+const BossRoundPrompt = dynamic(
+  () => import("@/components/gamification/boss-round").then((mod) => mod.BossRoundPrompt),
+  { ssr: false }
+);
+const BossRoundGame = dynamic(
+  () => import("@/components/gamification/boss-round").then((mod) => mod.BossRoundGame),
+  { ssr: false, loading: () => (
+    <div className="min-h-screen notebook-bg flex items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--accent-ribbon)" }} />
+    </div>
+  )}
+);
+const BossRoundResults = dynamic(
+  () => import("@/components/gamification/boss-round").then((mod) => mod.BossRoundResults),
+  { ssr: false }
+);
 
 export default function HomePage() {
   const router = useRouter();

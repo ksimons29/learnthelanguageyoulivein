@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generatedSentences, words } from '@/lib/db/schema';
-import {
-  getUnusedWordCombinations,
-  generateSentenceWithRetry,
-  generateWordIdsHash,
-  determineExerciseType,
-} from '@/lib/sentences';
+import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
+import { generateSentenceWithRetry } from '@/lib/sentences/generator';
+import { determineExerciseType } from '@/lib/sentences/exercise-type';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadSentenceAudio } from '@/lib/audio/storage';
 import { DEFAULT_LANGUAGE_PREFERENCE } from '@/lib/config/languages';

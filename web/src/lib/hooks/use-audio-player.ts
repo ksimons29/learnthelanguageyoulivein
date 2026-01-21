@@ -7,7 +7,7 @@ import {
   stopAudio as nativeStopAudio,
   onAudioComplete,
   getAssetIdForUrl,
-} from '@/lib/capacitor';
+} from '@/lib/capacitor/native-audio';
 
 interface UseAudioPlayerOptions {
   onEnded?: () => void;

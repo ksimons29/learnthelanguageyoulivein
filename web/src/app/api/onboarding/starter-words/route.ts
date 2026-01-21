@@ -134,30 +134,41 @@ export async function POST() {
 }
 
 /**
- * Generate TTS audio for words in background
+ * Generate TTS audio for words in background (parallelized)
  * Non-blocking, errors are logged but don't affect the user
+ *
+ * Uses Promise.allSettled to process all words in parallel while
+ * gracefully handling individual failures.
  */
 async function generateTTSForWords(
   userId: string,
   wordList: typeof words.$inferSelect[],
   languageCode: string
 ) {
-  for (const word of wordList) {
-    try {
-      const audioBuffer = await generateAudio({
-        text: word.originalText,
-        languageCode,
-      });
+  const processWord = async (word: typeof words.$inferSelect) => {
+    const audioBuffer = await generateAudio({
+      text: word.originalText,
+      languageCode,
+    });
 
-      const audioUrl = await uploadAudio(userId, word.id, audioBuffer);
+    const audioUrl = await uploadAudio(userId, word.id, audioBuffer);
 
-      await db
-        .update(words)
-        .set({ audioUrl })
-        .where(eq(words.id, word.id));
-    } catch (err) {
-      console.error(`TTS failed for word ${word.id}:`, err);
-      // Continue with other words
+    await db
+      .update(words)
+      .set({ audioUrl })
+      .where(eq(words.id, word.id));
+
+    return word.id;
+  };
+
+  // Process all words in parallel
+  const results = await Promise.allSettled(wordList.map(processWord));
+
+  // Log any failures
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === 'rejected') {
+      console.error(`TTS failed for word ${wordList[i].id}:`, result.reason);
     }
   }
 }
