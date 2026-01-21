@@ -12,12 +12,21 @@ import type { Word } from "@/lib/db/schema";
  * Appears as a prompt after completing daily goal, can be skipped.
  */
 
+interface BossRoundStats {
+  bestScore: number;
+  totalAttempts: number;
+  perfectCount: number;
+}
+
 interface BossRoundPromptProps {
   onStart: () => void;
   onSkip: () => void;
+  stats?: BossRoundStats | null;
 }
 
-export function BossRoundPrompt({ onStart, onSkip }: BossRoundPromptProps) {
+export function BossRoundPrompt({ onStart, onSkip, stats }: BossRoundPromptProps) {
+  const hasHistory = stats && stats.totalAttempts > 0;
+
   return (
     <div
       className="rounded-xl p-6 relative overflow-hidden"
@@ -50,6 +59,47 @@ export function BossRoundPrompt({ onStart, onSkip }: BossRoundPromptProps) {
         Test yourself with your 5 toughest words in 90 seconds. Ready for the challenge?
       </p>
 
+      {/* Personal Stats (like Erik tracking his progress) */}
+      {hasHistory && (
+        <div
+          className="flex items-center gap-4 mb-4 p-3 rounded-lg"
+          style={{ backgroundColor: "rgba(232, 92, 74, 0.1)" }}
+        >
+          <div className="text-center">
+            <p className="text-lg font-bold" style={{ color: "var(--accent-ribbon)" }}>
+              {stats.bestScore}/5
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Best
+            </p>
+          </div>
+          <div
+            className="h-8 w-px"
+            style={{ backgroundColor: "var(--accent-ribbon-light)" }}
+          />
+          <div className="text-center">
+            <p className="text-lg font-bold" style={{ color: "var(--accent-ribbon)" }}>
+              {stats.totalAttempts}
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Attempts
+            </p>
+          </div>
+          <div
+            className="h-8 w-px"
+            style={{ backgroundColor: "var(--accent-ribbon-light)" }}
+          />
+          <div className="text-center">
+            <p className="text-lg font-bold" style={{ color: "var(--accent-ribbon)" }}>
+              {stats.perfectCount}
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Perfect
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-3">
         <button
@@ -61,7 +111,7 @@ export function BossRoundPrompt({ onStart, onSkip }: BossRoundPromptProps) {
           }}
         >
           <Zap className="h-4 w-4" />
-          Let&apos;s go!
+          {hasHistory ? "Beat your best!" : "Let's go!"}
         </button>
         <button
           onClick={onSkip}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
-import { words, dailyProgress } from '@/lib/db/schema';
+import { words, dailyProgress, bossRoundHistory } from '@/lib/db/schema';
 import { eq, and, desc, asc, sql } from 'drizzle-orm';
 
 /**
@@ -56,11 +56,56 @@ export async function GET() {
       )
       .limit(5);
 
+    // 4. Get personal best stats (for motivation like Erik's scenario)
+    // Wrapped in try-catch: history tracking is optional, Boss Round works without it
+    let personalBest: { bestScore: number; totalAttempts: number; perfectCount: number; lastPlayed: string | null } | null = null;
+    let recentScores: { score: number; total: number; completedAt: Date }[] = [];
+
+    try {
+      const [stats] = await db
+        .select({
+          bestScore: sql<number>`max(${bossRoundHistory.correctCount})`,
+          totalAttempts: sql<number>`count(*)::int`,
+          perfectCount: sql<number>`count(*) filter (where ${bossRoundHistory.isPerfect})::int`,
+          lastPlayed: sql<string>`max(${bossRoundHistory.completedAt})`,
+        })
+        .from(bossRoundHistory)
+        .where(eq(bossRoundHistory.userId, user.id));
+
+      personalBest = stats;
+
+      // Get recent scores for trend (last 5 attempts)
+      recentScores = await db
+        .select({
+          score: bossRoundHistory.correctCount,
+          total: bossRoundHistory.totalWords,
+          completedAt: bossRoundHistory.completedAt,
+        })
+        .from(bossRoundHistory)
+        .where(eq(bossRoundHistory.userId, user.id))
+        .orderBy(desc(bossRoundHistory.completedAt))
+        .limit(5);
+    } catch (historyError) {
+      // Table may not exist yet - Boss Round still works, just without history
+      console.warn('Boss round history unavailable:', historyError);
+    }
+
     return NextResponse.json({
       data: {
         words: bossWords,
         timeLimit: 90, // seconds
         count: bossWords.length,
+        stats: {
+          bestScore: personalBest?.bestScore ?? 0,
+          totalAttempts: personalBest?.totalAttempts ?? 0,
+          perfectCount: personalBest?.perfectCount ?? 0,
+          lastPlayed: personalBest?.lastPlayed ?? null,
+          recentScores: recentScores.map(s => ({
+            score: s.score,
+            total: s.total,
+            date: s.completedAt,
+          })),
+        },
       },
     });
   } catch (error) {
@@ -99,8 +144,45 @@ export async function POST(request: NextRequest) {
     const accuracy = totalWords > 0 ? Math.round((score / totalWords) * 100) : 0;
     const isPerfect = score === totalWords;
 
-    // For now, just return the results
-    // Future: Could store boss round history for achievements
+    // Store boss round history (like Erik tracking Week 1: 2/5, Week 8: 4/5, Week 16: 5/5)
+    // Wrapped in try-catch: history is optional, results still returned even if save fails
+    let savedResult = null;
+    let stats: { bestScore: number; totalAttempts: number; perfectCount: number } | null = null;
+    let isNewBest = false;
+
+    try {
+      [savedResult] = await db
+        .insert(bossRoundHistory)
+        .values({
+          userId: user.id,
+          totalWords,
+          correctCount: score,
+          timeLimit: 90,
+          timeUsed: timeUsed ?? 0,
+          accuracy,
+          isPerfect,
+        })
+        .returning();
+
+      // Get updated stats after this attempt
+      const [fetchedStats] = await db
+        .select({
+          bestScore: sql<number>`max(${bossRoundHistory.correctCount})`,
+          totalAttempts: sql<number>`count(*)::int`,
+          perfectCount: sql<number>`count(*) filter (where ${bossRoundHistory.isPerfect})::int`,
+        })
+        .from(bossRoundHistory)
+        .where(eq(bossRoundHistory.userId, user.id));
+
+      stats = fetchedStats;
+
+      // Check if this was a new personal best
+      isNewBest = savedResult && stats && score === stats.bestScore && stats.totalAttempts > 1;
+    } catch (historyError) {
+      // Table may not exist yet - Boss Round results still shown, just not persisted
+      console.warn('Boss round history save failed:', historyError);
+    }
+
     return NextResponse.json({
       data: {
         score,
@@ -108,8 +190,16 @@ export async function POST(request: NextRequest) {
         accuracy,
         isPerfect,
         timeUsed,
+        isNewBest,
+        stats: {
+          bestScore: stats?.bestScore ?? score,
+          totalAttempts: stats?.totalAttempts ?? 1,
+          perfectCount: stats?.perfectCount ?? (isPerfect ? 1 : 0),
+        },
         message: isPerfect
           ? 'Perfect score! You conquered the boss round!'
+          : isNewBest
+          ? 'New personal best! Keep improving!'
           : score >= Math.ceil(totalWords / 2)
           ? 'Well done! You passed the boss round!'
           : 'Keep practicing! You\'ll get them next time.',

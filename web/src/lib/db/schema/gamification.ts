@@ -104,12 +104,15 @@ export type BingoState = typeof bingoState.$inferSelect;
 export type NewBingoState = typeof bingoState.$inferInsert;
 
 /**
- * Default Bingo Square Definitions
+ * Bingo Square Definitions
  *
- * These are the 9 squares used by default. Stored in the database
- * to allow for future A/B testing and personalization.
+ * These are the available squares for the daily Bingo board.
+ * Stored in the database to allow for future A/B testing and personalization.
+ *
+ * Note: We define more than 9 squares here to enable variety.
+ * The board selects 9 from this pool each day.
  */
-export const DEFAULT_BINGO_SQUARES = [
+export const ALL_BINGO_SQUARES = [
   { id: 'review5', label: 'Review 5 words', target: 5 },
   { id: 'streak3', label: '3 correct in a row', target: 3 },
   { id: 'fillBlank', label: 'Complete a fill-blank', target: 1 },
@@ -119,6 +122,41 @@ export const DEFAULT_BINGO_SQUARES = [
   { id: 'socialWord', label: 'Review a social word', target: 1 },
   { id: 'masterWord', label: 'Master a word', target: 1 },
   { id: 'finishSession', label: 'Finish daily session', target: 1 },
+  { id: 'bossRound', label: 'Complete Boss Round', target: 1 }, // Added for Erik's weekly ritual
 ] as const;
 
-export type BingoSquareId = typeof DEFAULT_BINGO_SQUARES[number]['id'];
+// Default selection for backwards compatibility
+export const DEFAULT_BINGO_SQUARES = ALL_BINGO_SQUARES.slice(0, 9);
+
+export type BingoSquareId = typeof ALL_BINGO_SQUARES[number]['id'];
+
+/**
+ * BossRoundHistory Entity
+ *
+ * Tracks completed boss round challenges for progress visualization.
+ * Enables personal best tracking (like Erik's scenario: Week 1: 2/5, Week 8: 4/5, Week 16: 5/5).
+ */
+export const bossRoundHistory = pgTable('boss_round_history', {
+  // Primary Key
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  // Foreign Keys
+  userId: uuid('user_id').notNull(), // References auth.users (Supabase Auth)
+
+  // Challenge Details
+  totalWords: integer('total_words').notNull().default(5),
+  correctCount: integer('correct_count').notNull().default(0),
+  timeLimit: integer('time_limit').notNull().default(90), // seconds
+  timeUsed: integer('time_used').notNull().default(0), // seconds
+
+  // Computed (stored for quick access)
+  accuracy: integer('accuracy').notNull().default(0), // percentage 0-100
+  isPerfect: boolean('is_perfect').notNull().default(false),
+
+  // Timestamps
+  completedAt: timestamp('completed_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export type BossRoundHistory = typeof bossRoundHistory.$inferSelect;
+export type NewBossRoundHistory = typeof bossRoundHistory.$inferInsert;

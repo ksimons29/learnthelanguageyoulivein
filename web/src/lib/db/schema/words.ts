@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, real, timestamp, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, real, timestamp, integer, boolean } from 'drizzle-orm/pg-core';
 
 /**
  * Word Entity
@@ -20,6 +20,7 @@ export const words = pgTable('words', {
   translation: text('translation').notNull(), // Auto-generated translation
   language: text('language', { enum: ['source', 'target'] }).notNull(), // Detected language
   audioUrl: text('audio_url'), // Supabase Storage URL for TTS audio
+  audioGenerationFailed: boolean('audio_generation_failed').default(false), // True if TTS generation failed after retries
 
   // Language Codes (ISO 639-1, e.g., 'en', 'pt-PT', 'nl', 'sv')
   // Tracks which specific languages were used for this word

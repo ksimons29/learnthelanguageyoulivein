@@ -1,11 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { getLanguageConfig } from '@/lib/config/languages';
+
+/**
+ * Retry helper with exponential backoff for transient API failures.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 1000
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);
+      console.warn(`Retry ${attempt}/${maxRetries} after ${delay}ms:`, error instanceof Error ? error.message : error);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error('Retry exhausted');
+}
 
 /**
  * POST /api/words/[id]/regenerate-audio
@@ -46,9 +67,18 @@ export async function POST(
       });
     }
 
-    // 4. Determine which language to use for TTS
-    // The original text could be in sourceLang or targetLang depending on capture flow
-    const ttsLanguage = word.sourceLang;
+    // 4. Get user's language preference to determine correct TTS language
+    const languagePreference = await getUserLanguagePreference(user.id);
+
+    // 5. Determine which text and language to use for TTS
+    // Audio must ALWAYS be in the TARGET language (language being learned)
+    // - If originalText is in target language → use originalText
+    // - If originalText is in native language → use translation (which is in target language)
+    const isInputInTargetLanguage =
+      word.sourceLang.split('-')[0] === languagePreference.targetLanguage.split('-')[0];
+    const audioText = isInputInTargetLanguage ? word.originalText : word.translation;
+    const ttsLanguage = languagePreference.targetLanguage;
+
     const languageConfig = getLanguageConfig(ttsLanguage);
 
     if (!languageConfig) {
@@ -58,19 +88,24 @@ export async function POST(
       );
     }
 
-    // 5. Generate audio
-    const audioBuffer = await generateAudio({
-      text: word.originalText,
-      languageCode: ttsLanguage,
-    });
+    // 6. Generate audio with retry logic (3 retries, exponential backoff: 2s → 4s → 8s)
+    const audioBuffer = await withRetry(
+      () => generateAudio({ text: audioText, languageCode: ttsLanguage }),
+      3,
+      2000
+    );
 
-    // 6. Upload to storage
-    const audioUrl = await uploadAudio(user.id, wordId, audioBuffer);
+    // 7. Upload to storage with retry logic (2 retries, exponential backoff: 1s → 2s)
+    const audioUrl = await withRetry(
+      () => uploadAudio(user.id, wordId, audioBuffer),
+      2,
+      1000
+    );
 
-    // 7. Update word with audio URL
+    // 8. Update word with audio URL and clear failure flag
     const [updatedWord] = await db
       .update(words)
-      .set({ audioUrl, updatedAt: new Date() })
+      .set({ audioUrl, audioGenerationFailed: false, updatedAt: new Date() })
       .where(eq(words.id, wordId))
       .returning();
 

@@ -16,6 +16,12 @@ import { getTTSVoice, type LanguageConfig } from '@/lib/config/languages';
  * Reference: /docs/engineering/implementation_plan.md (lines 95-114)
  */
 
+// Maximum text length for TTS (OpenAI supports up to 4096 chars, we limit to 500 for phrases)
+const MAX_TTS_TEXT_LENGTH = 500;
+
+// Timeout for TTS API calls (30 seconds)
+const TTS_TIMEOUT_MS = 30000;
+
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error(
@@ -37,28 +43,63 @@ export interface TTSOptions {
 /**
  * Generate audio for a given text using OpenAI TTS
  *
+ * Features:
+ * - Text length validation (max 500 chars)
+ * - 30s timeout to prevent hung requests
+ * - Rate limit detection for retry logic
+ *
  * @param options - TTS configuration options
  * @returns Audio buffer in MP3 format
+ * @throws Error if text is too long, timeout occurs, or API fails
  */
 export async function generateAudio(options: TTSOptions): Promise<Buffer> {
   const { text, languageCode, voice, speed = 1.0 } = options;
+
+  // Validate text length
+  if (!text || text.trim().length === 0) {
+    throw new Error('TTS text cannot be empty');
+  }
+  if (text.length > MAX_TTS_TEXT_LENGTH) {
+    throw new Error(`TTS text too long: ${text.length} chars (max ${MAX_TTS_TEXT_LENGTH})`);
+  }
 
   // Use provided voice, or get voice based on language code, or default to 'nova'
   const selectedVoice = voice || (languageCode ? getTTSVoice(languageCode) : 'nova');
   const openai = getOpenAI();
 
-  try {
-    const response = await openai.audio.speech.create({
-      model: 'tts-1', // Use 'tts-1-hd' for higher quality (2x cost)
-      voice: selectedVoice,
-      input: text,
-      response_format: 'mp3', // AAC preferred but MP3 widely supported
-      speed,
-    });
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
 
+  try {
+    const response = await openai.audio.speech.create(
+      {
+        model: 'tts-1', // Use 'tts-1-hd' for higher quality (2x cost)
+        voice: selectedVoice,
+        input: text,
+        response_format: 'mp3', // AAC preferred but MP3 widely supported
+        speed,
+      },
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);
   } catch (error) {
+    clearTimeout(timeoutId);
+
+    // Handle abort (timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`TTS request timed out after ${TTS_TIMEOUT_MS / 1000}s`);
+    }
+
+    // Handle rate limiting (OpenAI returns 429)
+    if (error instanceof OpenAI.RateLimitError) {
+      const retryAfter = error.headers?.get?.('retry-after');
+      throw new Error(`TTS rate limited${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
+    }
+
     console.error('TTS generation failed:', error);
     throw new Error(
       `Failed to generate audio: ${error instanceof Error ? error.message : 'Unknown error'}`

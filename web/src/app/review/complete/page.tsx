@@ -25,6 +25,11 @@ export default function ReviewCompletePage() {
   const [bossRoundTimeLimit, setBossRoundTimeLimit] = useState(90);
   const [bossRoundScore, setBossRoundScore] = useState(0);
   const [bossRoundTimeUsed, setBossRoundTimeUsed] = useState(0);
+  const [bossRoundStats, setBossRoundStats] = useState<{
+    bestScore: number;
+    totalAttempts: number;
+    perfectCount: number;
+  } | null>(null);
 
   // Calculate accuracy
   const accuracy =
@@ -63,6 +68,10 @@ export default function ReviewCompletePage() {
           if (bossData.words && bossData.words.length > 0) {
             setBossRoundWords(bossData.words);
             setBossRoundTimeLimit(bossData.timeLimit || 90);
+          }
+          // Set personal stats for motivation (like Erik's progress tracking)
+          if (bossData.stats) {
+            setBossRoundStats(bossData.stats);
           }
         }
       } catch (err) {
@@ -357,6 +366,7 @@ export default function ReviewCompletePage() {
             <BossRoundPrompt
               onStart={handleStartBossRound}
               onSkip={handleSkipBossRound}
+              stats={bossRoundStats}
             />
           </div>
         )}

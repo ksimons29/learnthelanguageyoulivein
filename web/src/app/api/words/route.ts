@@ -621,6 +621,13 @@ Respond with ONLY the category name in lowercase (e.g. "food_dining" or "work"),
  *
  * This runs after the word is returned to the user, so it doesn't
  * block the capture flow. The client polls for the audio URL.
+ *
+ * Uses retry logic with exponential backoff:
+ * - TTS generation: 3 retries (2s → 4s → 8s)
+ * - Storage upload: 2 retries (1s → 2s)
+ *
+ * If all retries fail, marks the word with audioGenerationFailed=true
+ * so the client can stop polling and show a retry button.
  */
 async function generateAudioInBackground(
   userId: string,
@@ -629,16 +636,32 @@ async function generateAudioInBackground(
   languageCode: string
 ): Promise<void> {
   try {
-    const audioBuffer = await generateAudio({ text, languageCode });
-    const audioUrl = await uploadAudio(userId, wordId, audioBuffer);
+    // TTS generation with retry (3 retries, 2s base delay)
+    const audioBuffer = await withRetry(
+      () => generateAudio({ text, languageCode }),
+      3,
+      2000
+    );
 
+    // Storage upload with retry (2 retries, 1s base delay)
+    const audioUrl = await withRetry(
+      () => uploadAudio(userId, wordId, audioBuffer),
+      2,
+      1000
+    );
+
+    // Success - update word with audio URL
     await db
       .update(words)
-      .set({ audioUrl })
+      .set({ audioUrl, audioGenerationFailed: false })
       .where(eq(words.id, wordId));
   } catch (error) {
-    console.error('Background audio generation error:', error);
-    // Non-fatal - word exists without audio
+    console.error('Background audio generation failed after retries:', error);
+    // Mark word as failed so client can stop polling and show retry button
+    await db
+      .update(words)
+      .set({ audioGenerationFailed: true })
+      .where(eq(words.id, wordId));
   }
 }
 

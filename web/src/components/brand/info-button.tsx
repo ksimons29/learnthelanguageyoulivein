@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical } from "lucide-react";
+import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/auth-store";
 import {
@@ -192,6 +192,19 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
             >
               Version 1.0 · Made with care in Lisbon
             </p>
+            {/* Early access note */}
+            <div
+              className="flex items-start gap-2 mt-3 p-2 rounded-lg"
+              style={{ backgroundColor: "var(--surface-page-aged)" }}
+            >
+              <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+              <p
+                className="text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Early access: Sign up is simplified without email confirmation. Your account is secure.
+              </p>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

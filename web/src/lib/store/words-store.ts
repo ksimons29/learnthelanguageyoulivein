@@ -249,54 +249,24 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       return { audioGeneratingIds: newSet };
     });
 
-    // Poll every 1 second for up to 30 seconds
-    const maxAttempts = 30;
-    let attempts = 0;
+    // Exponential backoff polling:
+    // - Total timeout: 60 seconds
+    // - Intervals: 1s → 1.5s → 2.25s → 3.4s → 5s (cap)
+    // - Early termination if server sets audioGenerationFailed=true
+    const TOTAL_TIMEOUT_MS = 60000;
+    const INITIAL_INTERVAL_MS = 1000;
+    const BACKOFF_MULTIPLIER = 1.5;
+    const MAX_INTERVAL_MS = 5000;
+
+    const startTime = Date.now();
+    let currentInterval = INITIAL_INTERVAL_MS;
 
     const poll = async () => {
-      attempts++;
-      try {
-        const response = await fetch(`/api/words/${wordId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch word');
-        }
+      const elapsedMs = Date.now() - startTime;
 
-        const { data } = await response.json();
-        const word = data.word;
-
-        if (word.audioUrl) {
-          // Audio is ready - update the word and remove from tracking
-          set((state) => {
-            const newSet = new Set(state.audioGeneratingIds);
-            newSet.delete(wordId);
-            return {
-              audioGeneratingIds: newSet,
-              words: state.words.map((w) =>
-                w.id === wordId ? { ...w, audioUrl: word.audioUrl } : w
-              ),
-            };
-          });
-          return; // Stop polling
-        }
-
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 1000);
-        } else {
-          // Give up after max attempts - mark as failed
-          console.warn(`Audio generation timed out for word ${wordId} after ${maxAttempts} seconds`);
-          set((state) => {
-            const generatingSet = new Set(state.audioGeneratingIds);
-            generatingSet.delete(wordId);
-            const failedSet = new Set(state.audioFailedIds);
-            failedSet.add(wordId);
-            return {
-              audioGeneratingIds: generatingSet,
-              audioFailedIds: failedSet,
-            };
-          });
-        }
-      } catch (error) {
-        console.error('Audio polling error:', error);
+      // Check if we've exceeded total timeout
+      if (elapsedMs >= TOTAL_TIMEOUT_MS) {
+        console.warn(`Audio generation timed out for word ${wordId} after ${TOTAL_TIMEOUT_MS / 1000}s`);
         set((state) => {
           const generatingSet = new Set(state.audioGeneratingIds);
           generatingSet.delete(wordId);
@@ -307,11 +277,66 @@ export const useWordsStore = create<WordsState>((set, get) => ({
             audioFailedIds: failedSet,
           };
         });
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/words/${wordId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch word');
+        }
+
+        const { data } = await response.json();
+        const word = data.word;
+
+        // Success: Audio is ready
+        if (word.audioUrl) {
+          set((state) => {
+            const newSet = new Set(state.audioGeneratingIds);
+            newSet.delete(wordId);
+            return {
+              audioGeneratingIds: newSet,
+              words: state.words.map((w) =>
+                w.id === wordId ? { ...w, audioUrl: word.audioUrl, audioGenerationFailed: false } : w
+              ),
+            };
+          });
+          return; // Stop polling
+        }
+
+        // Early termination: Server marked generation as failed
+        if (word.audioGenerationFailed) {
+          console.warn(`Server reported audio generation failed for word ${wordId}`);
+          set((state) => {
+            const generatingSet = new Set(state.audioGeneratingIds);
+            generatingSet.delete(wordId);
+            const failedSet = new Set(state.audioFailedIds);
+            failedSet.add(wordId);
+            return {
+              audioGeneratingIds: generatingSet,
+              audioFailedIds: failedSet,
+              words: state.words.map((w) =>
+                w.id === wordId ? { ...w, audioGenerationFailed: true } : w
+              ),
+            };
+          });
+          return; // Stop polling
+        }
+
+        // Continue polling with exponential backoff
+        currentInterval = Math.min(currentInterval * BACKOFF_MULTIPLIER, MAX_INTERVAL_MS);
+        setTimeout(poll, currentInterval);
+      } catch (error) {
+        console.error('Audio polling error:', error);
+        // On network error, continue polling (might be transient)
+        // Only stop if we've exceeded total timeout
+        currentInterval = Math.min(currentInterval * BACKOFF_MULTIPLIER, MAX_INTERVAL_MS);
+        setTimeout(poll, currentInterval);
       }
     };
 
     // Start polling after 1 second delay (give audio generation time to start)
-    setTimeout(poll, 1000);
+    setTimeout(poll, INITIAL_INTERVAL_MS);
   },
 
   isAudioGenerating: (wordId: string) => {

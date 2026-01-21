@@ -31,6 +31,7 @@ const SQUARE_LABELS: Record<BingoSquareId, { short: string; full: string }> = {
   socialWord: { short: "Social", full: "Social category" },
   masterWord: { short: "Master", full: "Master a word" },
   finishSession: { short: "Done", full: "Finish session" },
+  bossRound: { short: "Boss", full: "Complete Boss Round" },
 };
 
 // Navigation actions for each square
@@ -48,6 +49,7 @@ const SQUARE_ACTIONS: Record<BingoSquareId, {
   socialWord: { type: 'navigate', route: '/notebook?category=social' },
   masterWord: { type: 'tooltip', tooltip: 'Master any word through practice' },
   finishSession: { type: 'navigate', route: '/review' },
+  bossRound: { type: 'tooltip', tooltip: 'Complete a Boss Round challenge after daily goal' },
 };
 
 // Winning lines for bingo detection

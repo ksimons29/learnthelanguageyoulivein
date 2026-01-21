@@ -69,6 +69,7 @@ npm run build             # Production build
 | #20 | Open | Default categories |
 
 ### Closed This Session
+- ~~#57~~ **P2-normal** - Fixed: Audio generation reliability (~15% failure rate) - retry logic, language bug, timeout handling (Session 51)
 - ~~#52~~ **P3-low** - Fixed: Auth redirect - unauthenticated users now redirect to sign-in (Session 37)
 - ~~#43~~ **BLOCKER** - Fixed: Language filtering via shared helper in all word queries
 - ~~#50~~ **P0-critical** - Fixed: E2E User Flow Verification - all 3 test users pass (Session 30)
@@ -76,7 +77,6 @@ npm run build             # Production build
 ## Open Feature Issues
 | Issue | Feature | Priority |
 |-------|---------|----------|
-| #57 | Audio generation timeout (~15% failure rate) | P2-normal |
 | #51 | Review page misleading for unauth users | P2-normal |
 | #44 | Progress API 500 error | P1-high |
 | #23 | iOS App Store submission | P1-high |
@@ -95,6 +95,35 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 51 - 2026-01-21 - Audio Reliability Fix (Issue #57)
+
+**Problem:** ~15% of audio generation requests were failing, leaving users without pronunciation audio.
+
+**Root Causes Fixed:**
+1. **Critical language bug** - `regenerate-audio` endpoint used `sourceLang` instead of `targetLanguage` for TTS
+2. **No retry logic** - TTS generation had no retries (translation had `withRetry()` but audio didn't)
+3. **30s client timeout too short** - Server might still be working when client gives up
+4. **No failure visibility** - Users had no way to retry failed audio
+
+**Changes:**
+- `web/src/lib/db/schema/words.ts` - Added `audioGenerationFailed` boolean column
+- `web/src/app/api/words/[id]/regenerate-audio/route.ts` - Fixed language direction bug, added retry logic
+- `web/src/app/api/words/route.ts` - Added `withRetry()` to TTS generation (3 retries) and storage upload (2 retries)
+- `web/src/lib/audio/tts.ts` - Added 30s timeout, 500-char limit, rate limit detection
+- `web/src/lib/store/words-store.ts` - Exponential backoff polling (1s→5s cap), 60s total timeout, early termination on server failure
+- `web/src/components/audio/audio-retry-button.tsx` - New component for failed audio recovery
+- `web/src/components/home/phrase-card.tsx` - Integrated retry button
+- `web/src/components/home/captured-today-list.tsx` - Connected retry functionality
+
+**E2E Testing (all passed):**
+- EN→PT: English capture → Portuguese audio ✓
+- EN→PT: Portuguese capture → Portuguese audio ✓
+- NL→EN: Dutch capture → English audio ✓
+
+**Closes:** #57
+
+---
 
 ### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
 

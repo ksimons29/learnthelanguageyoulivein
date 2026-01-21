@@ -17,6 +17,8 @@ interface CapturedTodayListProps {
 
 export function CapturedTodayList({ phrases, onEdit }: CapturedTodayListProps) {
   const isAudioGenerating = useWordsStore((state) => state.isAudioGenerating);
+  const isAudioFailed = useWordsStore((state) => state.isAudioFailed);
+  const retryAudioGeneration = useWordsStore((state) => state.retryAudioGeneration);
 
   if (phrases.length === 0) {
     return (
@@ -54,6 +56,9 @@ export function CapturedTodayList({ phrases, onEdit }: CapturedTodayListProps) {
           translation={item.translation}
           audioUrl={item.audioUrl}
           audioGenerating={isAudioGenerating(item.id)}
+          audioFailed={isAudioFailed(item.id)}
+          isRetryingAudio={isAudioGenerating(item.id)}
+          onRetryAudio={() => retryAudioGeneration(item.id)}
           onEdit={onEdit ? () => onEdit(item.id) : undefined}
         />
       ))}

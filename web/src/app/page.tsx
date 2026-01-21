@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, PartyPopper, X } from "lucide-react";
 import {
@@ -9,12 +9,13 @@ import {
   CapturedTodayList,
   TodaysProgress,
 } from "@/components/home";
-import { BingoBoard, BingoBoardModal } from "@/components/gamification";
+import { BingoBoard, BingoBoardModal, BossRoundPrompt, BossRoundGame, BossRoundResults } from "@/components/gamification";
 import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
 import { useOnboardingStatus } from "@/lib/hooks";
+import type { Word } from "@/lib/db/schema";
 
 export default function HomePage() {
   const router = useRouter();
@@ -34,6 +35,19 @@ export default function HomePage() {
 
   // Bingo modal state
   const [showBingoModal, setShowBingoModal] = useState(false);
+
+  // Boss round state
+  const [bossRoundState, setBossRoundState] = useState<'hidden' | 'prompt' | 'playing' | 'results'>('hidden');
+  const [bossRoundWords, setBossRoundWords] = useState<Word[]>([]);
+  const [bossRoundTimeLimit, setBossRoundTimeLimit] = useState(90);
+  const [bossRoundScore, setBossRoundScore] = useState(0);
+  const [bossRoundTimeUsed, setBossRoundTimeUsed] = useState(0);
+  const [bossRoundStats, setBossRoundStats] = useState<{
+    bestScore: number;
+    totalAttempts: number;
+    perfectCount: number;
+  } | null>(null);
+  const [bossRoundLoading, setBossRoundLoading] = useState(false);
 
   // Redirect to onboarding if user hasn't completed it
   useEffect(() => {
@@ -55,6 +69,37 @@ export default function HomePage() {
       fetchGamificationState();
     }
   }, [user, authLoading, fetchGamificationState]);
+
+  // Fetch boss round data when daily goal is complete
+  useEffect(() => {
+    const fetchBossRound = async () => {
+      if (!daily?.isComplete || bossRoundLoading || bossRoundWords.length > 0) {
+        return;
+      }
+
+      setBossRoundLoading(true);
+      try {
+        const response = await fetch("/api/gamification/boss-round");
+        if (response.ok) {
+          const { data } = await response.json();
+          if (data.words && data.words.length > 0) {
+            setBossRoundWords(data.words);
+            setBossRoundTimeLimit(data.timeLimit || 90);
+            setBossRoundState('prompt');
+          }
+          if (data.stats) {
+            setBossRoundStats(data.stats);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch boss round:", err);
+      } finally {
+        setBossRoundLoading(false);
+      }
+    };
+
+    fetchBossRound();
+  }, [daily?.isComplete, bossRoundLoading, bossRoundWords.length]);
 
   // Redirect to sign-in if not authenticated (client-side fallback)
   useEffect(() => {
@@ -105,6 +150,46 @@ export default function HomePage() {
     }));
   }, [stats.capturedToday]);
 
+  // Boss round handlers
+  const handleStartBossRound = useCallback(() => {
+    setBossRoundState('playing');
+  }, []);
+
+  const handleSkipBossRound = useCallback(() => {
+    setBossRoundState('hidden');
+  }, []);
+
+  const handleBossRoundComplete = useCallback(async (score: number, timeUsed: number) => {
+    setBossRoundScore(score);
+    setBossRoundTimeUsed(timeUsed);
+    setBossRoundState('results');
+
+    // Submit results to server
+    try {
+      await fetch("/api/gamification/boss-round", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          score,
+          totalWords: bossRoundWords.length,
+          timeUsed,
+        }),
+      });
+      // Refresh gamification state to update bingo
+      await fetchGamificationState();
+    } catch (err) {
+      console.error("Failed to submit boss round results:", err);
+    }
+  }, [bossRoundWords.length, fetchGamificationState]);
+
+  const handleBossRoundCancel = useCallback(() => {
+    setBossRoundState('prompt');
+  }, []);
+
+  const handleBossRoundResultsClose = useCallback(() => {
+    setBossRoundState('hidden');
+  }, []);
+
   // Show loading state while checking auth or onboarding status
   if (authLoading || (user && onboardingLoading)) {
     return (
@@ -138,6 +223,18 @@ export default function HomePage() {
   // Don't render if not authenticated (will redirect)
   if (!user) {
     return null;
+  }
+
+  // Boss round game (full screen takeover)
+  if (bossRoundState === 'playing' && bossRoundWords.length > 0) {
+    return (
+      <BossRoundGame
+        words={bossRoundWords}
+        timeLimit={bossRoundTimeLimit}
+        onComplete={handleBossRoundComplete}
+        onCancel={handleBossRoundCancel}
+      />
+    );
   }
 
   return (
@@ -227,6 +324,31 @@ export default function HomePage() {
             />
           </div>
         </section>
+
+        {/* Boss Round Challenge - appears when daily goal is complete */}
+        {bossRoundState === 'prompt' && bossRoundWords.length > 0 && (
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="w-1 h-6 rounded-full"
+                style={{ backgroundColor: "var(--accent-ribbon)" }}
+              />
+              <h2
+                className="text-xl font-semibold heading-serif ink-text"
+                style={{ color: "var(--text-heading)" }}
+              >
+                Boss Round
+              </h2>
+            </div>
+            <div className="page-stack-3d">
+              <BossRoundPrompt
+                onStart={handleStartBossRound}
+                onSkip={handleSkipBossRound}
+                stats={bossRoundStats}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Daily Bingo */}
         {bingo && (
@@ -357,6 +479,16 @@ export default function HomePage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Boss Round Results Modal */}
+      {bossRoundState === 'results' && (
+        <BossRoundResults
+          score={bossRoundScore}
+          total={bossRoundWords.length}
+          timeUsed={bossRoundTimeUsed}
+          onClose={handleBossRoundResultsClose}
+        />
       )}
     </div>
   );

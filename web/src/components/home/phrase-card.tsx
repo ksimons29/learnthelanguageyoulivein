@@ -2,7 +2,7 @@
 
 import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AudioPlayButton } from "@/components/audio";
+import { AudioPlayButton, AudioRetryButton } from "@/components/audio";
 import { useAudioPlayer } from "@/lib/hooks";
 
 interface PhraseCardProps {
@@ -10,6 +10,9 @@ interface PhraseCardProps {
   translation: string;
   audioUrl?: string | null;
   audioGenerating?: boolean;
+  audioFailed?: boolean;
+  isRetryingAudio?: boolean;
+  onRetryAudio?: () => void;
   onEdit?: () => void;
   className?: string;
 }
@@ -19,6 +22,9 @@ export function PhraseCard({
   translation,
   audioUrl,
   audioGenerating = false,
+  audioFailed = false,
+  isRetryingAudio = false,
+  onRetryAudio,
   onEdit,
   className,
 }: PhraseCardProps) {
@@ -83,13 +89,22 @@ export function PhraseCard({
             <Pencil className="h-4 w-4" />
           </button>
         )}
-        <AudioPlayButton
-          isPlaying={isThisPlaying}
-          isLoading={audioGenerating || (isLoading && currentUrl === audioUrl)}
-          hasAudio={!!audioUrl || audioGenerating}
-          onClick={handlePlay}
-          size="md"
-        />
+        {/* Show retry button when audio generation failed, otherwise show play button */}
+        {audioFailed && onRetryAudio ? (
+          <AudioRetryButton
+            isRetrying={isRetryingAudio}
+            onRetry={onRetryAudio}
+            size="md"
+          />
+        ) : (
+          <AudioPlayButton
+            isPlaying={isThisPlaying}
+            isLoading={audioGenerating || (isLoading && currentUrl === audioUrl)}
+            hasAudio={!!audioUrl || audioGenerating}
+            onClick={handlePlay}
+            size="md"
+          />
+        )}
       </div>
     </div>
   );
