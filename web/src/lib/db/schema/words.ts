@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, real, timestamp, integer, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, real, timestamp, integer, boolean, index } from 'drizzle-orm/pg-core';
 
 /**
  * Word Entity
@@ -60,7 +60,22 @@ export const words = pgTable('words', {
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  // P0: Critical indexes for performance (3s capture requirement)
+  // Index for fetching due words - used by GET /api/reviews
+  index('words_user_next_review_idx').on(table.userId, table.nextReviewDate),
+  // Index for language filtering - used by notebook and review queries
+  index('words_user_target_lang_idx').on(table.userId, table.targetLang),
+  index('words_user_source_lang_idx').on(table.userId, table.sourceLang),
+  // Index for mastery filtering - used by notebook filters and progress dashboard
+  index('words_user_mastery_idx').on(table.userId, table.masteryStatus),
+  // Index for notebook ordering (most recent first)
+  index('words_user_created_idx').on(table.userId, table.createdAt),
+  // Index for category filtering - used by notebook category view
+  index('words_user_category_idx').on(table.userId, table.category),
+  // Index for duplicate detection - used by capture endpoint
+  index('words_user_original_text_idx').on(table.userId, table.originalText),
+]);
 
 export type Word = typeof words.$inferSelect;
 export type NewWord = typeof words.$inferInsert;

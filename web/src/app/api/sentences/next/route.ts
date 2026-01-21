@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
 
-    // 4. Find unused sentences (just get one - first available)
+    // 4. Find unused sentences (get a few in case some have missing words)
     const now = new Date();
 
     const unusedSentences = await db
@@ -57,37 +57,66 @@ export async function GET(request: NextRequest) {
           isNull(generatedSentences.usedAt)
         )
       )
-      .limit(5); // Get a few in case some have missing words
+      .limit(5);
 
-    // 5. Try each sentence until we find one with all words intact
-    // Track orphaned sentences for cleanup (self-healing guardrail)
+    // Early exit if no sentences
+    if (unusedSentences.length === 0) {
+      return NextResponse.json({
+        data: {
+          sentence: null,
+          targetWords: [],
+          message: 'No pre-generated sentences available. Generate more with POST /api/sentences/generate.',
+        },
+      });
+    }
+
+    // 5. OPTIMIZATION: Batch fetch all words for all sentences in ONE query
+    // This fixes the N+1 query problem (was: 1 query per sentence)
+    const allWordIds = new Set<string>();
+    const validSentences: typeof unusedSentences = [];
     const orphanedSentenceIds: string[] = [];
 
+    // Collect all word IDs and filter out sentences with empty wordIds
     for (const sentence of unusedSentences) {
-      // Guard against empty/null wordIds - inArray() crashes with empty arrays
       if (!sentence.wordIds || sentence.wordIds.length === 0) {
         console.warn(
           `[GUARDRAIL] Sentence ${sentence.id} has empty wordIds. Marking for deletion.`
         );
         orphanedSentenceIds.push(sentence.id);
-        continue;
+      } else {
+        validSentences.push(sentence);
+        for (const wordId of sentence.wordIds) {
+          allWordIds.add(wordId);
+        }
       }
+    }
 
-      // Get the words for this sentence (filtered by target language)
-      // Match words where the user's target language appears as either sourceLang or targetLang
-      const sentenceWords = await db
-        .select()
-        .from(words)
-        .where(
-          and(
-            eq(words.userId, user.id),
-            or(
-              eq(words.sourceLang, languagePreference.targetLanguage),
-              eq(words.targetLang, languagePreference.targetLanguage)
-            ),
-            inArray(words.id, sentence.wordIds)
+    // Fetch ALL words for all sentences in a single query
+    const allWords = allWordIds.size > 0
+      ? await db
+          .select()
+          .from(words)
+          .where(
+            and(
+              eq(words.userId, user.id),
+              or(
+                eq(words.sourceLang, languagePreference.targetLanguage),
+                eq(words.targetLang, languagePreference.targetLanguage)
+              ),
+              inArray(words.id, Array.from(allWordIds))
+            )
           )
-        );
+      : [];
+
+    // Create a lookup map for quick word retrieval
+    const wordsMap = new Map(allWords.map(w => [w.id, w]));
+
+    // 6. Find the first valid sentence with all words intact
+    for (const sentence of validSentences) {
+      // Get words for this sentence from the map
+      const sentenceWords = sentence.wordIds
+        .map(id => wordsMap.get(id))
+        .filter((w): w is typeof allWords[0] => w !== undefined);
 
       // Verify we found all words (data integrity check)
       // GUARDRAIL: Auto-delete orphaned sentences (words were deleted)
@@ -120,7 +149,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 6. GUARDRAIL: Clean up any orphaned sentences we found
+    // 7. GUARDRAIL: Clean up any orphaned sentences we found
     if (orphanedSentenceIds.length > 0) {
       console.log(`[GUARDRAIL] Auto-deleting ${orphanedSentenceIds.length} orphaned sentences`);
       await db
@@ -128,7 +157,7 @@ export async function GET(request: NextRequest) {
         .where(inArray(generatedSentences.id, orphanedSentenceIds));
     }
 
-    // 7. No valid sentence found
+    // 8. No valid sentence found
     return NextResponse.json({
       data: {
         sentence: null,

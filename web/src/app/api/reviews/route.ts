@@ -199,6 +199,8 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // 7. Update session stats atomically (prevents race conditions)
+    // Only update if session is still active (endedAt IS NULL) to prevent
+    // stats accumulating in ended sessions
     await db
       .update(reviewSessions)
       .set({
@@ -208,7 +210,10 @@ export async function POST(request: NextRequest) {
             ? sql`${reviewSessions.correctCount} + 1`
             : reviewSessions.correctCount,
       })
-      .where(eq(reviewSessions.id, sessionId));
+      .where(and(
+        eq(reviewSessions.id, sessionId),
+        isNull(reviewSessions.endedAt)
+      ));
 
     // 8. Determine if mastery was just achieved
     const masteryAchieved =
@@ -245,47 +250,54 @@ export async function POST(request: NextRequest) {
  * - No previous session exists
  * - Last session is >2 hours old
  * - Last session has been ended
+ *
+ * IMPORTANT: Uses a transaction to prevent race conditions where
+ * two simultaneous requests could create duplicate active sessions.
  */
 async function getOrCreateSession(userId: string): Promise<string> {
   const twoHoursAgo = new Date(Date.now() - SESSION_BOUNDARY_HOURS * 60 * 60 * 1000);
 
-  // Look for an active session (started within last 2 hours and not ended)
-  const [existingSession] = await db
-    .select()
-    .from(reviewSessions)
-    .where(
-      and(
-        eq(reviewSessions.userId, userId),
-        isNull(reviewSessions.endedAt)
+  // Use a transaction to prevent race conditions
+  // If two requests arrive simultaneously, only one will create a session
+  return await db.transaction(async (tx) => {
+    // Look for an active session (started within last 2 hours and not ended)
+    const [existingSession] = await tx
+      .select()
+      .from(reviewSessions)
+      .where(
+        and(
+          eq(reviewSessions.userId, userId),
+          isNull(reviewSessions.endedAt)
+        )
       )
-    )
-    .orderBy(desc(reviewSessions.startedAt))
-    .limit(1);
+      .orderBy(desc(reviewSessions.startedAt))
+      .limit(1);
 
-  // Check if session is still valid (within 2-hour window)
-  if (existingSession && existingSession.startedAt >= twoHoursAgo) {
-    return existingSession.id;
-  }
+    // Check if session is still valid (within 2-hour window)
+    if (existingSession && existingSession.startedAt >= twoHoursAgo) {
+      return existingSession.id;
+    }
 
-  // Close any old unclosed sessions
-  if (existingSession) {
-    await db
-      .update(reviewSessions)
-      .set({ endedAt: new Date() })
-      .where(eq(reviewSessions.id, existingSession.id));
-  }
+    // Close any old unclosed sessions
+    if (existingSession) {
+      await tx
+        .update(reviewSessions)
+        .set({ endedAt: new Date() })
+        .where(eq(reviewSessions.id, existingSession.id));
+    }
 
-  // Create new session
-  const [newSession] = await db
-    .insert(reviewSessions)
-    .values({
-      userId,
-      wordsReviewed: 0,
-      correctCount: 0,
-    })
-    .returning();
+    // Create new session
+    const [newSession] = await tx
+      .insert(reviewSessions)
+      .values({
+        userId,
+        wordsReviewed: 0,
+        correctCount: 0,
+      })
+      .returning();
 
-  return newSession.id;
+    return newSession.id;
+  });
 }
 
 /**

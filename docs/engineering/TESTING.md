@@ -1542,7 +1542,214 @@ Evidence
 
 ---
 
-## 10. Release readiness checklist
+## 10. Audit-Based Tests (Session 52)
+
+These tests verify fixes from the comprehensive application audit. Run after any changes to the affected systems.
+
+### 10.1 Capture Performance (P0)
+
+**Requirement:** Capture must complete in ≤ 3 seconds (user-facing latency)
+
+Steps
+
+1. Sign in with test account
+2. Navigate to `/capture`
+3. Set up JavaScript timing measurement:
+   ```javascript
+   window._captureTimings = [];
+   const originalFetch = window.fetch;
+   window.fetch = async function(...args) {
+     if (args[0]?.includes?.('/api/words')) {
+       const start = performance.now();
+       const result = await originalFetch.apply(this, args);
+       window._captureTimings.push({ url: args[0], duration: performance.now() - start });
+       return result;
+     }
+     return originalFetch.apply(this, args);
+   };
+   ```
+4. Capture a phrase
+5. Check `window._captureTimings`
+
+Expected
+
+* POST /api/words completes in < 3000ms
+* Typical performance: 2-2.5 seconds
+
+### 10.2 Database Indexes (P0)
+
+Verify indexes exist for performance-critical queries.
+
+Supabase SQL
+
+```sql
+-- Check words table indexes
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename = 'words'
+ORDER BY indexname;
+```
+
+Expected indexes
+
+* `words_user_next_review_idx` on (user_id, next_review_date)
+* `words_user_target_lang_idx` on (user_id, target_lang)
+* `words_user_source_lang_idx` on (user_id, source_lang)
+* `words_user_mastery_idx` on (user_id, mastery_status)
+* `words_user_created_idx` on (user_id, created_at)
+* `words_user_category_idx` on (user_id, category)
+
+### 10.3 Rate Limiting (P1)
+
+Test subscription-based limits enforcement.
+
+Steps
+
+1. Sign in with test account (free tier)
+2. Capture 50 words in a session
+3. Attempt to capture word #51
+
+Expected
+
+* 429 response returned
+* Error message: "You've reached your daily word capture limit"
+* `retryAfter` header or field present
+
+Manual test (curl)
+
+```bash
+# After exceeding limit
+curl -X POST https://llyli.vercel.app/api/words \
+  -H "Content-Type: application/json" \
+  -H "Cookie: [auth-cookie]" \
+  -d '{"text":"test"}' -w "%{http_code}"
+```
+
+Expected: HTTP 429
+
+### 10.4 Language Validation (P1)
+
+Test that unsupported language codes are rejected.
+
+Steps
+
+1. Sign in with test account
+2. Manually call the API with invalid language:
+   ```bash
+   curl -X POST /api/words \
+     -H "Content-Type: application/json" \
+     -d '{"text":"test", "sourceLang":"xx-XX", "targetLang":"en"}'
+   ```
+
+Expected
+
+* 400 response
+* Error message mentioning unsupported language
+
+### 10.5 Network Timeout (P1)
+
+Test that capture requests timeout after 10 seconds.
+
+Steps
+
+1. Use browser DevTools to throttle network to "Slow 3G"
+2. Attempt to capture a phrase
+3. Wait 10+ seconds
+
+Expected
+
+* Request aborts after ~10 seconds
+* User sees error: "Request timed out. Please check your connection and try again."
+* UI returns to input state (not stuck on "Capturing...")
+
+### 10.6 401 Redirect (P1)
+
+Test that expired sessions redirect to login.
+
+Steps
+
+1. Sign in with test account
+2. Clear the auth cookie in DevTools (Application > Cookies)
+3. Attempt to capture a phrase
+
+Expected
+
+* User is redirected to `/auth/sign-in`
+* No generic error shown to user
+
+### 10.7 Session Race Condition Prevention (P0)
+
+Test that concurrent review starts don't create duplicate sessions.
+
+Steps
+
+1. Sign in with test account that has due words
+2. Open two browser tabs
+3. Navigate both to `/review` simultaneously
+4. Check database for duplicate active sessions
+
+Verification SQL
+
+```sql
+SELECT COUNT(*) as active_sessions
+FROM review_sessions
+WHERE user_id = 'YOUR-USER-ID' AND ended_at IS NULL;
+```
+
+Expected
+
+* Exactly 1 active session (not 2+)
+* Transaction wrapping prevents race condition
+
+### 10.8 N+1 Query Fix Verification (P2)
+
+Verify sentences endpoint uses batch loading.
+
+Steps
+
+1. Ensure test user has 5+ pre-generated sentences
+2. Navigate to `/review`
+3. Check server logs or add timing
+
+Expected
+
+* Single words query regardless of sentence count
+* No sequential queries per sentence
+
+### 10.9 Polling Cleanup (P2)
+
+Test that audio polling doesn't leak memory.
+
+Steps
+
+1. Capture 5 words rapidly (within 10 seconds)
+2. Wait for all audio to complete
+3. Check browser memory usage
+4. Navigate away and back
+
+Expected
+
+* No lingering poll intervals
+* Memory stable after completion
+* AbortControllers cleaned up
+
+### 10.10 Admin Query Performance (P2)
+
+Test admin dashboard loads efficiently.
+
+Steps
+
+1. Access admin dashboard with authorized account
+2. Measure load time
+
+Expected
+
+* Dashboard loads in < 5 seconds
+* Queries run in parallel (check server logs)
+
+---
+
+## 11. Release readiness checklist
 
 Before you call a release ready:
 

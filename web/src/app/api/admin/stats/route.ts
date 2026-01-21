@@ -42,8 +42,9 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = sql.raw(`'${new Date(todayDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()}'::timestamp`);
     const oneDayAgo = sql.raw(`'${new Date(todayDate.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString()}'::timestamp`);
 
-    // Execute queries sequentially to avoid Supabase connection pool exhaustion
-    // (max_clients_in_session_mode limit)
+    // OPTIMIZATION: Execute queries in parallel using Promise.all
+    // All queries are independent read-only operations, safe to parallelize
+    // This significantly reduces total response time for the admin dashboard
 
     // Test user filter - exclude test accounts from analytics
     // Convention: test emails end with @llyli.test or @apple-review.test
@@ -55,322 +56,336 @@ export async function GET(request: NextRequest) {
       )
     `;
 
-    // User statistics (excludes test users)
-    const userStats = await db.execute(sql`
-      SELECT
-        COUNT(DISTINCT user_id) as total_users,
-        COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo} THEN user_id END) as new_users_7d,
-        COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo} THEN user_id END) as new_users_30d
-      FROM words
-      WHERE ${testUserFilter}
-    `);
-
-    // Word statistics (excludes test users)
-    const wordStats = await db.execute(sql`
-      SELECT
-        COUNT(*) as total_words,
-        COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as words_today,
-        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as words_7d,
-        COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as words_30d,
-        COUNT(CASE WHEN mastery_status = 'ready_to_use' THEN 1 END) as mastered_words,
-        COUNT(CASE WHEN mastery_status = 'learned' THEN 1 END) as learned_words,
-        COUNT(CASE WHEN mastery_status = 'learning' THEN 1 END) as learning_words,
-        ROUND(AVG(review_count)::numeric, 1) as avg_reviews_per_word,
-        ROUND(AVG(lapse_count)::numeric, 2) as avg_lapses_per_word
-      FROM words
-      WHERE ${testUserFilter}
-    `);
-
-    // Audio generation statistics - ONLY for recent captures (last 7 days)
-    // Bulk imports don't have audio, so we exclude them for meaningful metrics
-    // Excludes test users
-    const audioStats = await db.execute(sql`
-      SELECT
-        COUNT(*) as total_words,
-        COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) as with_audio,
-        COUNT(CASE WHEN audio_url IS NULL AND audio_generation_failed = false THEN 1 END) as pending_audio,
-        COUNT(CASE WHEN audio_generation_failed = true THEN 1 END) as failed_audio,
-        -- Recent captures only (last 7 days) for accurate success rate
-        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as recent_total,
-        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_url IS NOT NULL THEN 1 END) as recent_with_audio,
-        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_generation_failed = true THEN 1 END) as recent_failed
-      FROM words
-      WHERE ${testUserFilter}
-    `);
-
-    // Review statistics (excludes test users)
-    const reviewStats = await db.execute(sql`
-      SELECT
-        COUNT(*) as total_sessions,
-        COALESCE(SUM(words_reviewed), 0) as total_reviews,
-        COALESCE(SUM(correct_count), 0) as total_correct,
-        ROUND(
-          100.0 * COALESCE(SUM(correct_count), 0) / NULLIF(COALESCE(SUM(words_reviewed), 0), 0),
-          1
-        ) as accuracy_rate,
-        COUNT(CASE WHEN started_at >= ${sevenDaysAgo} THEN 1 END) as sessions_7d,
-        ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session
-      FROM review_sessions
-      WHERE ended_at IS NOT NULL
-        AND ${testUserFilter}
-    `);
-
-    // Gamification statistics (excludes test users)
-    const gamificationStats = await db.execute(sql`
-      SELECT
-        COUNT(DISTINCT user_id) as users_with_streaks,
-        ROUND(AVG(current_streak)::numeric, 1) as avg_streak,
-        MAX(longest_streak) as max_streak_ever,
-        COUNT(CASE WHEN current_streak >= 7 THEN 1 END) as users_7plus_streak,
-        COUNT(CASE WHEN current_streak >= 30 THEN 1 END) as users_30plus_streak
-      FROM streak_state
-      WHERE ${testUserFilter}
-    `);
-
-    // Feedback statistics (excludes test users)
-    const feedbackStats = await db.execute(sql`
-      SELECT
-        COUNT(*) as total_feedback,
-        COUNT(CASE WHEN type = 'bug_report' THEN 1 END) as bug_reports,
-        COUNT(CASE WHEN type = 'feature_request' THEN 1 END) as feature_requests,
-        COUNT(CASE WHEN type = 'general_feedback' THEN 1 END) as general_feedback,
-        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as feedback_7d
-      FROM user_feedback
-      WHERE ${testUserFilter}
-    `);
-
-    // Language pair distribution (filter out invalid same-language pairs, excludes test users)
-    const languagePairStats = await db.execute(sql`
-      SELECT
-        source_lang,
-        target_lang,
-        COUNT(*) as word_count,
-        COUNT(DISTINCT user_id) as user_count
-      FROM words
-      WHERE source_lang != target_lang
-        AND ${testUserFilter}
-      GROUP BY source_lang, target_lang
-      ORDER BY word_count DESC
-      LIMIT 10
-    `);
-
-    // Recent feedback (last 10) - ANONYMOUS: no user_id exposed, excludes test users
-    const recentFeedback = await db.execute(sql`
-      SELECT
-        id,
-        type,
-        message,
-        page_context,
-        created_at
-      FROM user_feedback
-      WHERE ${testUserFilter}
-      ORDER BY created_at DESC
-      LIMIT 10
-    `);
-
-    // Product KPIs (from PRD requirements, excludes test users)
-    const productKpis = await db.execute(sql`
-      SELECT
-        -- Daily Active Users (reviewed today)
-        COUNT(DISTINCT CASE WHEN rs.started_at >= ${today} THEN rs.user_id END) as dau,
-        -- Weekly Active Users (reviewed in last 7 days)
-        COUNT(DISTINCT CASE WHEN rs.started_at >= ${sevenDaysAgo} THEN rs.user_id END) as wau,
-        -- Monthly Active Users
-        COUNT(DISTINCT CASE WHEN rs.started_at >= ${thirtyDaysAgo} THEN rs.user_id END) as mau,
-        -- Session completion rate (sessions with ended_at vs total)
-        ROUND(
-          100.0 * COUNT(CASE WHEN rs.ended_at IS NOT NULL THEN 1 END) /
-          NULLIF(COUNT(*), 0), 1
-        ) as session_completion_rate,
-        -- Average session duration (minutes) - CAP at 30 min to exclude abandoned sessions
-        ROUND(
-          AVG(LEAST(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60, 30))::numeric, 1
-        ) as avg_session_minutes,
-        -- Median session duration (more accurate than mean)
-        ROUND(
-          PERCENTILE_CONT(0.5) WITHIN GROUP (
-            ORDER BY LEAST(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60, 30)
-          )::numeric, 1
-        ) as median_session_minutes
-      FROM review_sessions rs
-      WHERE rs.started_at >= ${thirtyDaysAgo}
-        AND rs.ended_at IS NOT NULL
-        AND rs.user_id NOT IN (
-          SELECT id FROM auth.users
-          WHERE email LIKE '%@llyli.test'
-             OR email LIKE '%@apple-review.test'
-        )
-    `);
-
-    // Retention cohorts (D1, D7, D30) - excludes test users
-    const retentionStats = await db.execute(sql`
-      WITH user_cohorts AS (
+    // Execute all independent queries in parallel
+    const [
+      userStats,
+      wordStats,
+      audioStats,
+      reviewStats,
+      gamificationStats,
+    ] = await Promise.all([
+      // User statistics (excludes test users)
+      db.execute(sql`
         SELECT
-          user_id,
-          MIN(created_at) as first_activity
+          COUNT(DISTINCT user_id) as total_users,
+          COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo} THEN user_id END) as new_users_7d,
+          COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo} THEN user_id END) as new_users_30d
         FROM words
-        WHERE user_id NOT IN (
-          SELECT id FROM auth.users
-          WHERE email LIKE '%@llyli.test'
-             OR email LIKE '%@apple-review.test'
-        )
-        GROUP BY user_id
-      ),
-      user_returns AS (
+        WHERE ${testUserFilter}
+      `),
+      // Word statistics (excludes test users)
+      db.execute(sql`
         SELECT
-          uc.user_id,
-          uc.first_activity,
-          MAX(rs.started_at) as last_review
-        FROM user_cohorts uc
-        LEFT JOIN review_sessions rs ON uc.user_id = rs.user_id
-        GROUP BY uc.user_id, uc.first_activity
-      )
-      SELECT
-        -- D1 retention: users who returned day after signup (from users who signed up 2-30 days ago)
-        ROUND(100.0 * COUNT(CASE
-          WHEN first_activity < ${oneDayAgo}
-          AND last_review >= first_activity + INTERVAL '1 day'
-          THEN 1 END) /
-          NULLIF(COUNT(CASE WHEN first_activity < ${oneDayAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
-        ) as d1_retention,
-        -- D7 retention: users active 7 days after signup
-        ROUND(100.0 * COUNT(CASE
-          WHEN first_activity < ${sevenDaysAgo}
-          AND last_review >= first_activity + INTERVAL '7 days'
-          THEN 1 END) /
-          NULLIF(COUNT(CASE WHEN first_activity < ${sevenDaysAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
-        ) as d7_retention,
-        -- D30 retention: users still active 30 days after signup
-        ROUND(100.0 * COUNT(CASE
-          WHEN first_activity < ${thirtyDaysAgo}
-          AND last_review >= first_activity + INTERVAL '30 days'
-          THEN 1 END) /
-          NULLIF(COUNT(CASE WHEN first_activity < ${thirtyDaysAgo} THEN 1 END), 0), 1
-        ) as d30_retention
-      FROM user_returns
-    `);
+          COUNT(*) as total_words,
+          COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as words_today,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as words_7d,
+          COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as words_30d,
+          COUNT(CASE WHEN mastery_status = 'ready_to_use' THEN 1 END) as mastered_words,
+          COUNT(CASE WHEN mastery_status = 'learned' THEN 1 END) as learned_words,
+          COUNT(CASE WHEN mastery_status = 'learning' THEN 1 END) as learning_words,
+          ROUND(AVG(review_count)::numeric, 1) as avg_reviews_per_word,
+          ROUND(AVG(lapse_count)::numeric, 2) as avg_lapses_per_word
+        FROM words
+        WHERE ${testUserFilter}
+      `),
+      // Audio generation statistics - ONLY for recent captures (last 7 days)
+      // Bulk imports don't have audio, so we exclude them for meaningful metrics
+      db.execute(sql`
+        SELECT
+          COUNT(*) as total_words,
+          COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) as with_audio,
+          COUNT(CASE WHEN audio_url IS NULL AND audio_generation_failed = false THEN 1 END) as pending_audio,
+          COUNT(CASE WHEN audio_generation_failed = true THEN 1 END) as failed_audio,
+          -- Recent captures only (last 7 days) for accurate success rate
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as recent_total,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_url IS NOT NULL THEN 1 END) as recent_with_audio,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_generation_failed = true THEN 1 END) as recent_failed
+        FROM words
+        WHERE ${testUserFilter}
+      `),
+      // Review statistics (excludes test users)
+      db.execute(sql`
+        SELECT
+          COUNT(*) as total_sessions,
+          COALESCE(SUM(words_reviewed), 0) as total_reviews,
+          COALESCE(SUM(correct_count), 0) as total_correct,
+          ROUND(
+            100.0 * COALESCE(SUM(correct_count), 0) / NULLIF(COALESCE(SUM(words_reviewed), 0), 0),
+            1
+          ) as accuracy_rate,
+          COUNT(CASE WHEN started_at >= ${sevenDaysAgo} THEN 1 END) as sessions_7d,
+          ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session
+        FROM review_sessions
+        WHERE ended_at IS NOT NULL
+          AND ${testUserFilter}
+      `),
+      // Gamification statistics (excludes test users)
+      db.execute(sql`
+        SELECT
+          COUNT(DISTINCT user_id) as users_with_streaks,
+          ROUND(AVG(current_streak)::numeric, 1) as avg_streak,
+          MAX(longest_streak) as max_streak_ever,
+          COUNT(CASE WHEN current_streak >= 7 THEN 1 END) as users_7plus_streak,
+          COUNT(CASE WHEN current_streak >= 30 THEN 1 END) as users_30plus_streak
+        FROM streak_state
+        WHERE ${testUserFilter}
+      `),
+    ]);
 
-    // Active users (users who captured or reviewed in last 7 days) - excludes test users
-    const activeUsersResult = await db.execute(sql`
-      SELECT COUNT(DISTINCT user_id) as active_users_7d
-      FROM (
-        SELECT user_id FROM words WHERE created_at >= ${sevenDaysAgo} AND ${testUserFilter}
-        UNION
-        SELECT user_id FROM review_sessions WHERE started_at >= ${sevenDaysAgo} AND ${testUserFilter}
-      ) as active
-    `);
+    // Second batch of parallel queries
+    const [
+      feedbackStats,
+      languagePairStats,
+      recentFeedback,
+      productKpis,
+      retentionStats,
+      activeUsersResult,
+    ] = await Promise.all([
+      // Feedback statistics (excludes test users)
+      db.execute(sql`
+        SELECT
+          COUNT(*) as total_feedback,
+          COUNT(CASE WHEN type = 'bug_report' THEN 1 END) as bug_reports,
+          COUNT(CASE WHEN type = 'feature_request' THEN 1 END) as feature_requests,
+          COUNT(CASE WHEN type = 'general_feedback' THEN 1 END) as general_feedback,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as feedback_7d
+        FROM user_feedback
+        WHERE ${testUserFilter}
+      `),
+      // Language pair distribution (filter out invalid same-language pairs, excludes test users)
+      db.execute(sql`
+        SELECT
+          source_lang,
+          target_lang,
+          COUNT(*) as word_count,
+          COUNT(DISTINCT user_id) as user_count
+        FROM words
+        WHERE source_lang != target_lang
+          AND ${testUserFilter}
+        GROUP BY source_lang, target_lang
+        ORDER BY word_count DESC
+        LIMIT 10
+      `),
+      // Recent feedback (last 10) - ANONYMOUS: no user_id exposed, excludes test users
+      db.execute(sql`
+        SELECT
+          id,
+          type,
+          message,
+          page_context,
+          created_at
+        FROM user_feedback
+        WHERE ${testUserFilter}
+        ORDER BY created_at DESC
+        LIMIT 10
+      `),
+      // Product KPIs (from PRD requirements, excludes test users)
+      db.execute(sql`
+        SELECT
+          -- Daily Active Users (reviewed today)
+          COUNT(DISTINCT CASE WHEN rs.started_at >= ${today} THEN rs.user_id END) as dau,
+          -- Weekly Active Users (reviewed in last 7 days)
+          COUNT(DISTINCT CASE WHEN rs.started_at >= ${sevenDaysAgo} THEN rs.user_id END) as wau,
+          -- Monthly Active Users
+          COUNT(DISTINCT CASE WHEN rs.started_at >= ${thirtyDaysAgo} THEN rs.user_id END) as mau,
+          -- Session completion rate (sessions with ended_at vs total)
+          ROUND(
+            100.0 * COUNT(CASE WHEN rs.ended_at IS NOT NULL THEN 1 END) /
+            NULLIF(COUNT(*), 0), 1
+          ) as session_completion_rate,
+          -- Average session duration (minutes) - CAP at 30 min to exclude abandoned sessions
+          ROUND(
+            AVG(LEAST(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60, 30))::numeric, 1
+          ) as avg_session_minutes,
+          -- Median session duration (more accurate than mean)
+          ROUND(
+            PERCENTILE_CONT(0.5) WITHIN GROUP (
+              ORDER BY LEAST(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60, 30)
+            )::numeric, 1
+          ) as median_session_minutes
+        FROM review_sessions rs
+        WHERE rs.started_at >= ${thirtyDaysAgo}
+          AND rs.ended_at IS NOT NULL
+          AND rs.user_id NOT IN (
+            SELECT id FROM auth.users
+            WHERE email LIKE '%@llyli.test'
+               OR email LIKE '%@apple-review.test'
+          )
+      `),
+      // Retention cohorts (D1, D7, D30) - excludes test users
+      db.execute(sql`
+        WITH user_cohorts AS (
+          SELECT
+            user_id,
+            MIN(created_at) as first_activity
+          FROM words
+          WHERE user_id NOT IN (
+            SELECT id FROM auth.users
+            WHERE email LIKE '%@llyli.test'
+               OR email LIKE '%@apple-review.test'
+          )
+          GROUP BY user_id
+        ),
+        user_returns AS (
+          SELECT
+            uc.user_id,
+            uc.first_activity,
+            MAX(rs.started_at) as last_review
+          FROM user_cohorts uc
+          LEFT JOIN review_sessions rs ON uc.user_id = rs.user_id
+          GROUP BY uc.user_id, uc.first_activity
+        )
+        SELECT
+          -- D1 retention: users who returned day after signup (from users who signed up 2-30 days ago)
+          ROUND(100.0 * COUNT(CASE
+            WHEN first_activity < ${oneDayAgo}
+            AND last_review >= first_activity + INTERVAL '1 day'
+            THEN 1 END) /
+            NULLIF(COUNT(CASE WHEN first_activity < ${oneDayAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
+          ) as d1_retention,
+          -- D7 retention: users active 7 days after signup
+          ROUND(100.0 * COUNT(CASE
+            WHEN first_activity < ${sevenDaysAgo}
+            AND last_review >= first_activity + INTERVAL '7 days'
+            THEN 1 END) /
+            NULLIF(COUNT(CASE WHEN first_activity < ${sevenDaysAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
+          ) as d7_retention,
+          -- D30 retention: users still active 30 days after signup
+          ROUND(100.0 * COUNT(CASE
+            WHEN first_activity < ${thirtyDaysAgo}
+            AND last_review >= first_activity + INTERVAL '30 days'
+            THEN 1 END) /
+            NULLIF(COUNT(CASE WHEN first_activity < ${thirtyDaysAgo} THEN 1 END), 0), 1
+          ) as d30_retention
+        FROM user_returns
+      `),
+      // Active users (users who captured or reviewed in last 7 days) - excludes test users
+      db.execute(sql`
+        SELECT COUNT(DISTINCT user_id) as active_users_7d
+        FROM (
+          SELECT user_id FROM words WHERE created_at >= ${sevenDaysAgo} AND ${testUserFilter}
+          UNION
+          SELECT user_id FROM review_sessions WHERE started_at >= ${sevenDaysAgo} AND ${testUserFilter}
+        ) as active
+      `),
+    ]);
 
     // ============================================
     // SCIENCE VERIFICATION METRICS
     // Validate that our research-backed approach is working
     // ============================================
 
-    // FSRS Health: Interval distribution (should grow over time)
-    const fsrsHealth = await db.execute(sql`
-      SELECT
-        -- Interval distribution buckets
-        COUNT(CASE WHEN stability < 1 THEN 1 END) as interval_under_1d,
-        COUNT(CASE WHEN stability >= 1 AND stability < 7 THEN 1 END) as interval_1_7d,
-        COUNT(CASE WHEN stability >= 7 AND stability < 30 THEN 1 END) as interval_7_30d,
-        COUNT(CASE WHEN stability >= 30 AND stability < 90 THEN 1 END) as interval_30_90d,
-        COUNT(CASE WHEN stability >= 90 THEN 1 END) as interval_90plus,
-        -- Average stability by mastery status (should increase)
-        ROUND(AVG(CASE WHEN mastery_status = 'learning' THEN stability END)::numeric, 1) as avg_stability_learning,
-        ROUND(AVG(CASE WHEN mastery_status = 'learned' THEN stability END)::numeric, 1) as avg_stability_learned,
-        ROUND(AVG(CASE WHEN mastery_status = 'ready_to_use' THEN stability END)::numeric, 1) as avg_stability_mastered,
-        -- Overall retention proxy (words reviewed in last 7 days that were correct)
-        COUNT(*) as total_reviewed_words
-      FROM words
-      WHERE review_count > 0 AND ${testUserFilter}
-    `);
-
-    // Mastery validation: Are words progressing correctly through 3-recall system?
-    const masteryValidation = await db.execute(sql`
-      SELECT
-        -- Average reviews to reach each stage
-        ROUND(AVG(CASE WHEN mastery_status = 'learned' THEN review_count END)::numeric, 1) as avg_reviews_to_learned,
-        ROUND(AVG(CASE WHEN mastery_status = 'ready_to_use' THEN review_count END)::numeric, 1) as avg_reviews_to_mastered,
-        -- Words stuck in learning (>30 days old, still learning, reviewed but not progressing)
-        COUNT(CASE
-          WHEN mastery_status = 'learning'
-          AND created_at < ${thirtyDaysAgo}
-          AND review_count >= 5
-          THEN 1
-        END) as words_stuck_in_learning,
-        -- Lapse rate (words that went back to learning after being learned)
-        COUNT(CASE WHEN lapse_count > 0 THEN 1 END) as words_with_lapses,
-        ROUND(AVG(lapse_count)::numeric, 2) as avg_lapse_count,
-        -- Mastery without enough reviews (potential bug)
-        COUNT(CASE
-          WHEN mastery_status = 'ready_to_use'
-          AND review_count < 3
-          THEN 1
-        END) as mastered_under_3_reviews
-      FROM words
-      WHERE ${testUserFilter}
-    `);
-
-    // Session quality: Are sessions in the optimal 5-15 minute range?
-    const sessionQuality = await db.execute(sql`
-      SELECT
-        -- Duration buckets (capped at 30 min)
-        COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 < 5 THEN 1 END) as sessions_under_5min,
-        COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 BETWEEN 5 AND 15 THEN 1 END) as sessions_5_15min,
-        COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 > 15 THEN 1 END) as sessions_over_15min,
-        -- Optimal session percentage (5-15 min is ideal per science)
-        ROUND(
-          100.0 * COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 BETWEEN 5 AND 15 THEN 1 END) /
-          NULLIF(COUNT(*), 0), 1
-        ) as optimal_session_pct,
-        -- Words per session distribution
-        ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session,
-        COUNT(CASE WHEN words_reviewed > 25 THEN 1 END) as sessions_over_25_words
-      FROM review_sessions
-      WHERE ended_at IS NOT NULL
-        AND started_at >= ${thirtyDaysAgo}
-        AND ${testUserFilter}
-    `);
-
-    // Data quality guardrails: Catch anomalies that indicate bugs
-    // Using separate subqueries since metrics come from different tables
-    const dataGuardrails = await db.execute(sql`
-      SELECT
-        -- Suspicious intervals (>365 days = likely bug) - from words table
-        (SELECT COUNT(*) FROM words
-          WHERE stability > 365
-          AND user_id NOT IN (
-            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
-          )
-        ) as words_interval_over_year,
-        -- Zero accuracy users (potential bot or broken UI) - from review_sessions
-        (SELECT COUNT(DISTINCT user_id) FROM review_sessions
-          WHERE words_reviewed > 10
-          AND correct_count = 0
-          AND ended_at IS NOT NULL
-          AND user_id NOT IN (
-            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
-          )
-        ) as users_zero_accuracy,
-        -- Words never reviewed but old (capture without learning) - from words table
-        (SELECT COUNT(*) FROM words
-          WHERE review_count = 0
-          AND created_at < ${sevenDaysAgo}
-          AND user_id NOT IN (
-            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
-          )
-        ) as old_words_never_reviewed,
-        -- Daily review overload (users with >50 due words) - from words grouped
-        (SELECT COUNT(*) FROM (
-          SELECT user_id
-          FROM words
-          WHERE next_review_date <= NOW()
+    // Third batch: Science verification metrics (parallel)
+    const [
+      fsrsHealth,
+      masteryValidation,
+      sessionQuality,
+      dataGuardrails,
+    ] = await Promise.all([
+      // FSRS Health: Interval distribution (should grow over time)
+      db.execute(sql`
+        SELECT
+          -- Interval distribution buckets
+          COUNT(CASE WHEN stability < 1 THEN 1 END) as interval_under_1d,
+          COUNT(CASE WHEN stability >= 1 AND stability < 7 THEN 1 END) as interval_1_7d,
+          COUNT(CASE WHEN stability >= 7 AND stability < 30 THEN 1 END) as interval_7_30d,
+          COUNT(CASE WHEN stability >= 30 AND stability < 90 THEN 1 END) as interval_30_90d,
+          COUNT(CASE WHEN stability >= 90 THEN 1 END) as interval_90plus,
+          -- Average stability by mastery status (should increase)
+          ROUND(AVG(CASE WHEN mastery_status = 'learning' THEN stability END)::numeric, 1) as avg_stability_learning,
+          ROUND(AVG(CASE WHEN mastery_status = 'learned' THEN stability END)::numeric, 1) as avg_stability_learned,
+          ROUND(AVG(CASE WHEN mastery_status = 'ready_to_use' THEN stability END)::numeric, 1) as avg_stability_mastered,
+          -- Overall retention proxy (words reviewed in last 7 days that were correct)
+          COUNT(*) as total_reviewed_words
+        FROM words
+        WHERE review_count > 0 AND ${testUserFilter}
+      `),
+      // Mastery validation: Are words progressing correctly through 3-recall system?
+      db.execute(sql`
+        SELECT
+          -- Average reviews to reach each stage
+          ROUND(AVG(CASE WHEN mastery_status = 'learned' THEN review_count END)::numeric, 1) as avg_reviews_to_learned,
+          ROUND(AVG(CASE WHEN mastery_status = 'ready_to_use' THEN review_count END)::numeric, 1) as avg_reviews_to_mastered,
+          -- Words stuck in learning (>30 days old, still learning, reviewed but not progressing)
+          COUNT(CASE
+            WHEN mastery_status = 'learning'
+            AND created_at < ${thirtyDaysAgo}
+            AND review_count >= 5
+            THEN 1
+          END) as words_stuck_in_learning,
+          -- Lapse rate (words that went back to learning after being learned)
+          COUNT(CASE WHEN lapse_count > 0 THEN 1 END) as words_with_lapses,
+          ROUND(AVG(lapse_count)::numeric, 2) as avg_lapse_count,
+          -- Mastery without enough reviews (potential bug)
+          COUNT(CASE
+            WHEN mastery_status = 'ready_to_use'
+            AND review_count < 3
+            THEN 1
+          END) as mastered_under_3_reviews
+        FROM words
+        WHERE ${testUserFilter}
+      `),
+      // Session quality: Are sessions in the optimal 5-15 minute range?
+      db.execute(sql`
+        SELECT
+          -- Duration buckets (capped at 30 min)
+          COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 < 5 THEN 1 END) as sessions_under_5min,
+          COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 BETWEEN 5 AND 15 THEN 1 END) as sessions_5_15min,
+          COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 > 15 THEN 1 END) as sessions_over_15min,
+          -- Optimal session percentage (5-15 min is ideal per science)
+          ROUND(
+            100.0 * COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 BETWEEN 5 AND 15 THEN 1 END) /
+            NULLIF(COUNT(*), 0), 1
+          ) as optimal_session_pct,
+          -- Words per session distribution
+          ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session,
+          COUNT(CASE WHEN words_reviewed > 25 THEN 1 END) as sessions_over_25_words
+        FROM review_sessions
+        WHERE ended_at IS NOT NULL
+          AND started_at >= ${thirtyDaysAgo}
+          AND ${testUserFilter}
+      `),
+      // Data quality guardrails: Catch anomalies that indicate bugs
+      // Using separate subqueries since metrics come from different tables
+      db.execute(sql`
+        SELECT
+          -- Suspicious intervals (>365 days = likely bug) - from words table
+          (SELECT COUNT(*) FROM words
+            WHERE stability > 365
             AND user_id NOT IN (
               SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
             )
-          GROUP BY user_id
-          HAVING COUNT(*) > 50
-        ) overloaded) as users_overloaded
-    `);
+          ) as words_interval_over_year,
+          -- Zero accuracy users (potential bot or broken UI) - from review_sessions
+          (SELECT COUNT(DISTINCT user_id) FROM review_sessions
+            WHERE words_reviewed > 10
+            AND correct_count = 0
+            AND ended_at IS NOT NULL
+            AND user_id NOT IN (
+              SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+            )
+          ) as users_zero_accuracy,
+          -- Words never reviewed but old (capture without learning) - from words table
+          (SELECT COUNT(*) FROM words
+            WHERE review_count = 0
+            AND created_at < ${sevenDaysAgo}
+            AND user_id NOT IN (
+              SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+            )
+          ) as old_words_never_reviewed,
+          -- Daily review overload (users with >50 due words) - from words grouped
+          (SELECT COUNT(*) FROM (
+            SELECT user_id
+            FROM words
+            WHERE next_review_date <= NOW()
+              AND user_id NOT IN (
+                SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+              )
+            GROUP BY user_id
+            HAVING COUNT(*) > 50
+          ) overloaded) as users_overloaded
+      `),
+    ]);
 
     // Type helper for raw SQL results (Drizzle returns array directly)
     type RawRow = Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, boolean, date, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, boolean, date, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 /**
  * Gamification Schema
@@ -32,7 +32,10 @@ export const dailyProgress = pgTable('daily_progress', {
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  // Unique constraint: one record per user per day
+  uniqueIndex('daily_progress_user_date_idx').on(table.userId, table.date),
+]);
 
 export type DailyProgress = typeof dailyProgress.$inferSelect;
 export type NewDailyProgress = typeof dailyProgress.$inferInsert;
@@ -98,7 +101,10 @@ export const bingoState = pgTable('bingo_state', {
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => [
+  // Unique constraint: one board per user per day
+  uniqueIndex('bingo_state_user_date_idx').on(table.userId, table.date),
+]);
 
 export type BingoState = typeof bingoState.$inferSelect;
 export type NewBingoState = typeof bingoState.$inferInsert;
@@ -156,7 +162,10 @@ export const bossRoundHistory = pgTable('boss_round_history', {
   // Timestamps
   completedAt: timestamp('completed_at').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => [
+  // Index for user history lookup (most recent first)
+  index('boss_round_user_completed_idx').on(table.userId, table.completedAt),
+]);
 
 export type BossRoundHistory = typeof bossRoundHistory.$inferSelect;
 export type NewBossRoundHistory = typeof bossRoundHistory.$inferInsert;

@@ -8,7 +8,9 @@ import {
   DEFAULT_LANGUAGE_PREFERENCE,
   getTranslationName,
   isDirectionSupported,
+  isLanguageSupported,
 } from '@/lib/config/languages';
+import { checkWordCaptureLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
 import {
   getUnusedWordCombinations,
@@ -65,6 +67,15 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 1b. Check rate limit (daily word capture limit)
+    const rateLimit = await checkWordCaptureLimit(user.id);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        rateLimitResponse('words', rateLimit),
+        { status: 429 }
+      );
     }
 
     // 2. Validate request body
@@ -152,7 +163,19 @@ export async function POST(request: NextRequest) {
     let translationLang: string;
 
     if (requestSourceLang && requestTargetLang) {
-      // Explicit languages provided - use them
+      // Explicit languages provided - validate against SUPPORTED_LANGUAGES
+      if (!isLanguageSupported(requestSourceLang)) {
+        return NextResponse.json(
+          { error: `Unsupported source language: ${requestSourceLang}` },
+          { status: 400 }
+        );
+      }
+      if (!isLanguageSupported(requestTargetLang)) {
+        return NextResponse.json(
+          { error: `Unsupported target language: ${requestTargetLang}` },
+          { status: 400 }
+        );
+      }
       textLang = requestSourceLang;
       translationLang = requestTargetLang;
     } else {

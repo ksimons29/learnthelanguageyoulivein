@@ -3,11 +3,73 @@ import type { Word } from '@/lib/db/schema';
 import type { MemoryContext } from '@/lib/config/memory-context';
 
 /**
+ * Timeout for network requests in milliseconds
+ * Capture should complete within 10 seconds per UX requirements
+ */
+const NETWORK_TIMEOUT_MS = 10000;
+
+/**
+ * Helper to fetch with timeout using AbortController
+ * Prevents UI from showing "Capturing..." indefinitely on network issues
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = NETWORK_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Check if error is a network timeout (AbortError)
+ */
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+/**
+ * Redirect to login page (used on 401 errors)
+ */
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/auth/sign-in';
+  }
+}
+
+/**
  * Words Store
  *
  * Manages the collection of captured words and provides actions
  * for capturing, retrieving, updating, and deleting words.
  */
+
+/**
+ * Module-level storage for polling AbortControllers
+ * Prevents memory leaks by allowing cancellation of pending poll requests
+ */
+const pollingControllers = new Map<string, AbortController>();
+
+/**
+ * Cancel any existing polling for a word
+ */
+function cancelPolling(wordId: string): void {
+  const controller = pollingControllers.get(wordId);
+  if (controller) {
+    controller.abort();
+    pollingControllers.delete(wordId);
+  }
+}
 
 /**
  * Category statistics returned from the API
@@ -176,7 +238,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
   ) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/words', {
+      const response = await fetchWithTimeout('/api/words', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -187,6 +249,12 @@ export const useWordsStore = create<WordsState>((set, get) => ({
           memoryContext: options?.memoryContext,
         }),
       });
+
+      // Handle 401 errors by redirecting to login
+      if (response.status === 401) {
+        redirectToLogin();
+        throw new Error('Session expired. Please sign in again.');
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -209,8 +277,15 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
       return word;
     } catch (error) {
+      // Provide user-friendly message for timeout errors
+      const errorMessage = isTimeoutError(error)
+        ? 'Request timed out. Please check your connection and try again.'
+        : error instanceof Error
+        ? error.message
+        : 'Failed to capture word';
+
       set({
-        error: error instanceof Error ? error.message : 'Failed to capture word',
+        error: errorMessage,
         isLoading: false,
       });
       throw error;
@@ -242,6 +317,13 @@ export const useWordsStore = create<WordsState>((set, get) => ({
   },
 
   pollForAudio: (wordId: string) => {
+    // Cancel any existing polling for this word (prevents memory leak)
+    cancelPolling(wordId);
+
+    // Create new AbortController for this polling session
+    const controller = new AbortController();
+    pollingControllers.set(wordId, controller);
+
     // Add to tracking set
     set((state) => {
       const newSet = new Set(state.audioGeneratingIds);
@@ -262,11 +344,17 @@ export const useWordsStore = create<WordsState>((set, get) => ({
     let currentInterval = INITIAL_INTERVAL_MS;
 
     const poll = async () => {
+      // Check if polling was cancelled
+      if (controller.signal.aborted) {
+        return;
+      }
+
       const elapsedMs = Date.now() - startTime;
 
       // Check if we've exceeded total timeout
       if (elapsedMs >= TOTAL_TIMEOUT_MS) {
         console.warn(`Audio generation timed out for word ${wordId} after ${TOTAL_TIMEOUT_MS / 1000}s`);
+        cancelPolling(wordId);
         set((state) => {
           const generatingSet = new Set(state.audioGeneratingIds);
           generatingSet.delete(wordId);
@@ -281,7 +369,9 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       }
 
       try {
-        const response = await fetch(`/api/words/${wordId}`);
+        const response = await fetch(`/api/words/${wordId}`, {
+          signal: controller.signal,
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch word');
         }
@@ -291,6 +381,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
         // Success: Audio is ready
         if (word.audioUrl) {
+          cancelPolling(wordId); // Clean up controller
           set((state) => {
             const newSet = new Set(state.audioGeneratingIds);
             newSet.delete(wordId);
@@ -307,6 +398,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
         // Early termination: Server marked generation as failed
         if (word.audioGenerationFailed) {
           console.warn(`Server reported audio generation failed for word ${wordId}`);
+          cancelPolling(wordId); // Clean up controller
           set((state) => {
             const generatingSet = new Set(state.audioGeneratingIds);
             generatingSet.delete(wordId);
@@ -327,6 +419,10 @@ export const useWordsStore = create<WordsState>((set, get) => ({
         currentInterval = Math.min(currentInterval * BACKOFF_MULTIPLIER, MAX_INTERVAL_MS);
         setTimeout(poll, currentInterval);
       } catch (error) {
+        // If polling was aborted, stop silently (not an error)
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
         console.error('Audio polling error:', error);
         // On network error, continue polling (might be transient)
         // Only stop if we've exceeded total timeout

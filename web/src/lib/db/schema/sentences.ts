@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, index } from 'drizzle-orm/pg-core';
 
 /**
  * GeneratedSentence Entity
@@ -33,7 +33,13 @@ export const generatedSentences = pgTable('generated_sentences', {
   // Usage Tracking
   usedAt: timestamp('used_at'), // null = pre-generated but not yet shown
   createdAt: timestamp('created_at').notNull().defaultNow(),
-});
+}, (table) => [
+  // Index for finding unused sentences by user
+  // Used by GET /api/sentences/next to find available sentences
+  index('sentences_user_used_idx').on(table.userId, table.usedAt),
+  // Index for session-based lookups
+  index('sentences_user_session_idx').on(table.userId, table.sessionId),
+]);
 
 export type GeneratedSentence = typeof generatedSentences.$inferSelect;
 export type NewGeneratedSentence = typeof generatedSentences.$inferInsert;

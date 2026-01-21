@@ -1,4 +1,4 @@
-import { pgTable, uuid, timestamp, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, timestamp, integer, index } from 'drizzle-orm/pg-core';
 
 /**
  * ReviewSession Entity
@@ -20,7 +20,13 @@ export const reviewSessions = pgTable('review_sessions', {
   endedAt: timestamp('ended_at'), // null = session still active
   wordsReviewed: integer('words_reviewed').notNull().default(0),
   correctCount: integer('correct_count').notNull().default(0), // Count of Good/Easy ratings
-});
+}, (table) => [
+  // P0: Index for finding active sessions (endedAt IS NULL) by user
+  // Used by getOrCreateSession() in reviews API
+  index('sessions_user_ended_idx').on(table.userId, table.endedAt),
+  // Index for session lookup by user and start time (for session boundary checks)
+  index('sessions_user_started_idx').on(table.userId, table.startedAt),
+]);
 
 export type ReviewSession = typeof reviewSessions.$inferSelect;
 export type NewReviewSession = typeof reviewSessions.$inferInsert;

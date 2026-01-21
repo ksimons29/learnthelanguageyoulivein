@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Comprehensive Audit Implementation** - Database indexes, session race condition fix, rate limiting, language validation, network timeout, N+1 query fix, admin query parallelization, polling memory leak fix (Session 52)
 - [x] **Gamification Automated Testing** - 186+ tests, work category starter words, Boss Round ready data (Session 50)
 - [x] **API 500 Error Fixes** - Safe destructuring, empty array guard, OpenAI retry logic, TOCTOU race conditions (Session 49)
 - [x] **UX Review Bug Fixes** - Duplicate MC options, untranslatable words, PROJECT_LOG archiving (Session 48)
@@ -29,7 +30,6 @@ npm run build             # Production build
 - [x] **Vercel Deployment Fix** - Root Directory config fixed, no more duplicate/failing deployments (Session 31)
 - [x] **Language Filtering + E2E Testing** - Fixed OR logic for word queries, added English to target languages, verified all 3 test users (Session 30)
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
-- [x] **Auth Bug Fix + Starter Words** - Email confirmation UI, improved sign-in errors, 10 starter words per language (Session 28)
 
 ### In Progress
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
@@ -95,6 +95,54 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 52 - 2026-01-21 - Comprehensive Audit Implementation (P0-P2 Fixes)
+
+**Context**: Independent codebase audit identified critical issues across 9 priority areas. Implemented all fixes in a single session.
+
+**What Changed**:
+1. **P0 - Database Indexes**: Added composite indexes to all schema files (`words.ts`, `sessions.ts`, `gamification.ts`, `sentences.ts`) for query optimization. Critical indexes include `(userId, nextReviewDate)`, `(userId, targetLang)`, `(userId, masteryStatus)`, `(userId, createdAt)`.
+
+2. **P0 - Session Race Condition**: Wrapped `getOrCreateSession()` in `db.transaction()` to prevent duplicate sessions from concurrent requests.
+
+3. **P1 - Rate Limiting**: Created `web/src/lib/rate-limit.ts` with subscription-based limits (free tier: 50 words/day, 10 reviews/day). Integrated into capture endpoint.
+
+4. **P1 - Language Validation**: Added `isLanguageSupported()` validation for explicit language parameters in capture endpoint.
+
+5. **P1 - Network Timeout**: Added `fetchWithTimeout()` helper with 10s timeout to words-store.ts capture flow.
+
+6. **P1 - 401 Handling**: Added auth expiry detection with redirect to `/auth/sign-in` on 401 responses.
+
+7. **P2 - N+1 Query Fix**: Refactored `/api/sentences/next` to batch fetch all words in ONE query instead of per-sentence queries. Uses `Map` for O(1) lookups.
+
+8. **P2 - Admin Query Parallelization**: Converted 15 sequential admin stats queries into 3 parallel batches using `Promise.all()`.
+
+9. **P2 - Polling Memory Leak**: Added `AbortController` tracking for audio polling. Controllers are stored in a module-level `Map` and properly cleaned up on completion/cancellation.
+
+**Files Changed**:
+| File | Change |
+|------|--------|
+| `web/src/lib/db/schema/words.ts` | Added 7 composite indexes |
+| `web/src/lib/db/schema/sessions.ts` | Added 2 composite indexes |
+| `web/src/lib/db/schema/gamification.ts` | Added 3 unique/composite indexes |
+| `web/src/lib/db/schema/sentences.ts` | Added 2 composite indexes |
+| `web/src/app/api/reviews/route.ts` | Transaction wrapping, active session validation |
+| `web/src/lib/rate-limit.ts` | **NEW** - Rate limiting utilities |
+| `web/src/app/api/words/route.ts` | Rate limit check, language validation |
+| `web/src/lib/store/words-store.ts` | Network timeout, 401 handling, AbortController for polling |
+| `web/src/app/api/sentences/next/route.ts` | N+1 query fix with batch loading |
+| `web/src/app/api/admin/stats/route.ts` | Parallelized queries with Promise.all |
+
+**Verification**:
+- `npm run build` ✅ (TypeScript clean)
+- `npm run test:run` ✅ (186 tests pass)
+
+**Next Steps**:
+- Push schema changes: `npm run db:push` (adds indexes to production DB)
+- Verify capture timing < 3s after indexes are applied
+- Scale test with 500+ words to confirm performance improvement
+
+---
 
 ### Session 51 - 2026-01-21 - Audio Reliability Fix (Issue #57)
 
