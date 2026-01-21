@@ -552,3 +552,66 @@ describe('Word review display vs answer - Issue #68', () => {
     expect(getTargetLanguageText(nlEnWord, 'en')).not.toBe(getNativeLanguageText(nlEnWord, 'nl'))
   })
 })
+
+/**
+ * Null Safety Tests - Issue #69
+ *
+ * BUG FOUND: App crashes when closing review mid-session with error:
+ * "Cannot read properties of undefined (reading 'sourceLang')"
+ *
+ * ROOT CAUSE: The text helper functions (getNativeLanguageText, getTargetLanguageText)
+ * did not handle null/undefined word inputs. When a user closes review mid-session:
+ * 1. resetSession() clears dueWords array
+ * 2. currentWord = dueWords[currentIndex] becomes undefined
+ * 3. Text helpers called with undefined word → crash
+ *
+ * THE FIX: Add null guards to both helper functions that return empty string
+ * when word is null or undefined. This allows graceful handling during state
+ * transitions when the review session is being closed.
+ */
+describe('Null safety for text helpers - Issue #69', () => {
+  it('getNativeLanguageText returns empty string for null word', () => {
+    expect(getNativeLanguageText(null, 'en')).toBe('')
+  })
+
+  it('getNativeLanguageText returns empty string for undefined word', () => {
+    expect(getNativeLanguageText(undefined, 'en')).toBe('')
+  })
+
+  it('getTargetLanguageText returns empty string for null word', () => {
+    expect(getTargetLanguageText(null, 'pt-PT')).toBe('')
+  })
+
+  it('getTargetLanguageText returns empty string for undefined word', () => {
+    expect(getTargetLanguageText(undefined, 'pt-PT')).toBe('')
+  })
+
+  it('helpers still work correctly with valid word', () => {
+    const word = createMockWord({
+      originalText: 'teste',
+      translation: 'test',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    // Should return text, not empty string
+    expect(getNativeLanguageText(word, 'en')).toBe('test')
+    expect(getTargetLanguageText(word, 'pt-PT')).toBe('teste')
+  })
+
+  it('no crash when used in component-like scenarios', () => {
+    // Simulate what happens during review close:
+    // dueWords becomes [], currentWord becomes undefined
+    const dueWords: typeof createMockWord[] = []
+    const currentIndex = 0
+    const currentWord = dueWords[currentIndex] // undefined
+
+    // These should NOT throw
+    expect(() => getNativeLanguageText(currentWord, 'en')).not.toThrow()
+    expect(() => getTargetLanguageText(currentWord, 'pt-PT')).not.toThrow()
+
+    // And should return empty strings
+    expect(getNativeLanguageText(currentWord, 'en')).toBe('')
+    expect(getTargetLanguageText(currentWord, 'pt-PT')).toBe('')
+  })
+})

@@ -68,8 +68,8 @@ npm run build             # Production build
 | #61 | **P0-2** | ~~Sentence answer validation broken - wrong word highlighted~~ **FIXED** (Session 55) |
 | #62 | **P0-3** | ~~Multiple choice missing correct answer~~ **FIXED** (Session 55) |
 | #68 | **P0-5** | ~~Word review same word as answer for native→target~~ **FIXED** (Session 56) |
-| #69 | **P0-6** | Crash on close review (sourceLang undefined) - partial fix |
-| #63 | P0-7 | Due count mismatch - Notebook shows 49, Today shows 0 |
+| ~~#69~~ | **FIXED** | ~~Crash on close review (sourceLang undefined)~~ **FIXED** (Session 58) |
+| ~~#63~~ | **FIXED** | ~~Due count mismatch - Notebook shows 49, Today shows 0~~ **FIXED** (Session 57) |
 | #64 | P1 | Duplicate words in review queue and no shuffling |
 | #65 | P1 | Captured Today section resets when navigating away |
 | #66 | P1 | Notebook Inbox shows 4 items but none visible when opened |
@@ -77,15 +77,21 @@ npm run build             # Production build
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
 
-### Closed This Session (Session 56)
-- ~~#68~~ **P0-BLOCKER** - Fixed: Word review showed same word as answer for native→target captures
-- **#69** **P0-Critical** - Partial fix: Added null checks to prevent crash on close review (full fix pending)
+### Closed This Session (Session 58)
+- ~~#69~~ **P0-Critical** - Fixed: Crash on close review - null guards + race condition fix
+- ~~#63~~ **Closed** - Due count mismatch (closed on GitHub this session, fixed Session 57)
 
-### Closed Previous Session (Session 55)
+### Closed Previous Session (Session 57)
+- ~~#63~~ **P0-Critical** - Fixed: Due count mismatch - Today page now fetches from `/api/words/stats` (same source as Notebook)
+
+### Previously Closed (Session 56)
+- ~~#68~~ **P0-BLOCKER** - Fixed: Word review showed same word as answer for native→target captures
+
+### Previously Closed (Session 55)
 - ~~#61~~ **P0-BLOCKER** - Fixed: Focus word mismatch - created single source of truth for which word is being tested
 - ~~#62~~ **P0-BLOCKER** - Fixed: Correct answer missing from options - now loads distractors for focusWord
 
-### Previously Closed
+### Older Fixes
 - ~~#60~~ **P0-BLOCKER** - Fixed: Language direction via language-aware text helpers (Session 54)
 - ~~#57~~ **P2-normal** - Fixed: Audio generation reliability (~15% failure rate) - retry logic, language bug, timeout handling (Session 51)
 - ~~#52~~ **P3-low** - Fixed: Auth redirect - unauthenticated users now redirect to sign-in (Session 37)
@@ -113,6 +119,83 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 58 - 2026-01-21 - Crash on Close Review Fix (Issue #69)
+
+**Focus:** Fix P0 Critical crash when user clicks "Close review" mid-session.
+
+**Root Cause Identified:**
+1. **Null guard missing in text helpers:** `getNativeLanguageText()` and `getTargetLanguageText()` crashed when given undefined word
+2. **Race condition:** When `resetSession()` cleared state, the `useEffect` saw `!sessionId` and tried to start a NEW session during navigation
+
+**What Was Fixed:**
+1. Added null guards to `getNativeLanguageText()` and `getTargetLanguageText()` - return empty string instead of crashing
+2. Added `isClosing` state flag to prevent session restart race condition
+3. Updated useEffect to check `isClosing` before starting new session
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/lib/review/distractors.ts` | Null guards for text helpers |
+| `web/src/app/review/page.tsx` | isClosing flag, race condition fix |
+| `web/src/__tests__/lib/distractors.test.ts` | 6 new tests for null safety |
+
+**Tests:**
+- Added 6 new tests for null safety (209 total tests pass)
+- Build passes
+
+**E2E Verification:**
+| User | Language Pair | Close Review | Result |
+|------|---------------|--------------|--------|
+| test-en-pt | EN→PT | ✅ | No crash, navigates home |
+| test-en-sv | EN→SV | ✅ | No crash, navigates home |
+| test-nl-en | NL→EN | ✅ | No crash, navigates home |
+
+**Closes:** #69
+
+---
+
+### Session 57 - 2026-01-21 - Due Count Mismatch Fix (Issue #63)
+
+**Focus:** Fix P0 Critical bug where Today page showed 0 due while Notebook showed 49 due for the same user.
+
+**Root Cause Identified:**
+Two different calculation methods were used:
+- **Today page (client-side):** `words.filter(w => nextReviewDate <= now).length` - counted ALL words past their review date
+- **Notebook page (API):** `/api/words/stats` - used FSRS scientific formula: `min(newCards, 15) + reviewDue`
+
+The API caps new cards at 15/day to prevent learner burnout from bulk imports.
+
+**What Was Fixed:**
+1. Added server stats fetch to Today page using `/api/words/stats`
+2. Use `serverStats.dueToday` as the displayed due count
+3. Fall back to client-side calculation if API fails
+4. Added unit tests for FSRS due count formula
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/app/page.tsx` | Fetch due count from API, use as single source of truth |
+| `web/src/__tests__/lib/due-count.test.ts` | 8 new tests for FSRS formula validation |
+| `findings.md` | Updated Finding #10 with fix verification |
+
+**Tests:**
+- Added 8 new tests verifying FSRS due count calculation
+- All 203 tests pass
+- Build passes
+
+**E2E Verification:**
+| User | Today | Notebook | Match |
+|------|-------|----------|-------|
+| test-en-pt (EN→PT) | 7 | 7 | ✅ |
+| test-en-sv (EN→SV) | 15 | 15 | ✅ |
+| test-nl-en (NL→EN) | 5 | 5* | ✅ |
+
+*Notebook had separate 500 error on categories endpoint (unrelated issue)
+
+**Closes:** #63
+
+---
 
 ### Session 56 - 2026-01-21 - Word Review Same-Word Bug Fix (Issue #68)
 

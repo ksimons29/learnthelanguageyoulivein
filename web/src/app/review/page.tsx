@@ -75,6 +75,10 @@ export default function ReviewPage() {
   const [showMastery, setShowMastery] = useState(false);
   const [masteredPhrase, setMasteredPhrase] = useState("");
 
+  // FIX for Issue #69: Track when we're closing to prevent race condition
+  // This prevents the useEffect from starting a new session after resetSession()
+  const [isClosing, setIsClosing] = useState(false);
+
   // Sentence exercise state
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -143,6 +147,13 @@ export default function ReviewPage() {
       return;
     }
 
+    // FIX for Issue #69: Don't start new session if we're closing
+    // This prevents race condition where resetSession clears sessionId
+    // and this effect tries to start a new session during navigation
+    if (isClosing) {
+      return;
+    }
+
     if (user && !sessionId && !isLoading) {
       startSession()
         .then(async () => {
@@ -164,7 +175,7 @@ export default function ReviewPage() {
           console.error("Failed to start session:", err);
         });
     }
-  }, [user, authLoading, sessionId, isLoading, startSession, fetchNextSentence, router]);
+  }, [user, authLoading, sessionId, isLoading, isClosing, startSession, fetchNextSentence, router]);
 
   // Load distractors when we have a multiple choice sentence
   // FIX for Issue #61 & #62: Use focusWord instead of sentenceTargetWords[0]
@@ -198,6 +209,9 @@ export default function ReviewPage() {
   };
 
   const handleClose = () => {
+    // FIX for Issue #69: Set closing flag BEFORE reset to prevent race condition
+    // This stops the useEffect from trying to start a new session
+    setIsClosing(true);
     resetSession();
     router.push("/");
   };

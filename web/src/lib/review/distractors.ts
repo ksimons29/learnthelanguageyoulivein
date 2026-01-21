@@ -26,11 +26,17 @@ export function shuffleArray<T>(array: T[]): T[] {
  *
  * For multiple choice, all options must be in the user's native language.
  *
- * @param word - The word to extract native language text from
+ * @param word - The word to extract native language text from (can be null/undefined)
  * @param nativeLanguage - The user's native language code (e.g., 'en')
- * @returns The text in the user's native language
+ * @returns The text in the user's native language, or empty string if word is null/undefined
  */
-export function getNativeLanguageText(word: Word, nativeLanguage: string): string {
+export function getNativeLanguageText(word: Word | null | undefined, nativeLanguage: string): string {
+  // FIX for Issue #69: Guard against undefined/null word
+  // This can happen when closing review mid-session (state clears before render completes)
+  if (!word) {
+    return '';
+  }
+
   // sourceLang is the language of originalText
   // targetLang is the language of translation
   if (word.sourceLang === nativeLanguage) {
@@ -49,11 +55,17 @@ export function getNativeLanguageText(word: Word, nativeLanguage: string): strin
  *
  * This is the text that should be shown as the prompt in exercises.
  *
- * @param word - The word to extract target language text from
+ * @param word - The word to extract target language text from (can be null/undefined)
  * @param targetLanguage - The user's target language code (e.g., 'pt-PT')
- * @returns The text in the user's target language
+ * @returns The text in the user's target language, or empty string if word is null/undefined
  */
-export function getTargetLanguageText(word: Word, targetLanguage: string): string {
+export function getTargetLanguageText(word: Word | null | undefined, targetLanguage: string): string {
+  // FIX for Issue #69: Guard against undefined/null word
+  // This can happen when closing review mid-session (state clears before render completes)
+  if (!word) {
+    return '';
+  }
+
   if (word.sourceLang === targetLanguage) {
     return word.originalText;
   }
