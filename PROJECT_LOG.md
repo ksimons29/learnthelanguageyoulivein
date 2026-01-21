@@ -140,7 +140,9 @@ npm run build             # Production build
 - Root cause: `.vercel/project.json` existed in both root and `/web` directories
 - Fixed by removing root `.vercel/` directory (`.vercel` already in `.gitignore`)
 
-**Known Issue:** Admin stats API has database query issues with Drizzle ORM's parameter binding on Vercel (works locally). Investigating `sql.raw()` approach for timestamp comparisons.
+**Fixed Issues:**
+- Timestamp parameter binding: Used `sql.raw()` for date values
+- Connection pool exhaustion: Changed from `Promise.all` to sequential queries (Supabase session mode has limited concurrent connections)
 
 **Files Changed:**
 - `web/src/app/api/admin/stats/route.ts` (new)

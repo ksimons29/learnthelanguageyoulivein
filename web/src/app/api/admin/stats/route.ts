@@ -42,186 +42,175 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = sql.raw(`'${new Date(todayDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()}'::timestamp`);
     const oneDayAgo = sql.raw(`'${new Date(todayDate.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString()}'::timestamp`);
 
-    // Execute all queries in parallel for performance
-    const [
-      userStats,
-      wordStats,
-      audioStats,
-      reviewStats,
-      gamificationStats,
-      feedbackStats,
-      languagePairStats,
-      recentFeedback,
-      productKpis,
-      retentionStats,
-    ] = await Promise.all([
-      // User statistics
-      db.execute(sql`
+    // Execute queries sequentially to avoid Supabase connection pool exhaustion
+    // (max_clients_in_session_mode limit)
+
+    // User statistics
+    const userStats = await db.execute(sql`
+      SELECT
+        COUNT(DISTINCT user_id) as total_users,
+        COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo} THEN user_id END) as new_users_7d,
+        COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo} THEN user_id END) as new_users_30d
+      FROM words
+    `);
+
+    // Word statistics
+    const wordStats = await db.execute(sql`
+      SELECT
+        COUNT(*) as total_words,
+        COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as words_today,
+        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as words_7d,
+        COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as words_30d,
+        COUNT(CASE WHEN mastery_status = 'ready_to_use' THEN 1 END) as mastered_words,
+        COUNT(CASE WHEN mastery_status = 'learned' THEN 1 END) as learned_words,
+        COUNT(CASE WHEN mastery_status = 'learning' THEN 1 END) as learning_words,
+        ROUND(AVG(review_count)::numeric, 1) as avg_reviews_per_word,
+        ROUND(AVG(lapse_count)::numeric, 2) as avg_lapses_per_word
+      FROM words
+    `);
+
+    // Audio generation statistics (key health metric!)
+    const audioStats = await db.execute(sql`
+      SELECT
+        COUNT(*) as total_words,
+        COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) as with_audio,
+        COUNT(CASE WHEN audio_url IS NULL AND audio_generation_failed = false THEN 1 END) as pending_audio,
+        COUNT(CASE WHEN audio_generation_failed = true THEN 1 END) as failed_audio,
+        ROUND(
+          100.0 * COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) / NULLIF(COUNT(*), 0),
+          1
+        ) as audio_success_rate
+      FROM words
+    `);
+
+    // Review statistics
+    const reviewStats = await db.execute(sql`
+      SELECT
+        COUNT(*) as total_sessions,
+        COALESCE(SUM(words_reviewed), 0) as total_reviews,
+        COALESCE(SUM(correct_count), 0) as total_correct,
+        ROUND(
+          100.0 * COALESCE(SUM(correct_count), 0) / NULLIF(COALESCE(SUM(words_reviewed), 0), 0),
+          1
+        ) as accuracy_rate,
+        COUNT(CASE WHEN started_at >= ${sevenDaysAgo} THEN 1 END) as sessions_7d,
+        ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session
+      FROM review_sessions
+      WHERE ended_at IS NOT NULL
+    `);
+
+    // Gamification statistics
+    const gamificationStats = await db.execute(sql`
+      SELECT
+        COUNT(DISTINCT user_id) as users_with_streaks,
+        ROUND(AVG(current_streak)::numeric, 1) as avg_streak,
+        MAX(longest_streak) as max_streak_ever,
+        COUNT(CASE WHEN current_streak >= 7 THEN 1 END) as users_7plus_streak,
+        COUNT(CASE WHEN current_streak >= 30 THEN 1 END) as users_30plus_streak
+      FROM streak_state
+    `);
+
+    // Feedback statistics
+    const feedbackStats = await db.execute(sql`
+      SELECT
+        COUNT(*) as total_feedback,
+        COUNT(CASE WHEN type = 'bug_report' THEN 1 END) as bug_reports,
+        COUNT(CASE WHEN type = 'feature_request' THEN 1 END) as feature_requests,
+        COUNT(CASE WHEN type = 'general_feedback' THEN 1 END) as general_feedback,
+        COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as feedback_7d
+      FROM user_feedback
+    `);
+
+    // Language pair distribution
+    const languagePairStats = await db.execute(sql`
+      SELECT
+        source_lang,
+        target_lang,
+        COUNT(*) as word_count,
+        COUNT(DISTINCT user_id) as user_count
+      FROM words
+      GROUP BY source_lang, target_lang
+      ORDER BY word_count DESC
+      LIMIT 10
+    `);
+
+    // Recent feedback (last 10) - ANONYMOUS: no user_id exposed
+    const recentFeedback = await db.execute(sql`
+      SELECT
+        id,
+        type,
+        message,
+        page_context,
+        created_at
+      FROM user_feedback
+      ORDER BY created_at DESC
+      LIMIT 10
+    `);
+
+    // Product KPIs (from PRD requirements)
+    const productKpis = await db.execute(sql`
+      SELECT
+        -- Daily Active Users (reviewed today)
+        COUNT(DISTINCT CASE WHEN rs.started_at >= ${today} THEN rs.user_id END) as dau,
+        -- Weekly Active Users (reviewed in last 7 days)
+        COUNT(DISTINCT CASE WHEN rs.started_at >= ${sevenDaysAgo} THEN rs.user_id END) as wau,
+        -- Monthly Active Users
+        COUNT(DISTINCT CASE WHEN rs.started_at >= ${thirtyDaysAgo} THEN rs.user_id END) as mau,
+        -- Session completion rate (sessions with ended_at vs total)
+        ROUND(
+          100.0 * COUNT(CASE WHEN rs.ended_at IS NOT NULL THEN 1 END) /
+          NULLIF(COUNT(*), 0), 1
+        ) as session_completion_rate,
+        -- Average session duration (minutes)
+        ROUND(
+          AVG(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60)::numeric, 1
+        ) as avg_session_minutes
+      FROM review_sessions rs
+      WHERE rs.started_at >= ${thirtyDaysAgo}
+    `);
+
+    // Retention cohorts (D1, D7, D30)
+    const retentionStats = await db.execute(sql`
+      WITH user_cohorts AS (
         SELECT
-          COUNT(DISTINCT user_id) as total_users,
-          COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo} THEN user_id END) as new_users_7d,
-          COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo} THEN user_id END) as new_users_30d
+          user_id,
+          MIN(created_at) as first_activity
         FROM words
-      `),
-
-      // Word statistics
-      db.execute(sql`
+        GROUP BY user_id
+      ),
+      user_returns AS (
         SELECT
-          COUNT(*) as total_words,
-          COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as words_today,
-          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as words_7d,
-          COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as words_30d,
-          COUNT(CASE WHEN mastery_status = 'ready_to_use' THEN 1 END) as mastered_words,
-          COUNT(CASE WHEN mastery_status = 'learned' THEN 1 END) as learned_words,
-          COUNT(CASE WHEN mastery_status = 'learning' THEN 1 END) as learning_words,
-          ROUND(AVG(review_count)::numeric, 1) as avg_reviews_per_word,
-          ROUND(AVG(lapse_count)::numeric, 2) as avg_lapses_per_word
-        FROM words
-      `),
-
-      // Audio generation statistics (key health metric!)
-      db.execute(sql`
-        SELECT
-          COUNT(*) as total_words,
-          COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) as with_audio,
-          COUNT(CASE WHEN audio_url IS NULL AND audio_generation_failed = false THEN 1 END) as pending_audio,
-          COUNT(CASE WHEN audio_generation_failed = true THEN 1 END) as failed_audio,
-          ROUND(
-            100.0 * COUNT(CASE WHEN audio_url IS NOT NULL THEN 1 END) / NULLIF(COUNT(*), 0),
-            1
-          ) as audio_success_rate
-        FROM words
-      `),
-
-      // Review statistics
-      db.execute(sql`
-        SELECT
-          COUNT(*) as total_sessions,
-          COALESCE(SUM(words_reviewed), 0) as total_reviews,
-          COALESCE(SUM(correct_count), 0) as total_correct,
-          ROUND(
-            100.0 * COALESCE(SUM(correct_count), 0) / NULLIF(COALESCE(SUM(words_reviewed), 0), 0),
-            1
-          ) as accuracy_rate,
-          COUNT(CASE WHEN started_at >= ${sevenDaysAgo} THEN 1 END) as sessions_7d,
-          ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session
-        FROM review_sessions
-        WHERE ended_at IS NOT NULL
-      `),
-
-      // Gamification statistics
-      db.execute(sql`
-        SELECT
-          COUNT(DISTINCT user_id) as users_with_streaks,
-          ROUND(AVG(current_streak)::numeric, 1) as avg_streak,
-          MAX(longest_streak) as max_streak_ever,
-          COUNT(CASE WHEN current_streak >= 7 THEN 1 END) as users_7plus_streak,
-          COUNT(CASE WHEN current_streak >= 30 THEN 1 END) as users_30plus_streak
-        FROM streak_state
-      `),
-
-      // Feedback statistics
-      db.execute(sql`
-        SELECT
-          COUNT(*) as total_feedback,
-          COUNT(CASE WHEN type = 'bug_report' THEN 1 END) as bug_reports,
-          COUNT(CASE WHEN type = 'feature_request' THEN 1 END) as feature_requests,
-          COUNT(CASE WHEN type = 'general_feedback' THEN 1 END) as general_feedback,
-          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as feedback_7d
-        FROM user_feedback
-      `),
-
-      // Language pair distribution
-      db.execute(sql`
-        SELECT
-          source_lang,
-          target_lang,
-          COUNT(*) as word_count,
-          COUNT(DISTINCT user_id) as user_count
-        FROM words
-        GROUP BY source_lang, target_lang
-        ORDER BY word_count DESC
-        LIMIT 10
-      `),
-
-      // Recent feedback (last 10) - ANONYMOUS: no user_id exposed
-      db.execute(sql`
-        SELECT
-          id,
-          type,
-          message,
-          page_context,
-          created_at
-        FROM user_feedback
-        ORDER BY created_at DESC
-        LIMIT 10
-      `),
-
-      // Product KPIs (from PRD requirements)
-      db.execute(sql`
-        SELECT
-          -- Daily Active Users (reviewed today)
-          COUNT(DISTINCT CASE WHEN rs.started_at >= ${today} THEN rs.user_id END) as dau,
-          -- Weekly Active Users (reviewed in last 7 days)
-          COUNT(DISTINCT CASE WHEN rs.started_at >= ${sevenDaysAgo} THEN rs.user_id END) as wau,
-          -- Monthly Active Users
-          COUNT(DISTINCT CASE WHEN rs.started_at >= ${thirtyDaysAgo} THEN rs.user_id END) as mau,
-          -- Session completion rate (sessions with ended_at vs total)
-          ROUND(
-            100.0 * COUNT(CASE WHEN rs.ended_at IS NOT NULL THEN 1 END) /
-            NULLIF(COUNT(*), 0), 1
-          ) as session_completion_rate,
-          -- Average session duration (minutes)
-          ROUND(
-            AVG(EXTRACT(EPOCH FROM (rs.ended_at - rs.started_at)) / 60)::numeric, 1
-          ) as avg_session_minutes
-        FROM review_sessions rs
-        WHERE rs.started_at >= ${thirtyDaysAgo}
-      `),
-
-      // Retention cohorts (D1, D7, D30)
-      db.execute(sql`
-        WITH user_cohorts AS (
-          SELECT
-            user_id,
-            MIN(created_at) as first_activity
-          FROM words
-          GROUP BY user_id
-        ),
-        user_returns AS (
-          SELECT
-            uc.user_id,
-            uc.first_activity,
-            MAX(rs.started_at) as last_review
-          FROM user_cohorts uc
-          LEFT JOIN review_sessions rs ON uc.user_id = rs.user_id
-          GROUP BY uc.user_id, uc.first_activity
-        )
-        SELECT
-          -- D1 retention: users who returned day after signup (from users who signed up 2-30 days ago)
-          ROUND(100.0 * COUNT(CASE
-            WHEN first_activity < ${oneDayAgo}
-            AND last_review >= first_activity + INTERVAL '1 day'
-            THEN 1 END) /
-            NULLIF(COUNT(CASE WHEN first_activity < ${oneDayAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
-          ) as d1_retention,
-          -- D7 retention: users active 7 days after signup
-          ROUND(100.0 * COUNT(CASE
-            WHEN first_activity < ${sevenDaysAgo}
-            AND last_review >= first_activity + INTERVAL '7 days'
-            THEN 1 END) /
-            NULLIF(COUNT(CASE WHEN first_activity < ${sevenDaysAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
-          ) as d7_retention,
-          -- D30 retention: users still active 30 days after signup
-          ROUND(100.0 * COUNT(CASE
-            WHEN first_activity < ${thirtyDaysAgo}
-            AND last_review >= first_activity + INTERVAL '30 days'
-            THEN 1 END) /
-            NULLIF(COUNT(CASE WHEN first_activity < ${thirtyDaysAgo} THEN 1 END), 0), 1
-          ) as d30_retention
-        FROM user_returns
-      `),
-    ]);
+          uc.user_id,
+          uc.first_activity,
+          MAX(rs.started_at) as last_review
+        FROM user_cohorts uc
+        LEFT JOIN review_sessions rs ON uc.user_id = rs.user_id
+        GROUP BY uc.user_id, uc.first_activity
+      )
+      SELECT
+        -- D1 retention: users who returned day after signup (from users who signed up 2-30 days ago)
+        ROUND(100.0 * COUNT(CASE
+          WHEN first_activity < ${oneDayAgo}
+          AND last_review >= first_activity + INTERVAL '1 day'
+          THEN 1 END) /
+          NULLIF(COUNT(CASE WHEN first_activity < ${oneDayAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
+        ) as d1_retention,
+        -- D7 retention: users active 7 days after signup
+        ROUND(100.0 * COUNT(CASE
+          WHEN first_activity < ${sevenDaysAgo}
+          AND last_review >= first_activity + INTERVAL '7 days'
+          THEN 1 END) /
+          NULLIF(COUNT(CASE WHEN first_activity < ${sevenDaysAgo} AND first_activity >= ${thirtyDaysAgo} THEN 1 END), 0), 1
+        ) as d7_retention,
+        -- D30 retention: users still active 30 days after signup
+        ROUND(100.0 * COUNT(CASE
+          WHEN first_activity < ${thirtyDaysAgo}
+          AND last_review >= first_activity + INTERVAL '30 days'
+          THEN 1 END) /
+          NULLIF(COUNT(CASE WHEN first_activity < ${thirtyDaysAgo} THEN 1 END), 0), 1
+        ) as d30_retention
+      FROM user_returns
+    `);
 
     // Active users (users who captured or reviewed in last 7 days)
     const activeUsersResult = await db.execute(sql`
