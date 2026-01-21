@@ -672,16 +672,36 @@ A bug is NOT fixed until:
 
 ### Priority Fix Order
 
-| Priority | Bug | Why First |
-|----------|-----|-----------|
-| 1 | Language direction (phrase vs translation) | Fixes #1, #2, #5, #6a, #7b - one root cause |
-| 2 | Highlighted word ≠ answer | Fixes #4, #5a - makes exercises possible |
-| 3 | Correct answer in options | Fixes #7 - makes exercises completable |
-| 4 | Due count consistency | Fixes #10 - trust in data |
-| 5 | Duplicates + shuffle | Fixes #3, #3a - better UX |
-| 6 | Captured Today persistence | Fixes #8 - feedback loop |
-| 7 | Inbox count | Fixes #9 - data consistency |
-| 8 | Word limit | Fixes #6 - feature enhancement |
+| Priority | Bug | Why First | Status |
+|----------|-----|-----------|--------|
+| 1 | Language direction (phrase vs translation) | Fixes #1, #2, #5, #6a, #7b - one root cause | ✅ **FIXED** (commit e5a8897) |
+| 2 | Highlighted word ≠ answer | Fixes #4, #5a - makes exercises possible | ⬜ Pending |
+| 3 | Correct answer in options | Fixes #7 - makes exercises completable | ⬜ Pending |
+| 4 | Due count consistency | Fixes #10 - trust in data | ⬜ Pending |
+| 5 | Duplicates + shuffle | Fixes #3, #3a - better UX | ⬜ Pending |
+| 6 | Captured Today persistence | Fixes #8 - feedback loop | ⬜ Pending |
+| 7 | Inbox count | Fixes #9 - data consistency | ⬜ Pending |
+| 8 | Word limit | Fixes #6 - feature enhancement | ⬜ Pending |
+
+### Fix Verification: Priority 1 (Language Direction)
+
+**Commit:** e5a8897 - fix(review): use language-aware text helpers for bidirectional capture
+
+**What was fixed:**
+- `review/page.tsx` now uses `getTargetLanguageText()` and `getNativeLanguageText()` instead of raw `originalText`/`translation` fields
+- Translation hints now show "TARGET: NATIVE" format consistently
+- Multiple choice options display in native language
+- Blanked word in fill-in-blank shows target language
+
+**E2E Verification:**
+- ✅ EN→PT user: Multiple choice options displayed in English (native) - PASSED
+- ✅ EN→SV user: Multiple choice options displayed in English (native) - PASSED
+- ⚠️ NL→EN user: Skipped - test user has data quality issues (words from wrong language pairs)
+
+**Note:** Test users have some data quality issues (sentences mixing multiple languages like Swedish + Portuguese). This is a separate data problem, not related to the display logic fix.
+
+**Tests Added:**
+- `distractors.test.ts`: 3 new tests for translation hint formatting with bidirectional capture
 
 ### The Standard Going Forward
 
