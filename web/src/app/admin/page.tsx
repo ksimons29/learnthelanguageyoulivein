@@ -93,6 +93,7 @@ interface AdminStats {
     d30Retention: number;
   };
   dataQualityNotes?: {
+    testUsers: string;
     audioSuccessRate: string;
     sessionDuration: string;
     retention: string;
@@ -789,6 +790,7 @@ export default function AdminDashboard() {
                   }}
                 >
                   <ul className="space-y-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                    <li><strong>Test Users:</strong> {stats.dataQualityNotes.testUsers}</li>
                     <li><strong>Audio Success Rate:</strong> {stats.dataQualityNotes.audioSuccessRate}</li>
                     <li><strong>Session Duration:</strong> {stats.dataQualityNotes.sessionDuration}</li>
                     <li><strong>Retention:</strong> {stats.dataQualityNotes.retention}</li>

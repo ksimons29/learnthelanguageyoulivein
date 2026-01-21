@@ -45,16 +45,27 @@ export async function GET(request: NextRequest) {
     // Execute queries sequentially to avoid Supabase connection pool exhaustion
     // (max_clients_in_session_mode limit)
 
-    // User statistics
+    // Test user filter - exclude test accounts from analytics
+    // Convention: test emails end with @llyli.test or @apple-review.test
+    const testUserFilter = sql`
+      user_id NOT IN (
+        SELECT id FROM auth.users
+        WHERE email LIKE '%@llyli.test'
+           OR email LIKE '%@apple-review.test'
+      )
+    `;
+
+    // User statistics (excludes test users)
     const userStats = await db.execute(sql`
       SELECT
         COUNT(DISTINCT user_id) as total_users,
         COUNT(DISTINCT CASE WHEN created_at >= ${sevenDaysAgo} THEN user_id END) as new_users_7d,
         COUNT(DISTINCT CASE WHEN created_at >= ${thirtyDaysAgo} THEN user_id END) as new_users_30d
       FROM words
+      WHERE ${testUserFilter}
     `);
 
-    // Word statistics
+    // Word statistics (excludes test users)
     const wordStats = await db.execute(sql`
       SELECT
         COUNT(*) as total_words,
@@ -67,10 +78,12 @@ export async function GET(request: NextRequest) {
         ROUND(AVG(review_count)::numeric, 1) as avg_reviews_per_word,
         ROUND(AVG(lapse_count)::numeric, 2) as avg_lapses_per_word
       FROM words
+      WHERE ${testUserFilter}
     `);
 
     // Audio generation statistics - ONLY for recent captures (last 7 days)
     // Bulk imports don't have audio, so we exclude them for meaningful metrics
+    // Excludes test users
     const audioStats = await db.execute(sql`
       SELECT
         COUNT(*) as total_words,
@@ -82,9 +95,10 @@ export async function GET(request: NextRequest) {
         COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_url IS NOT NULL THEN 1 END) as recent_with_audio,
         COUNT(CASE WHEN created_at >= ${sevenDaysAgo} AND audio_generation_failed = true THEN 1 END) as recent_failed
       FROM words
+      WHERE ${testUserFilter}
     `);
 
-    // Review statistics
+    // Review statistics (excludes test users)
     const reviewStats = await db.execute(sql`
       SELECT
         COUNT(*) as total_sessions,
@@ -98,9 +112,10 @@ export async function GET(request: NextRequest) {
         ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session
       FROM review_sessions
       WHERE ended_at IS NOT NULL
+        AND ${testUserFilter}
     `);
 
-    // Gamification statistics
+    // Gamification statistics (excludes test users)
     const gamificationStats = await db.execute(sql`
       SELECT
         COUNT(DISTINCT user_id) as users_with_streaks,
@@ -109,9 +124,10 @@ export async function GET(request: NextRequest) {
         COUNT(CASE WHEN current_streak >= 7 THEN 1 END) as users_7plus_streak,
         COUNT(CASE WHEN current_streak >= 30 THEN 1 END) as users_30plus_streak
       FROM streak_state
+      WHERE ${testUserFilter}
     `);
 
-    // Feedback statistics
+    // Feedback statistics (excludes test users)
     const feedbackStats = await db.execute(sql`
       SELECT
         COUNT(*) as total_feedback,
@@ -120,9 +136,10 @@ export async function GET(request: NextRequest) {
         COUNT(CASE WHEN type = 'general_feedback' THEN 1 END) as general_feedback,
         COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as feedback_7d
       FROM user_feedback
+      WHERE ${testUserFilter}
     `);
 
-    // Language pair distribution (filter out invalid same-language pairs)
+    // Language pair distribution (filter out invalid same-language pairs, excludes test users)
     const languagePairStats = await db.execute(sql`
       SELECT
         source_lang,
@@ -131,12 +148,13 @@ export async function GET(request: NextRequest) {
         COUNT(DISTINCT user_id) as user_count
       FROM words
       WHERE source_lang != target_lang
+        AND ${testUserFilter}
       GROUP BY source_lang, target_lang
       ORDER BY word_count DESC
       LIMIT 10
     `);
 
-    // Recent feedback (last 10) - ANONYMOUS: no user_id exposed
+    // Recent feedback (last 10) - ANONYMOUS: no user_id exposed, excludes test users
     const recentFeedback = await db.execute(sql`
       SELECT
         id,
@@ -145,11 +163,12 @@ export async function GET(request: NextRequest) {
         page_context,
         created_at
       FROM user_feedback
+      WHERE ${testUserFilter}
       ORDER BY created_at DESC
       LIMIT 10
     `);
 
-    // Product KPIs (from PRD requirements)
+    // Product KPIs (from PRD requirements, excludes test users)
     const productKpis = await db.execute(sql`
       SELECT
         -- Daily Active Users (reviewed today)
@@ -176,15 +195,25 @@ export async function GET(request: NextRequest) {
       FROM review_sessions rs
       WHERE rs.started_at >= ${thirtyDaysAgo}
         AND rs.ended_at IS NOT NULL
+        AND rs.user_id NOT IN (
+          SELECT id FROM auth.users
+          WHERE email LIKE '%@llyli.test'
+             OR email LIKE '%@apple-review.test'
+        )
     `);
 
-    // Retention cohorts (D1, D7, D30)
+    // Retention cohorts (D1, D7, D30) - excludes test users
     const retentionStats = await db.execute(sql`
       WITH user_cohorts AS (
         SELECT
           user_id,
           MIN(created_at) as first_activity
         FROM words
+        WHERE user_id NOT IN (
+          SELECT id FROM auth.users
+          WHERE email LIKE '%@llyli.test'
+             OR email LIKE '%@apple-review.test'
+        )
         GROUP BY user_id
       ),
       user_returns AS (
@@ -221,13 +250,13 @@ export async function GET(request: NextRequest) {
       FROM user_returns
     `);
 
-    // Active users (users who captured or reviewed in last 7 days)
+    // Active users (users who captured or reviewed in last 7 days) - excludes test users
     const activeUsersResult = await db.execute(sql`
       SELECT COUNT(DISTINCT user_id) as active_users_7d
       FROM (
-        SELECT user_id FROM words WHERE created_at >= ${sevenDaysAgo}
+        SELECT user_id FROM words WHERE created_at >= ${sevenDaysAgo} AND ${testUserFilter}
         UNION
-        SELECT user_id FROM review_sessions WHERE started_at >= ${sevenDaysAgo}
+        SELECT user_id FROM review_sessions WHERE started_at >= ${sevenDaysAgo} AND ${testUserFilter}
       ) as active
     `);
 
@@ -335,6 +364,7 @@ export async function GET(request: NextRequest) {
       },
       // Data quality notes for interpreting metrics
       dataQualityNotes: {
+        testUsers: 'All metrics exclude test accounts (*@llyli.test, *@apple-review.test). Only real user data is shown.',
         audioSuccessRate: 'Based on last 7 days only. Bulk imports (before audio feature) are excluded.',
         sessionDuration: 'Capped at 30 min. Sessions longer than 30 min are counted as 30 min (abandoned tabs).',
         retention: 'D1/D7/D30 calculated from users who signed up within relevant windows. May show 0% if insufficient data.',

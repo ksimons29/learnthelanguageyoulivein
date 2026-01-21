@@ -177,6 +177,37 @@ npm run build             # Production build
 
 ---
 
+### Session 51d - 2026-01-21 - Exclude Test Users from Analytics
+
+**Problem:** Analytics included test account data, polluting real user metrics.
+
+**Solution:** Filter all dashboard queries to exclude test users by email pattern.
+
+**Convention Established:**
+- Test account emails end with `@llyli.test` (e.g., `test-en-pt@llyli.test`)
+- Apple review accounts use `@apple-review.test` (future iOS)
+- Real users and TestFlight beta testers use real emails
+
+**Implementation:**
+```sql
+WHERE user_id NOT IN (
+  SELECT id FROM auth.users
+  WHERE email LIKE '%@llyli.test'
+     OR email LIKE '%@apple-review.test'
+)
+```
+
+**Queries Updated (11 total):**
+- userStats, wordStats, audioStats, reviewStats
+- gamificationStats, feedbackStats, languagePairStats
+- recentFeedback, productKpis, retentionStats, activeUsersResult
+
+**Files Changed:**
+- `web/src/app/api/admin/stats/route.ts` - Added test user filter to all queries
+- `web/src/app/admin/page.tsx` - Added testUsers note to data quality section
+
+---
+
 ### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
 
 **Focus**: Create comprehensive automated tests for gamification and ensure new users have gamification-ready data from day one.
