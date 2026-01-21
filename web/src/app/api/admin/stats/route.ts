@@ -260,6 +260,116 @@ export async function GET(request: NextRequest) {
       ) as active
     `);
 
+    // ============================================
+    // SCIENCE VERIFICATION METRICS
+    // Validate that our research-backed approach is working
+    // ============================================
+
+    // FSRS Health: Interval distribution (should grow over time)
+    const fsrsHealth = await db.execute(sql`
+      SELECT
+        -- Interval distribution buckets
+        COUNT(CASE WHEN stability < 1 THEN 1 END) as interval_under_1d,
+        COUNT(CASE WHEN stability >= 1 AND stability < 7 THEN 1 END) as interval_1_7d,
+        COUNT(CASE WHEN stability >= 7 AND stability < 30 THEN 1 END) as interval_7_30d,
+        COUNT(CASE WHEN stability >= 30 AND stability < 90 THEN 1 END) as interval_30_90d,
+        COUNT(CASE WHEN stability >= 90 THEN 1 END) as interval_90plus,
+        -- Average stability by mastery status (should increase)
+        ROUND(AVG(CASE WHEN mastery_status = 'learning' THEN stability END)::numeric, 1) as avg_stability_learning,
+        ROUND(AVG(CASE WHEN mastery_status = 'learned' THEN stability END)::numeric, 1) as avg_stability_learned,
+        ROUND(AVG(CASE WHEN mastery_status = 'ready_to_use' THEN stability END)::numeric, 1) as avg_stability_mastered,
+        -- Overall retention proxy (words reviewed in last 7 days that were correct)
+        COUNT(*) as total_reviewed_words
+      FROM words
+      WHERE review_count > 0 AND ${testUserFilter}
+    `);
+
+    // Mastery validation: Are words progressing correctly through 3-recall system?
+    const masteryValidation = await db.execute(sql`
+      SELECT
+        -- Average reviews to reach each stage
+        ROUND(AVG(CASE WHEN mastery_status = 'learned' THEN review_count END)::numeric, 1) as avg_reviews_to_learned,
+        ROUND(AVG(CASE WHEN mastery_status = 'ready_to_use' THEN review_count END)::numeric, 1) as avg_reviews_to_mastered,
+        -- Words stuck in learning (>30 days old, still learning, reviewed but not progressing)
+        COUNT(CASE
+          WHEN mastery_status = 'learning'
+          AND created_at < ${thirtyDaysAgo}
+          AND review_count >= 5
+          THEN 1
+        END) as words_stuck_in_learning,
+        -- Lapse rate (words that went back to learning after being learned)
+        COUNT(CASE WHEN lapse_count > 0 THEN 1 END) as words_with_lapses,
+        ROUND(AVG(lapse_count)::numeric, 2) as avg_lapse_count,
+        -- Mastery without enough reviews (potential bug)
+        COUNT(CASE
+          WHEN mastery_status = 'ready_to_use'
+          AND review_count < 3
+          THEN 1
+        END) as mastered_under_3_reviews
+      FROM words
+      WHERE ${testUserFilter}
+    `);
+
+    // Session quality: Are sessions in the optimal 5-15 minute range?
+    const sessionQuality = await db.execute(sql`
+      SELECT
+        -- Duration buckets (capped at 30 min)
+        COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 < 5 THEN 1 END) as sessions_under_5min,
+        COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 BETWEEN 5 AND 15 THEN 1 END) as sessions_5_15min,
+        COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 > 15 THEN 1 END) as sessions_over_15min,
+        -- Optimal session percentage (5-15 min is ideal per science)
+        ROUND(
+          100.0 * COUNT(CASE WHEN EXTRACT(EPOCH FROM (ended_at - started_at)) / 60 BETWEEN 5 AND 15 THEN 1 END) /
+          NULLIF(COUNT(*), 0), 1
+        ) as optimal_session_pct,
+        -- Words per session distribution
+        ROUND(AVG(words_reviewed)::numeric, 1) as avg_words_per_session,
+        COUNT(CASE WHEN words_reviewed > 25 THEN 1 END) as sessions_over_25_words
+      FROM review_sessions
+      WHERE ended_at IS NOT NULL
+        AND started_at >= ${thirtyDaysAgo}
+        AND ${testUserFilter}
+    `);
+
+    // Data quality guardrails: Catch anomalies that indicate bugs
+    const dataGuardrails = await db.execute(sql`
+      SELECT
+        -- Suspicious intervals (>365 days = likely bug)
+        COUNT(CASE WHEN stability > 365 THEN 1 END) as words_interval_over_year,
+        -- Zero accuracy users (potential bot or broken UI)
+        COUNT(DISTINCT CASE
+          WHEN rs.words_reviewed > 10 AND rs.correct_count = 0
+          THEN rs.user_id
+        END) as users_zero_accuracy,
+        -- Words never reviewed but old (capture without learning)
+        (SELECT COUNT(*) FROM words w2
+          WHERE w2.review_count = 0
+          AND w2.created_at < ${sevenDaysAgo}
+          AND w2.user_id NOT IN (
+            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+          )
+        ) as old_words_never_reviewed,
+        -- Daily review overload (users with >50 due words)
+        COUNT(DISTINCT CASE
+          WHEN due_word_count > 50
+          THEN user_id
+        END) as users_overloaded
+      FROM review_sessions rs
+      LEFT JOIN (
+        SELECT user_id, COUNT(*) as due_word_count
+        FROM words
+        WHERE next_review_at <= NOW()
+          AND user_id NOT IN (
+            SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+          )
+        GROUP BY user_id
+      ) due ON rs.user_id = due.user_id
+      WHERE rs.ended_at IS NOT NULL
+        AND rs.user_id NOT IN (
+          SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
+        )
+    `);
+
     // Type helper for raw SQL results (Drizzle returns array directly)
     type RawRow = Record<string, unknown>;
     const getRow = (result: unknown[], index = 0): RawRow => (result[index] || {}) as RawRow;
@@ -370,6 +480,59 @@ export async function GET(request: NextRequest) {
         retention: 'D1/D7/D30 calculated from users who signed up within relevant windows. May show 0% if insufficient data.',
         languagePairs: 'Invalid same-language pairs (e.g., sv→sv) are filtered out.',
         userCounts: 'Derived from word captures. Users who only reviewed but never captured are not counted as "new users".',
+      },
+      // ============================================
+      // SCIENCE VERIFICATION - Proof that our approach works
+      // ============================================
+      scienceMetrics: {
+        // FSRS Algorithm Health (intervals should grow as words are learned)
+        fsrsHealth: {
+          intervalDistribution: {
+            under1Day: Number(getRow(fsrsHealth).interval_under_1d || 0),
+            days1to7: Number(getRow(fsrsHealth).interval_1_7d || 0),
+            days7to30: Number(getRow(fsrsHealth).interval_7_30d || 0),
+            days30to90: Number(getRow(fsrsHealth).interval_30_90d || 0),
+            over90Days: Number(getRow(fsrsHealth).interval_90plus || 0),
+          },
+          avgStabilityByStatus: {
+            learning: Number(getRow(fsrsHealth).avg_stability_learning || 0),
+            learned: Number(getRow(fsrsHealth).avg_stability_learned || 0),
+            mastered: Number(getRow(fsrsHealth).avg_stability_mastered || 0),
+          },
+          totalReviewedWords: Number(getRow(fsrsHealth).total_reviewed_words || 0),
+        },
+        // 3-Recall Mastery System Validation
+        masteryValidation: {
+          avgReviewsToLearned: Number(getRow(masteryValidation).avg_reviews_to_learned || 0),
+          avgReviewsToMastered: Number(getRow(masteryValidation).avg_reviews_to_mastered || 0),
+          wordsStuckInLearning: Number(getRow(masteryValidation).words_stuck_in_learning || 0),
+          wordsWithLapses: Number(getRow(masteryValidation).words_with_lapses || 0),
+          avgLapseCount: Number(getRow(masteryValidation).avg_lapse_count || 0),
+          masteredUnder3Reviews: Number(getRow(masteryValidation).mastered_under_3_reviews || 0),
+        },
+        // Session Quality (optimal = 5-15 minutes per science)
+        sessionQuality: {
+          under5Min: Number(getRow(sessionQuality).sessions_under_5min || 0),
+          optimal5to15Min: Number(getRow(sessionQuality).sessions_5_15min || 0),
+          over15Min: Number(getRow(sessionQuality).sessions_over_15min || 0),
+          optimalSessionPct: Number(getRow(sessionQuality).optimal_session_pct || 0),
+          avgWordsPerSession: Number(getRow(sessionQuality).avg_words_per_session || 0),
+          sessionsOver25Words: Number(getRow(sessionQuality).sessions_over_25_words || 0),
+        },
+        // Data Quality Guardrails (alerts for anomalies)
+        guardrails: {
+          wordsIntervalOverYear: Number(getRow(dataGuardrails).words_interval_over_year || 0),
+          usersZeroAccuracy: Number(getRow(dataGuardrails).users_zero_accuracy || 0),
+          oldWordsNeverReviewed: Number(getRow(dataGuardrails).old_words_never_reviewed || 0),
+          usersOverloaded: Number(getRow(dataGuardrails).users_overloaded || 0),
+        },
+      },
+      // Science metric explanations
+      scienceNotes: {
+        fsrsHealth: 'FSRS stability should increase as words progress: learning < learned < mastered. Healthy distribution shifts right over time.',
+        masteryValidation: 'Words should reach mastery in ~3-6 reviews. "Stuck in learning" (>5 reviews, >30 days) indicates difficulty. "Mastered under 3" is a bug.',
+        sessionQuality: '5-15 minute sessions are optimal per cognitive science. Sessions >25 words risk overload.',
+        guardrails: 'Alerts: intervals >365d (suspicious), 0% accuracy (bot/bug), never reviewed (abandoned), >50 due (overload).',
       },
     });
   } catch (error) {

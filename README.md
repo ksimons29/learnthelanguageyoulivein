@@ -22,6 +22,21 @@ npm run dev     # localhost:3000
 - **Boss Round** - 90-second speed challenge
 - **Admin Dashboard** - Platform analytics and product KPIs
 
+## The Science
+
+LLYLI is built on peer-reviewed memory research, not guesswork.
+
+| Principle | How We Apply It | Evidence |
+|-----------|-----------------|----------|
+| **Forgetting Curve** (1885) | Review timing catches you just as you start to forget | 64% → 87% retention after 3 reviews |
+| **FSRS Algorithm** (2023) | Modern ML-based scheduling, not 1987 math | 36 years newer than most apps |
+| **Optimal Sessions** | 5-15 min sessions, 25 word max, clear finish line | +11% retention from immediate feedback |
+| **Interleaved Practice** | Dynamic sentences combine 2-4 of your words | 4-6x faster acquisition |
+| **Encoding Specificity** | YOUR words from YOUR life, with context | r=0.5 novelty-learning correlation |
+| **3-Recall Mastery** | Words graduate after 3 correct recalls | Proven long-term retention |
+
+**Full details:** [docs/product/science.md](docs/product/science.md) | **In-app:** [/science](https://llyli.vercel.app/science)
+
 ## Supported Languages
 
 | From | To | Status |

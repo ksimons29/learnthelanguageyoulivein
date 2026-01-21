@@ -15,6 +15,8 @@ import {
   Clock,
   TrendingUp,
   Lock,
+  FlaskConical,
+  ShieldAlert,
 } from "lucide-react";
 
 interface AdminStats {
@@ -106,6 +108,51 @@ interface AdminStats {
     mastered: number;
     conversionToLearned: number;
     conversionToMastered: number;
+  };
+  scienceMetrics?: {
+    fsrsHealth: {
+      intervalDistribution: {
+        under1Day: number;
+        days1to7: number;
+        days7to30: number;
+        days30to90: number;
+        over90Days: number;
+      };
+      avgStabilityByStatus: {
+        learning: number;
+        learned: number;
+        mastered: number;
+      };
+      totalReviewedWords: number;
+    };
+    masteryValidation: {
+      avgReviewsToLearned: number;
+      avgReviewsToMastered: number;
+      wordsStuckInLearning: number;
+      wordsWithLapses: number;
+      avgLapseCount: number;
+      masteredUnder3Reviews: number;
+    };
+    sessionQuality: {
+      under5Min: number;
+      optimal5to15Min: number;
+      over15Min: number;
+      optimalSessionPct: number;
+      avgWordsPerSession: number;
+      sessionsOver25Words: number;
+    };
+    guardrails: {
+      wordsIntervalOverYear: number;
+      usersZeroAccuracy: number;
+      oldWordsNeverReviewed: number;
+      usersOverloaded: number;
+    };
+  };
+  scienceNotes?: {
+    fsrsHealth: string;
+    masteryValidation: string;
+    sessionQuality: string;
+    guardrails: string;
   };
 }
 
@@ -472,6 +519,166 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </section>
+
+            {/* Science Verification - Proof the algorithms work */}
+            {stats.scienceMetrics && (
+              <section>
+                <SectionHeader title="Science Verification" icon={FlaskConical} />
+                <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
+                  Validates that our research-backed approach is working correctly.
+                </p>
+
+                {/* FSRS Health */}
+                <div
+                  className="rounded-lg border p-4 mb-4"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <h3 className="font-medium mb-3 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                    <Brain className="h-4 w-4" style={{ color: "var(--accent-nav)" }} />
+                    FSRS Algorithm Health
+                  </h3>
+                  <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                    Stability should increase: learning → learned → mastered
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center">
+                      <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                        {stats.scienceMetrics.fsrsHealth.avgStabilityByStatus.learning || 0}d
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>Learning</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold" style={{ color: "var(--accent-nav)" }}>
+                        {stats.scienceMetrics.fsrsHealth.avgStabilityByStatus.learned || 0}d
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>Learned</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold" style={{ color: "var(--state-easy)" }}>
+                        {stats.scienceMetrics.fsrsHealth.avgStabilityByStatus.mastered || 0}d
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>Mastered</div>
+                    </div>
+                  </div>
+                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Interval distribution: {stats.scienceMetrics.fsrsHealth.intervalDistribution.under1Day} (&lt;1d) |{" "}
+                    {stats.scienceMetrics.fsrsHealth.intervalDistribution.days1to7} (1-7d) |{" "}
+                    {stats.scienceMetrics.fsrsHealth.intervalDistribution.days7to30} (7-30d) |{" "}
+                    {stats.scienceMetrics.fsrsHealth.intervalDistribution.days30to90} (30-90d) |{" "}
+                    {stats.scienceMetrics.fsrsHealth.intervalDistribution.over90Days} (&gt;90d)
+                  </div>
+                </div>
+
+                {/* Session Quality */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <StatCard
+                    title="Optimal Sessions"
+                    value={`${stats.scienceMetrics.sessionQuality.optimalSessionPct}%`}
+                    subtitle="5-15 min (ideal)"
+                    icon={Clock}
+                    alert={stats.scienceMetrics.sessionQuality.optimalSessionPct < 30}
+                  />
+                  <StatCard
+                    title="Avg Reviews to Master"
+                    value={stats.scienceMetrics.masteryValidation.avgReviewsToMastered || "—"}
+                    subtitle="Target: 3-6"
+                    icon={Brain}
+                    alert={stats.scienceMetrics.masteryValidation.avgReviewsToMastered > 10}
+                  />
+                  <StatCard
+                    title="Words Stuck"
+                    value={stats.scienceMetrics.masteryValidation.wordsStuckInLearning}
+                    subtitle=">30d, >5 reviews"
+                    icon={AlertCircle}
+                    alert={stats.scienceMetrics.masteryValidation.wordsStuckInLearning > 10}
+                  />
+                  <StatCard
+                    title="Lapse Rate"
+                    value={`${stats.scienceMetrics.masteryValidation.avgLapseCount}`}
+                    subtitle="Avg lapses/word"
+                    icon={TrendingUp}
+                  />
+                </div>
+
+                {/* Data Quality Guardrails */}
+                <div
+                  className="rounded-lg border p-4"
+                  style={{
+                    backgroundColor: stats.scienceMetrics.masteryValidation.masteredUnder3Reviews > 0 ||
+                      stats.scienceMetrics.guardrails.usersZeroAccuracy > 0
+                      ? "rgba(234, 88, 12, 0.05)"
+                      : "var(--surface-card)",
+                    borderColor: stats.scienceMetrics.masteryValidation.masteredUnder3Reviews > 0 ||
+                      stats.scienceMetrics.guardrails.usersZeroAccuracy > 0
+                      ? "var(--state-hard)"
+                      : "var(--notebook-line)",
+                  }}
+                >
+                  <h3 className="font-medium mb-3 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                    <ShieldAlert className="h-4 w-4" style={{ color: "var(--state-hard)" }} />
+                    Data Quality Guardrails
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <div
+                        className="font-medium"
+                        style={{
+                          color: stats.scienceMetrics.masteryValidation.masteredUnder3Reviews > 0
+                            ? "var(--state-hard)"
+                            : "var(--text-primary)",
+                        }}
+                      >
+                        {stats.scienceMetrics.masteryValidation.masteredUnder3Reviews}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Mastered &lt;3 reviews (bug)
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        className="font-medium"
+                        style={{
+                          color: stats.scienceMetrics.guardrails.usersZeroAccuracy > 0
+                            ? "var(--state-hard)"
+                            : "var(--text-primary)",
+                        }}
+                      >
+                        {stats.scienceMetrics.guardrails.usersZeroAccuracy}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Users 0% accuracy
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium" style={{ color: "var(--text-primary)" }}>
+                        {stats.scienceMetrics.guardrails.oldWordsNeverReviewed}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Never reviewed (&gt;7d)
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        className="font-medium"
+                        style={{
+                          color: stats.scienceMetrics.guardrails.usersOverloaded > 0
+                            ? "var(--state-hard)"
+                            : "var(--text-primary)",
+                        }}
+                      >
+                        {stats.scienceMetrics.guardrails.usersOverloaded}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Users overloaded (&gt;50 due)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Users Section */}
             <section>

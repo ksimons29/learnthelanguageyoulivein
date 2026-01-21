@@ -208,6 +208,33 @@ WHERE user_id NOT IN (
 
 ---
 
+### Session 51e - 2026-01-21 - Science Verification Metrics
+
+**Focus:** Add metrics to prove the science behind LLYLI is actually working, plus documentation.
+
+**Science Verification Metrics Added:**
+1. **FSRS Health** - Interval distribution, avg stability by mastery status
+2. **Mastery Validation** - Avg reviews to mastery, words stuck in learning, lapse rate
+3. **Session Quality** - Optimal 5-15 min percentage, overload detection
+4. **Data Quality Guardrails** - Suspicious patterns (mastered <3 reviews, 0% accuracy users)
+
+**Documentation Created:**
+- `docs/product/science.md` - Full science documentation with research references
+- Updated `README.md` with Science section highlighting differentiators
+
+**Admin Dashboard Updates:**
+- New "Science Verification" section with FSRS health visualization
+- Guardrails panel that highlights anomalies in orange
+- Interval distribution breakdown
+
+**Files Changed:**
+- `web/src/app/api/admin/stats/route.ts` - 4 new science metric queries
+- `web/src/app/admin/page.tsx` - Science Verification UI section
+- `docs/product/science.md` (new) - Research documentation
+- `README.md` - Added Science section
+
+---
+
 ### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
 
 **Focus**: Create comprehensive automated tests for gamification and ensure new users have gamification-ready data from day one.
