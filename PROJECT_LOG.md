@@ -65,18 +65,22 @@ npm run build             # Production build
 | Issue | Status | Notes |
 |-------|--------|-------|
 | #60 | **P0-1** | ~~Language direction bug - phrase vs translation~~ **FIXED** |
-| #61 | P0-2 | Sentence answer validation broken - wrong word highlighted |
-| #62 | P0-3 | Multiple choice missing correct answer |
-| #63 | P0-4 | Multiple choice options in wrong language |
-| #64 | P1 | Word selection capped at 2 |
-| #65 | P1 | Due count mismatch (Today vs Notebook) |
-| #66 | P2 | Captured Today resets on navigation |
-| #67 | P2 | Inbox shows count but no items |
-| #29 | Low | Turbopack config warning - no impact (closed) |
+| #61 | **P0-2** | ~~Sentence answer validation broken - wrong word highlighted~~ **FIXED** (Session 55) |
+| #62 | **P0-3** | ~~Multiple choice missing correct answer~~ **FIXED** (Session 55) |
+| #63 | P0-4 | Due count mismatch - Notebook shows 49, Today shows 0 |
+| #64 | P1 | Duplicate words in review queue and no shuffling |
+| #65 | P1 | Captured Today section resets when navigating away |
+| #66 | P1 | Notebook Inbox shows 4 items but none visible when opened |
+| #67 | P2 | Word selection capped at 2 words - too restrictive |
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
 
-### Closed This Session
+### Closed This Session (Session 55)
+- ~~#61~~ **P0-BLOCKER** - Fixed: Focus word mismatch - created single source of truth for which word is being tested
+- ~~#62~~ **P0-BLOCKER** - Fixed: Correct answer missing from options - now loads distractors for focusWord
+
+### Previously Closed
+- ~~#60~~ **P0-BLOCKER** - Fixed: Language direction via language-aware text helpers (Session 54)
 - ~~#57~~ **P2-normal** - Fixed: Audio generation reliability (~15% failure rate) - retry logic, language bug, timeout handling (Session 51)
 - ~~#52~~ **P3-low** - Fixed: Auth redirect - unauthenticated users now redirect to sign-in (Session 37)
 - ~~#43~~ **BLOCKER** - Fixed: Language filtering via shared helper in all word queries
@@ -103,6 +107,47 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 55 - 2026-01-21 - Focus Word Selection Fix (Issues #61 & #62)
+
+**Focus:** Fix P0 BLOCKER bugs where sentence exercises showed wrong highlighted word and missing correct answer in options.
+
+**Root Cause Identified:**
+The sentence review system had no single source of truth for "which word is being tested":
+- `sentenceTargetWords[0]` was used for loading distractors (arbitrary array order)
+- `selectWordToBlank()` was used for fill-blank exercises (lowest mastery word)
+- ALL target words were highlighted (confusing for user)
+
+Result: User sees word A highlighted, but options are for word B, making exercises impossible.
+
+**What Was Fixed:**
+1. Created `focusWord = selectWordToBlank(sentenceTargetWords)` as single source of truth
+2. Changed `loadDistractors(sentenceTargetWords[0])` → `loadDistractors(focusWord)`
+3. Changed highlighting from ALL target words → ONLY the focus word
+4. Updated answer feedback to use `focusWord` for correct answer display
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/app/review/page.tsx` | Added focusWord state, fixed 4 code locations |
+| `web/src/__tests__/lib/distractors.test.ts` | Added 3 tests for focus word invariant |
+| `findings.md` | Updated fix status for Priority 2 & 3 |
+| `PROJECT_LOG.md` | Session 55 documentation |
+
+**Tests:**
+- Added 3 new tests verifying focus word selection invariant
+- All 192 tests pass
+- Build passes
+
+**Verification:**
+- ✅ `npm run build` - Passes
+- ✅ `npm run test:run` - 192 tests pass
+- ⚠️ E2E on local - No pre-generated sentences available (word mode tested successfully)
+- 🔲 E2E on production - Requires deployment
+
+**Closes:** #61, #62
+
+---
 
 ### Session 54 - 2026-01-21 - MVP Bug Audit and Language Direction Fix
 

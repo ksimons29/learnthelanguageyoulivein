@@ -675,13 +675,42 @@ A bug is NOT fixed until:
 | Priority | Bug | Why First | Status |
 |----------|-----|-----------|--------|
 | 1 | Language direction (phrase vs translation) | Fixes #1, #2, #5, #6a, #7b - one root cause | ✅ **FIXED** (commit e5a8897) |
-| 2 | Highlighted word ≠ answer | Fixes #4, #5a - makes exercises possible | ⬜ Pending |
-| 3 | Correct answer in options | Fixes #7 - makes exercises completable | ⬜ Pending |
+| 2 | Highlighted word ≠ answer | Fixes #4, #5a - makes exercises possible | ✅ **FIXED** (Session 55) |
+| 3 | Correct answer in options | Fixes #7 - makes exercises completable | ✅ **FIXED** (Session 55) |
 | 4 | Due count consistency | Fixes #10 - trust in data | ⬜ Pending |
 | 5 | Duplicates + shuffle | Fixes #3, #3a - better UX | ⬜ Pending |
 | 6 | Captured Today persistence | Fixes #8 - feedback loop | ⬜ Pending |
 | 7 | Inbox count | Fixes #9 - data consistency | ⬜ Pending |
 | 8 | Word limit | Fixes #6 - feature enhancement | ⬜ Pending |
+
+### Fix Verification: Priority 2 & 3 (Focus Word Selection)
+
+**Session 55 Fix - Issues #61 & #62:**
+
+**Root Cause:** In sentence exercises, the code used `sentenceTargetWords[0]` to load multiple choice
+options, but `selectWordToBlank()` for fill-in-blank exercises. These could return different words
+because array order from the database doesn't match display order or mastery priority.
+
+**The Fix:**
+1. Created `focusWord = selectWordToBlank(sentenceTargetWords)` - single source of truth for which word is being tested
+2. Changed `loadDistractors(sentenceTargetWords[0])` → `loadDistractors(focusWord)`
+3. Changed highlighting from ALL target words → ONLY the focus word
+4. Updated answer feedback to use `focusWord` for correct answer display
+
+**Files Changed:**
+- `web/src/app/review/page.tsx` - 4 code changes with comments
+- `web/src/__tests__/lib/distractors.test.ts` - Added 3 new tests for focus word invariant
+
+**Tests Added:**
+- `selectWordToBlank returns word with lowest mastery consistently`
+- `INVARIANT: options must be generated for focus word, not arbitrary array[0]`
+- `fill_blank and multiple_choice use same focus word selection`
+
+**Verification:**
+- ✅ `npm run build` - Passes
+- ✅ `npm run test:run` - 192 tests pass
+- ⚠️ E2E on local - No sentences available (word mode tested successfully)
+- 🔲 E2E on production - Requires deployment
 
 ### Fix Verification: Priority 1 (Language Direction)
 

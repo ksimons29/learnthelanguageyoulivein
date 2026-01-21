@@ -91,15 +91,28 @@ export default function ReviewPage() {
   const currentWord = dueWords[currentIndex];
   const { isPlaying, isLoading: audioLoading, play, stop } = useAudioPlayer();
 
-  // Determine exercise type and blanked word for sentence mode
+  // Determine exercise type and focus word for sentence mode
+  // IMPORTANT: focusWord is the single word being tested in this exercise
+  // It's used for:
+  // - Blanking the word in fill_blank exercises
+  // - Loading distractors in multiple_choice exercises
+  // - Highlighting only the focus word (not all target words)
   const exerciseType =
     reviewMode === "sentence" && sentenceTargetWords.length > 0
       ? determineExerciseType(sentenceTargetWords)
       : "type_translation";
-  const blankedWord =
-    exerciseType === "fill_blank" && sentenceTargetWords.length > 0
+
+  // Focus word: the word with lowest mastery (most practice needed)
+  // This ensures we're always testing the word that needs the most attention
+  // FIX for Issue #61 & #62: Use selectWordToBlank for BOTH fill_blank AND multiple_choice
+  const focusWord =
+    reviewMode === "sentence" && sentenceTargetWords.length > 0
       ? selectWordToBlank(sentenceTargetWords)
       : null;
+
+  // For fill_blank, blankedWord === focusWord
+  // For multiple_choice, we still need focusWord for loading correct distractors
+  const blankedWord = exerciseType === "fill_blank" ? focusWord : null;
 
   // Load distractors for multiple choice
   // IMPORTANT: nativeLanguage ensures all options are in the user's native language
@@ -154,15 +167,17 @@ export default function ReviewPage() {
   }, [user, authLoading, sessionId, isLoading, startSession, fetchNextSentence, router]);
 
   // Load distractors when we have a multiple choice sentence
+  // FIX for Issue #61 & #62: Use focusWord instead of sentenceTargetWords[0]
+  // This ensures options are generated for the word that is actually highlighted
   useEffect(() => {
     if (
       reviewMode === "sentence" &&
-      sentenceTargetWords.length > 0 &&
-      determineExerciseType(sentenceTargetWords) === "multiple_choice"
+      focusWord &&
+      exerciseType === "multiple_choice"
     ) {
-      loadDistractors(sentenceTargetWords[0]);
+      loadDistractors(focusWord);
     }
-  }, [reviewMode, sentenceTargetWords, loadDistractors]);
+  }, [reviewMode, focusWord, exerciseType, loadDistractors]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -457,11 +472,14 @@ export default function ReviewPage() {
             )}
 
             {/* Sentence Card */}
+            {/* FIX for Issue #61 & #62: Only highlight the focus word, not all target words */}
+            {/* This makes it clear which word the user is being tested on */}
             <SentenceCard
               sentence={currentSentence.text}
-              highlightedWords={sentenceTargetWords.map((w) =>
-                getTargetLanguageText(w, targetLanguage)
-              )}
+              highlightedWords={focusWord
+                ? [getTargetLanguageText(focusWord, targetLanguage)]
+                : []
+              }
               translation={
                 currentSentence.translation ||
                 sentenceTargetWords
@@ -520,11 +538,14 @@ export default function ReviewPage() {
             </SentenceCard>
 
             {/* Answer Feedback (shown after answering, before grading) */}
+            {/* FIX for Issue #61 & #62: Use focusWord for correct answer display */}
             {isAnswerCorrect !== null && reviewState === "recall" && (
               <AnswerFeedback
                 isCorrect={isAnswerCorrect}
                 correctAnswer={
-                  !isAnswerCorrect ? blankedWord?.originalText : undefined
+                  !isAnswerCorrect && focusWord
+                    ? getNativeLanguageText(focusWord, nativeLanguage)
+                    : undefined
                 }
               />
             )}

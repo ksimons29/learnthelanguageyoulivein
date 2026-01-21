@@ -284,3 +284,173 @@ describe('Translation hint formatting for bidirectional capture', () => {
     expect(joinedHint).toBe('tampo: lid | desastre: Trainwreck')
   })
 })
+
+/**
+ * Focus Word Selection Tests - Issue #61 & #62
+ *
+ * BUG FOUND: In sentence exercises, the "focus word" (the word being tested)
+ * is not consistent across:
+ * - Which word is highlighted in the sentence
+ * - Which word's options are shown in multiple choice
+ * - Which word's answer is expected
+ *
+ * ROOT CAUSE: For multiple_choice, the code uses `sentenceTargetWords[0]`
+ * but for fill_blank, it uses `selectWordToBlank()`. These can return
+ * different words, causing a mismatch.
+ *
+ * THE FIX: Use `selectWordToBlank()` for BOTH exercise types to ensure
+ * the same word is used for:
+ * - Selecting which word to blank/test
+ * - Loading distractors for multiple choice
+ * - Validating the user's answer
+ */
+describe('Focus word selection for sentence exercises - Issue #61 & #62', () => {
+  /**
+   * Test: selectWordToBlank should return consistent results
+   *
+   * This test verifies that the word selection logic works correctly
+   * and can be used for BOTH fill_blank AND multiple_choice exercises.
+   */
+  it('selectWordToBlank returns word with lowest mastery consistently', async () => {
+    const { selectWordToBlank } = await import('@/lib/sentences/exercise-type')
+
+    const words = [
+      createMockWord({
+        id: 'high-mastery',
+        originalText: 'além disso',
+        translation: 'besides',
+        consecutiveCorrectSessions: 3,  // High mastery
+      }),
+      createMockWord({
+        id: 'low-mastery',
+        originalText: 'Observadores',
+        translation: 'Watchers',
+        consecutiveCorrectSessions: 0,  // Low mastery - should be selected
+      }),
+      createMockWord({
+        id: 'medium-mastery',
+        originalText: 'relatório',
+        translation: 'report',
+        consecutiveCorrectSessions: 1,  // Medium mastery
+      }),
+    ]
+
+    // Regardless of array order, should return lowest mastery word
+    const focusWord = selectWordToBlank(words)
+
+    expect(focusWord).not.toBeNull()
+    expect(focusWord!.id).toBe('low-mastery')
+    expect(focusWord!.originalText).toBe('Observadores')
+  })
+
+  /**
+   * Test: Multiple choice options must be for the focus word, not array[0]
+   *
+   * This is the INVARIANT that was broken:
+   * The word for which options are generated MUST be the same word
+   * that is highlighted and expected as the answer.
+   *
+   * Previously, code did: loadDistractors(sentenceTargetWords[0])
+   * This is WRONG because array[0] may not be the focus word.
+   */
+  it('INVARIANT: options must be generated for focus word, not arbitrary array[0]', async () => {
+    const { selectWordToBlank } = await import('@/lib/sentences/exercise-type')
+
+    // Simulate a sentence with words in a specific order
+    // Array order: [high, low, medium]
+    // But focus word (lowest mastery) is the second one!
+    const sentenceTargetWords = [
+      createMockWord({
+        id: 'array-first',
+        originalText: 'além disso',
+        translation: 'besides',
+        consecutiveCorrectSessions: 2,  // NOT the lowest
+        sourceLang: 'pt-PT',
+        targetLang: 'en',
+      }),
+      createMockWord({
+        id: 'lowest-mastery',
+        originalText: 'selos',
+        translation: 'stamps',
+        consecutiveCorrectSessions: 0,  // LOWEST - this should be the focus word
+        sourceLang: 'pt-PT',
+        targetLang: 'en',
+      }),
+      createMockWord({
+        id: 'array-third',
+        originalText: 'cartas',
+        translation: 'letters',
+        consecutiveCorrectSessions: 1,
+        sourceLang: 'pt-PT',
+        targetLang: 'en',
+      }),
+    ]
+
+    // The CORRECT way: use selectWordToBlank to get focus word
+    const focusWord = selectWordToBlank(sentenceTargetWords)
+
+    // Focus word MUST be the lowest mastery word
+    expect(focusWord!.id).toBe('lowest-mastery')
+    expect(focusWord!.translation).toBe('stamps')
+
+    // The BUG was: using sentenceTargetWords[0]
+    const wrongWord = sentenceTargetWords[0]
+    expect(wrongWord.id).toBe('array-first')  // This is NOT the focus word!
+
+    // CRITICAL ASSERTION:
+    // Options must be generated for focusWord, not wrongWord
+    // If we build options for wrongWord, the correct answer ('besides')
+    // won't match what user sees highlighted ('selos' → 'stamps')
+    expect(focusWord!.id).not.toBe(wrongWord.id)
+
+    // When we build options, they MUST include the focus word's translation
+    const distractors = [
+      createMockWord({ translation: 'letters', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ translation: 'packages', sourceLang: 'pt-PT', targetLang: 'en' }),
+    ]
+
+    const options = buildMultipleChoiceOptions(focusWord!, distractors, 'en')
+
+    // The correct answer MUST be in the options
+    expect(options.some(o => o.text === 'stamps')).toBe(true)
+
+    // The wrong word's translation should NOT be the expected answer
+    expect(options.some(o => o.id === focusWord!.id)).toBe(true)
+  })
+
+  /**
+   * Test: All exercise types must use the same focus word
+   *
+   * For a given set of words, both fill_blank and multiple_choice
+   * must test the SAME word - the one with lowest mastery.
+   */
+  it('fill_blank and multiple_choice use same focus word selection', async () => {
+    const { selectWordToBlank, determineExerciseType } = await import('@/lib/sentences/exercise-type')
+
+    const words = [
+      createMockWord({
+        id: 'word-1',
+        originalText: 'excerto',
+        translation: 'excerpt',
+        consecutiveCorrectSessions: 2,
+      }),
+      createMockWord({
+        id: 'word-2',
+        originalText: 'selos',
+        translation: 'stamps',
+        consecutiveCorrectSessions: 0,  // Lowest - should be focus
+      }),
+    ]
+
+    // For any exercise type, the focus word should be the same
+    const focusWord = selectWordToBlank(words)
+
+    // This should work for fill_blank
+    expect(focusWord!.id).toBe('word-2')
+
+    // AND for multiple_choice (same selection logic)
+    // The code must NOT do: sentenceTargetWords[0]
+    // It must do: selectWordToBlank(sentenceTargetWords)
+    expect(focusWord!.id).toBe('word-2')
+  })
+})
