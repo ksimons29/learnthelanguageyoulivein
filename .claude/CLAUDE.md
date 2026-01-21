@@ -43,6 +43,8 @@ vercel logs <deployment-url> --since 5m
 
 | Document | Purpose |
 |----------|---------|
+| `findings.md` | **★★ CRITICAL - Active bugs** - Fix before anything else |
+| `MVP_AUDIT.md` | **★★ CRITICAL - Feature checklist** - 60 steps to verify |
 | `/docs/design/design-system.md` | **★ Moleskine design tokens** - Always for UI |
 | `/docs/engineering/TESTING.md` | **★ Testing guide** - Run after every feature |
 | `~/.claude/skills/vercel-react-best-practices/` | **★ React/Next.js performance** - 45 rules |
@@ -54,24 +56,36 @@ vercel logs <deployment-url> --since 5m
 
 ## Implementation Status
 
-### Complete ✅
-- Authentication (Supabase)
-- Phrase capture with auto-translation
-- TTS audio generation & storage
-- FSRS spaced repetition engine
-- Review sessions with mastery tracking
-- Notebook browser with categories
-- User onboarding flow
-- Progress dashboard
-- Production deployment (Vercel)
+**⚠️ WARNING: Status below needs verification. See `MVP_AUDIT.md` for actual test results.**
+
+### Needs Re-Verification 🔄
+- Authentication (Supabase) - untested this session
+- Phrase capture with auto-translation - partial fail (Finding #8)
+- TTS audio generation & storage - untested
+- FSRS spaced repetition engine - untested
+- Review sessions with mastery tracking - untested
+- Notebook browser with categories - partial fail (Finding #9, #10)
+- User onboarding flow - untested
+- Progress dashboard - untested
+- Production deployment (Vercel) - deployed but buggy
+
+### Broken ❌ (See findings.md)
+- Sentence review - 7 P0 bugs, completely non-functional
+- Today dashboard - due count mismatch, captured today resets
+- Notebook inbox - count doesn't match content
 
 ### In Progress ⚠️
-- Sentence generation (pre-gen works, review integration WIP)
 - PWA offline caching
 - iOS App Store submission (Capacitor setup complete)
 
 ### Not Started ❌
 - Stripe payments
+
+### MVP Readiness
+- **60 feature steps defined** in MVP_AUDIT.md
+- **0 passing, 12 failing, 48 untested**
+- **15 bugs documented** in findings.md
+- **NOT ready for MVP launch**
 
 ## Code Patterns
 
@@ -185,23 +199,113 @@ await db.update(table).set({ status }).where(inArray(table.id, ids));
 
 See `/docs/design/design-system.md` for full reference.
 
-## Testing (MANDATORY)
+## Testing (MANDATORY - NO EXCEPTIONS)
 
-**⚠️ CRITICAL: After EVERY code change (feature, bug fix, or refactor), run:**
+### The Rule: "It builds" is NOT "it works"
+
+TypeScript catches type errors. It does NOT catch:
+- Wrong language displayed
+- Wrong data in UI
+- State synchronization bugs
+- Logic errors
+
+**Every change requires BOTH automated AND manual verification.**
+
+---
+
+### Step 1: Automated Tests (REQUIRED)
 
 ```bash
 cd web
-npm run build          # Must pass - catches TypeScript errors
-npm run test:run       # Must pass - unit tests
+npm run build          # Must pass
+npm run test:run       # Must pass
 ```
 
-**For UI/API changes, also run E2E via Playwright MCP:**
-1. `browser_navigate` to https://llyli.vercel.app
-2. Sign in with test account: `test-en-pt@llyli.test` / `TestPassword123!`
-3. Test the changed feature
-4. `browser_snapshot` to verify
+---
 
-**Integration test scripts (run when changing related systems):**
+### Step 2: E2E Verification (REQUIRED - NOT OPTIONAL)
+
+**This is NOT optional. This is NOT "also run". This is REQUIRED.**
+
+For ANY change to these paths, you MUST complete E2E verification:
+- `app/review/**` - Sentence review, flashcards
+- `app/notebook/**` - Word browser, categories
+- `app/today/**` - Dashboard, due counts
+- `app/capture/**` - Phrase capture
+- `components/sentence/**` - Sentence generation
+- `lib/fsrs/**` - Spaced repetition
+- `stores/**` - State management
+
+**E2E Protocol:**
+1. `browser_navigate` to https://llyli.vercel.app
+2. Sign in with test account
+3. Complete the FULL user flow (not just the changed component)
+4. `browser_snapshot` at each step
+5. Verify from USER PERSPECTIVE (not developer perspective)
+
+---
+
+### Step 3: Multi-Language Verification (REQUIRED for display logic)
+
+Any change that affects what text/language is shown MUST be tested with ALL language pairs:
+
+| Account | Direction | What to Verify |
+|---------|-----------|----------------|
+| `test-en-pt@llyli.test` | EN→PT | Native=English, Target=Portuguese |
+| `test-en-sv@llyli.test` | EN→SV | Native=English, Target=Swedish |
+| `test-nl-en@llyli.test` | NL→EN | Native=Dutch, Target=English |
+
+Password for all: `TestPassword123!`
+
+**Critical checks:**
+- Word picker shows NATIVE language (what user understands)
+- Flashcard front shows TARGET language (what user is learning)
+- Multiple choice options in NATIVE language
+- Highlighted word matches expected answer
+
+---
+
+### Step 4: Semantic Verification (REQUIRED)
+
+Don't just check "does it render?" Check "does it show the RIGHT thing?"
+
+```typescript
+// ❌ BAD: Tests structure only
+expect(wordList).toHaveLength(10);
+expect(component).toBeInTheDocument();
+
+// ✅ GOOD: Tests meaning
+expect(displayedLanguage).toBe(user.nativeLanguage);
+expect(highlightedWord.id).toBe(expectedAnswer.id);
+expect(options).toContain(correctAnswer);
+```
+
+---
+
+### Definition of "Fixed"
+
+A bug is NOT fixed until ALL of these are true:
+- [ ] Code change made
+- [ ] Unit test added that catches the bug
+- [ ] Build passes
+- [ ] E2E verification with Playwright MCP
+- [ ] Multi-language verification (if display-related)
+- [ ] Screenshots showing correct behavior
+- [ ] Behavior verified from USER perspective
+
+---
+
+### Critical Bug Tracking
+
+**Active bugs:** See `findings.md`
+**MVP readiness:** See `MVP_AUDIT.md`
+
+Before claiming ANY feature works, verify against MVP_AUDIT.md checklist.
+
+---
+
+### Integration Test Scripts
+
 ```bash
 cd web
 npx tsx scripts/test-database.js      # Database/schema changes
@@ -210,38 +314,42 @@ npx tsx scripts/test-openai.js        # Translation/TTS changes
 npx tsx scripts/test-comprehensive.ts # Major features
 ```
 
-**Test Accounts (pre-confirmed, ready to use):**
-| Email | Password | Languages |
-|-------|----------|-----------|
-| `test-en-pt@llyli.test` | `TestPassword123!` | EN→PT |
-| `test-en-sv@llyli.test` | `TestPassword123!` | EN→SV |
-| `test-nl-en@llyli.test` | `TestPassword123!` | NL→EN |
-
 **Reset test users:** `npx tsx scripts/create-test-users.ts`
 
-**📖 Full testing guide:** `/docs/engineering/TESTING.md` - Contains E2E scenarios, database queries, all test user types, and release readiness checklist.
+**📖 Full testing guide:** `/docs/engineering/TESTING.md`
 
 ## Session Workflow
 
-**Start:** `/clear` → read PROJECT_LOG.md → check learned preferences → use plan mode for complex work
+**Start:** `/clear` → read findings.md → read MVP_AUDIT.md → check PROJECT_LOG.md → fix bugs FIRST
 
-**End:** Update PROJECT_LOG.md → Commit with `fixes #N` → **Run tests**
+**End:** Update findings.md status → Update MVP_AUDIT.md → Update PROJECT_LOG.md → **Run FULL tests**
 
 **Debug:** Copy server logs → paste to Claude with page context
 
 ### Session Start Checklist (MANDATORY)
 
-Before starting work, read these files to understand current context and apply learned patterns:
+Before starting ANY work, read these files IN ORDER:
 
-1. **`PROJECT_LOG.md`** - Current status, recent changes, open bugs
-2. **`~/.claude/skills/reflect/SKILL.md`** (section: "Learned Preferences") - Testing discipline, bug detection patterns, design rules accumulated from previous sessions
+1. **`findings.md`** - Active bugs that MUST be fixed first
+2. **`MVP_AUDIT.md`** - Feature checklist with pass/fail status
+3. **`PROJECT_LOG.md`** - Current status, recent changes
+4. **`~/.claude/skills/reflect/SKILL.md`** - Learned patterns
 
-Key learnings to apply:
+**Priority order:**
+1. Fix P0 BLOCKER bugs (app unusable)
+2. Fix P0 Critical bugs (major features broken)
+3. Fix P1 High bugs (significant UX issues)
+4. New features (ONLY after bugs fixed)
+
+### Key Learnings (ENFORCED)
+
+- **"It builds" ≠ "It works"** - Always verify with E2E
+- **Test semantics, not structure** - Check WHAT is shown, not IF it renders
+- **User perspective testing** - What should the USER see?
+- **Multi-language verification** - Test EN→PT, EN→SV, NL→EN
+- **Full flow testing** - Not just changed component, full user journey
 - Scale testing with 500+ records for data-heavy features
-- Bidirectional language testing (both capture directions)
-- Double verification: Claude (Playwright) + User (iPhone)
-- Self-healing guardrails for data integrity
-- Invariant assertions for critical metrics
+- Double verification: Claude (Playwright) + User (device)
 
 ### PROJECT_LOG.md Updates (MANDATORY)
 

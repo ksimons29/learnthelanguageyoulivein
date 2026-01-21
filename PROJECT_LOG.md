@@ -64,6 +64,14 @@ npm run build             # Production build
 ## Open Bugs
 | Issue | Status | Notes |
 |-------|--------|-------|
+| #60 | **P0-1** | ~~Language direction bug - phrase vs translation~~ **FIXED** |
+| #61 | P0-2 | Sentence answer validation broken - wrong word highlighted |
+| #62 | P0-3 | Multiple choice missing correct answer |
+| #63 | P0-4 | Multiple choice options in wrong language |
+| #64 | P1 | Word selection capped at 2 |
+| #65 | P1 | Due count mismatch (Today vs Notebook) |
+| #66 | P2 | Captured Today resets on navigation |
+| #67 | P2 | Inbox shows count but no items |
 | #29 | Low | Turbopack config warning - no impact (closed) |
 | #23 | Open | iOS App Store submission |
 | #20 | Open | Default categories |
@@ -95,6 +103,35 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 54 - 2026-01-21 - MVP Bug Audit and Language Direction Fix
+
+**Focus:** Comprehensive bug documentation and TDD fix for language direction bug.
+
+**What was done:**
+1. Created `findings.md` - documented 15 bugs with root cause analysis
+2. Created `MVP_AUDIT.md` - 60 feature verification steps across 10 user flows
+3. Updated `CLAUDE.md` with stricter testing requirements (E2E REQUIRED)
+4. Created 8 GitHub issues (#60-#67) for all P0-P2 bugs
+5. **FIXED #60** - Language direction bug in review page using TDD approach:
+   - Wrote failing tests first in `distractors.test.ts`
+   - Fixed `review/page.tsx` to use `getTargetLanguageText()` and `getNativeLanguageText()`
+   - All 189 tests pass
+
+**Root cause of #60:** Bidirectional capture means `originalText` isn't always in target language.
+Words can be captured EN→PT (user types English) or PT→EN (user types Portuguese).
+Fix: Use language-aware helpers that check `sourceLang`/`targetLang` fields.
+
+**Files changed:**
+- `web/src/app/review/page.tsx` - Fixed 4 places using raw `originalText`
+- `web/src/__tests__/lib/distractors.test.ts` - Added 3 tests for translation hint formatting
+- `findings.md` (NEW) - Bug tracking document
+- `MVP_AUDIT.md` (NEW) - Feature verification checklist
+- `.claude/CLAUDE.md` - Stricter testing requirements
+
+**MVP Status:** 0 passing, 12 failing, 48 untested (60 total steps)
+
+---
 
 ### Session 53 - 2026-01-21 - Vercel React Best Practices Implementation
 
