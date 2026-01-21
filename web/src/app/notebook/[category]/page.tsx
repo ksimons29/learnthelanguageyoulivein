@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Search, X, BookOpen } from "lucide-react";
+import { ArrowLeft, Search, X, BookOpen, Inbox } from "lucide-react";
 import { useWordsStore } from "@/lib/store/words-store";
-import { getCategoryConfig } from "@/lib/config/categories";
+import { getCategoryConfig, INBOX_ICON } from "@/lib/config/categories";
 import {
   SearchBar,
   WordCard,
@@ -32,8 +32,13 @@ export default function CategoryDetailPage() {
 
   const { words, isLoading, error, fetchWords, setFilter } = useWordsStore();
 
-  // Get category configuration
-  const categoryConfig = getCategoryConfig(category);
+  // Check if this is the special "inbox" view
+  const isInbox = category === 'inbox';
+
+  // Get category configuration (inbox has special handling)
+  const categoryConfig = isInbox
+    ? { key: 'inbox', label: 'Inbox', icon: INBOX_ICON }
+    : getCategoryConfig(category);
   const CategoryIcon = categoryConfig.icon;
 
   // Fetch words for this category on mount

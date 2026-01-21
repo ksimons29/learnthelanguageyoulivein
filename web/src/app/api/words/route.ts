@@ -376,7 +376,15 @@ export async function GET(request: NextRequest) {
       )!,
     ];
 
-    if (category) {
+    // Special handling for "inbox" - words created in last 24 hours with no reviews
+    // This matches the inbox definition in /api/words/categories
+    if (category === 'inbox') {
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const twentyFourHoursAgoISO = twentyFourHoursAgo.toISOString();
+      conditions.push(eq(words.reviewCount, 0));
+      conditions.push(gte(words.createdAt, new Date(twentyFourHoursAgoISO)));
+    } else if (category) {
       conditions.push(eq(words.category, category));
     }
 
