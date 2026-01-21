@@ -358,7 +358,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN (
         SELECT user_id, COUNT(*) as due_word_count
         FROM words
-        WHERE next_review_at <= NOW()
+        WHERE next_review_date <= NOW()
           AND user_id NOT IN (
             SELECT id FROM auth.users WHERE email LIKE '%@llyli.test' OR email LIKE '%@apple-review.test'
           )
