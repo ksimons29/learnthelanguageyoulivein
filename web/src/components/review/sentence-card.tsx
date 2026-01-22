@@ -39,10 +39,15 @@ export function SentenceCard({
       const isHighlighted = highlightedWords.some(
         (hw) => hw.toLowerCase() === cleanWord
       );
+      // FIX for Finding #16: Handle multi-word phrases like "Bom dia"
+      // Split blankedWord into parts and check if cleanWord matches ANY part
+      // This ensures all words in a multi-word phrase are blanked
       const isBlanked =
         exerciseType === "fill_blank" &&
         blankedWord &&
-        blankedWord.toLowerCase() === cleanWord;
+        blankedWord.toLowerCase().split(' ').some(
+          part => part.replace(/[.,!?;:]/g, '') === cleanWord
+        );
       const punctuation = word.match(/[.,!?;:]/)?.[0] || "";
       const wordWithoutPunct = word.replace(/[.,!?;:]/g, "");
 

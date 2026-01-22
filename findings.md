@@ -1,5 +1,81 @@
 # Bug Findings - Session 2026-01-21
 
+## ✅ FIXED: Finding #18: Bingo Squares Not Tracking (Issue #78)
+
+### Status: **FIXED** (Session 66 - 2026-01-22)
+
+### Observed Behavior
+1. User completes 18 reviews with fill-blank and multiple choice exercises
+2. User finishes daily session (daily goal complete)
+3. Bingo board shows **0/9 completed** instead of expected 4+/9
+
+### Root Cause
+Exercise type format mismatch between client and API:
+- Client sends: `'fill_blank'` (underscore)
+- API expected: `'fill-blank'` (hyphen)
+
+The comparison `data.exerciseType === 'fill-blank'` never matched `'fill_blank'`, so `fillBlank` and `multipleChoice` squares were never tracked.
+
+### Fix Applied
+Normalize exerciseType by replacing underscores with hyphens before comparison:
+```typescript
+const normalizedExerciseType = data.exerciseType?.replace(/_/g, '-');
+```
+
+### Verification
+- E2E verified: `squaresCompleted` went from `[]` to `["review5", "socialWord"]` after fix
+
+### GitHub Issue: #78
+
+---
+
+## ✅ FIXED: Finding #17: Progress Page 500 Error (Issue #77)
+
+### Status: **FIXED** (Session 67 - 2026-01-22)
+
+### Observed Behavior
+1. Navigate to Progress page
+2. Page shows "Failed to fetch progress data"
+3. Console shows 500 error
+
+### Error Details
+```
+GET /api/progress => 500
+
+Error: Failed query: select date("next_review_date"), count(*)::int from "words" ...
+```
+
+### Root Cause
+PostgreSQL `date()` function incompatibility with Drizzle ORM's parameterized queries.
+
+When using `sql`date(${words.nextReviewDate})`` Drizzle converts the column reference to a parameter placeholder like `date($6)`. PostgreSQL's `date()` function cannot accept parameterized column references.
+
+### Fix Applied
+Used `sql.raw()` for column names inside PostgreSQL `date()` function:
+```typescript
+// BEFORE (broken):
+date: sql<string>`date(${words.nextReviewDate})`
+
+// AFTER (fixed):
+date: sql<string>`date(${sql.raw('next_review_date')})`
+```
+
+Changes made in `web/src/app/api/progress/route.ts`:
+- Streak query: `date(${reviewSessions.endedAt})` → `date(${sql.raw('ended_at')})`
+- Forecast query: `date(${words.nextReviewDate})` → `date(${sql.raw('next_review_date')})`
+- Activity heatmap: `date(${reviewSessions.endedAt})` → `date(${sql.raw('ended_at')})`
+
+### Verification
+- ✅ Build passes
+- ✅ 231 unit tests pass
+- ✅ EN→PT test user: Progress page loads correctly
+- ✅ EN→SV test user: Progress page loads correctly
+- ✅ NL→EN test user: Progress page loads correctly
+
+### GitHub Issue: #77
+
+---
+
 ## ✅ FIXED: Finding #16: Gamification Daily Goal Always Shows 0/10
 
 ### Status: **FIXED** (Session 66 - 2026-01-22)
@@ -1108,12 +1184,101 @@ Full feature spec created at:
 
 ---
 
+---
+
+## Finding #15: Duplicate Word Capture Allowed
+
+### Status: **P2 Enhancement** (Session 69)
+
+### Observed Behavior
+1. User captures "sorvete" with memory context
+2. User navigates away and returns to Capture
+3. User captures "sorvete" again
+4. Both entries appear in Captured Today and Notebook
+
+### Expected Behavior
+System should either:
+- Prevent duplicate capture with "Already in your notebook" message
+- Or merge with existing entry and update context
+
+### Impact
+- Minor UX issue - user may accidentally add duplicates
+- Not a blocker - delete functionality works to remove duplicates
+- Could be intentional for users wanting multiple contexts for same word
+
+### Priority: **P2 Enhancement** (Post-MVP)
+
+---
+
+## Finding #16: Fill-in-Blank Exercise Missing Focus Word Highlight
+
+### Status: **FIXED** (Session 70 - 2026-01-22)
+
+### Observed Behavior
+1. User enters fill-in-the-blank exercise in sentence review
+2. Sentence displayed: "Bom dia, desculpe a demora, obrigado pela paciência."
+3. Prompt says "Fill in the blank:" but **NO word is visually highlighted**
+4. All words appear identical - no bracket, no blank `[____]`, no different color
+5. User has no way to know which word (Bom dia? desculpe? obrigado?) is being tested
+6. User guesses "thank you" (for obrigado), but answer was "Good morning" (for Bom dia)
+
+### Root Cause
+Multi-word phrases like "Bom dia" were not being blanked because the comparison logic
+checked if `blankedWord === cleanWord`, which fails when:
+- `blankedWord = "bom dia"` (multi-word phrase)
+- `cleanWord = "bom"` (single word from sentence split by spaces)
+
+The comparison `"bom dia" === "bom"` always returns false, so no words were blanked.
+
+### Fix Applied
+Changed the blanking logic in `sentence-card.tsx` to split the blanked phrase and check
+if ANY part matches the current word:
+
+```typescript
+// BEFORE (broken for multi-word phrases):
+const isBlanked =
+  exerciseType === "fill_blank" &&
+  blankedWord &&
+  blankedWord.toLowerCase() === cleanWord;
+
+// AFTER (handles multi-word phrases):
+const isBlanked =
+  exerciseType === "fill_blank" &&
+  blankedWord &&
+  blankedWord.toLowerCase().split(' ').some(
+    part => part.replace(/[.,!?;:]/g, '') === cleanWord
+  );
+```
+
+This ensures ALL words in a multi-word phrase are blanked (e.g., both "Bom" and "dia"
+show as underscores).
+
+### Files Changed
+- `web/src/components/review/sentence-card.tsx` - Fixed multi-word blanking logic
+
+### Tests Added
+- `web/src/__tests__/components/sentence-card.test.tsx` - 9 new tests:
+  - Blanks single words correctly
+  - Blanks ALL words in "Bom dia" multi-word phrase
+  - Blanks ALL words in "Quanto custa?" multi-word phrase
+  - Blanks ALL words in "A conta, por favor" multi-word phrase
+  - Handles case-insensitive matching
+  - Does not blank when exerciseType is not fill_blank
+  - Shows correct prompts for each exercise type
+
+### Verification
+- ✅ Build passes
+- ✅ 240 unit tests pass (9 new)
+- ✅ Unit tests verify multi-word blanking works for all common patterns
+
+---
+
 ## Document Created
 - **Date:** 2026-01-21
 - **Session:** Bug documentation and assessment
-- **Finding count:** 19 issues (17 original + 2 new + 1 feature request)
+- **Finding count:** 21 issues (17 original + 4 new + 1 feature request)
 - **P0/Blocker count:** 0 remaining (all fixed!)
-- **P1/High count:** 1 remaining (#7a - distractor quality)
-- **P2/Medium count:** 1 (#6 word limit) - #13, #14 fixed (Session 64)
-- **Status:** MVP blockers resolved, enhancements documented
-- **Last Updated:** Session 64 - Finding #13 fix (work category starter words)
+- **P1/High count:** 1 remaining (#7a distractor quality)
+- **P2/Medium count:** 2 (#6 word limit, #15 duplicate capture)
+- **Status:** MVP blockers resolved, #16 fixed
+- **Last Updated:** Session 70 - Finding #16 FIXED (multi-word blanking)

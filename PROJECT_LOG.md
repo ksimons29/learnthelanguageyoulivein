@@ -72,11 +72,12 @@ npm run build             # Production build
 ### Under Investigation
 | Issue | Description | Status | Notes |
 |-------|-------------|--------|-------|
-| #77 | Progress 500 error | Monitoring | Could not reproduce - page loads correctly |
+| - | - | - | No bugs under investigation |
 
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #77 | Progress 500 error | Session 67, `86523a0` |
 | #78 | Bingo squares not tracking | Session 66, `5e661fe` |
 
 | Issue | Description | Fixed In |
@@ -126,7 +127,6 @@ npm run build             # Production build
 |-------|---------|----------|
 | #73 | Memory Context improvements (gamification, visual feedback) | P3-low |
 | #51 | Review page misleading for unauth users | P2-normal |
-| #44 | Progress API 500 error | P1-high |
 | #23 | iOS App Store submission | P1-high |
 | #49 | PWA Install Banner | P2-normal |
 | #42 | German → Portuguese support | P2-normal |
@@ -143,6 +143,141 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 70 - 2026-01-22 - Fix Fill-in-Blank Multi-Word Blanking (Finding #16)
+
+**Focus:** Fix P1 bug where fill-in-blank exercises didn't show blanked words for multi-word phrases.
+
+**Root Cause:**
+Multi-word phrases like "Bom dia" were not blanked because the comparison `blankedWord === cleanWord`
+fails when comparing `"bom dia"` (phrase) to `"bom"` (single word from sentence split).
+
+**Fix Applied:**
+Changed blanking logic in `sentence-card.tsx` to split the blanked phrase and check if ANY part matches:
+```typescript
+blankedWord.toLowerCase().split(' ').some(
+  part => part.replace(/[.,!?;:]/g, '') === cleanWord
+)
+```
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/components/review/sentence-card.tsx` | Fixed multi-word blanking logic |
+| `web/src/__tests__/components/sentence-card.test.tsx` | NEW: 9 unit tests for blanking |
+| `findings.md` | Updated #16 status to FIXED |
+
+**Tests:**
+- ✅ Build passes
+- ✅ 240 unit tests pass (9 new)
+- New tests cover: "Bom dia", "Quanto custa?", "A conta, por favor", case-insensitivity
+
+**Closes:** Finding #16
+
+---
+
+### Session 69 - 2026-01-22 - S3: Word Capture & Notebook Tests (#83)
+
+**Focus:** MVP Launch Testing - Section C (Word Capture) and Section D (Notebook).
+
+**Test Results:**
+
+**Section C: Word Capture (10/12 ✅, 2 ⚠️)**
+| Test | Result |
+|------|--------|
+| C-01: Target phrase (PT→EN) | ✅ "padaria" → "bakery" |
+| C-02: Native phrase (EN→PT) | ✅ "supermarket" → "supermercado" |
+| C-03: Auto-categorization | ✅ Food & Dining assigned |
+| C-04: TTS audio | ✅ Generated within 5s |
+| C-05: Location context | ✅ "at the ice cream shop in Belém" |
+| C-06: Situation tags | ⚠️ May not persist (investigate) |
+| C-07: Personal note | ✅ Saved and displayed |
+| C-08: Time auto-detect | ✅ "evening" detected |
+| C-10: Duplicate handling | ⚠️ Duplicates allowed (no prevention) |
+| C-11: Untranslatable | ✅ "saudade" → "nostalgic longing" |
+| C-12: Performance | ✅ < 3 seconds |
+
+**Section D: Notebook (10/10 ✅)**
+| Test | Result |
+|------|--------|
+| D-01: Journal title | ✅ "Your Portuguese Journal" |
+| D-02: Word count | ✅ Correct (18 words) |
+| D-03: Category counts | ✅ All categories accurate |
+| D-04: Due count | ✅ Matches Today (17) |
+| D-05: Inbox | ✅ New phrases shown |
+| D-06: Word detail | ✅ Full details visible |
+| D-07: Memory context | ✅ Location, time, note |
+| D-08: Sentences | ✅ (if available) |
+| D-09: Search | ✅ Found "sorvete" |
+| D-10: Delete | ✅ Word removed, counts updated |
+
+**Bonus:** Bingo went 5/9 → 6/9 (addContext square completed!)
+
+**Known Issues Found:**
+1. **C-06**: Situation tags may not persist after selection
+2. **C-10**: Duplicate words not prevented - no deduplication
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `docs/testing/MVP_LAUNCH_TEST_PLAN.md` | Updated with S3 results |
+
+**Closes:** #83
+
+---
+
+### Session 68 - 2026-01-22 - S2: Authentication & Onboarding Tests (#82)
+
+**Focus:** MVP Launch Testing - Section A (Authentication) and Section B (Onboarding).
+
+**Test Results:**
+- Authentication (5/5 ✅): Sign in, persistence, sign out, protected routes, invalid credentials
+- Onboarding (7/7 ✅): Fresh redirect, language selection, initial capture, counter, dual buttons, starter words, redirect
+
+**Closes:** #82 (details in MVP_LAUNCH_TEST_PLAN.md)
+
+---
+
+### Session 67 - 2026-01-22 - Progress Page 500 Error Fix (#77)
+
+**Focus:** Fix `/api/progress` endpoint returning 500 error due to PostgreSQL `date()` function incompatibility.
+
+**Root Cause:**
+When using Drizzle ORM's `sql` template literal with PostgreSQL functions:
+- `sql`date(${words.nextReviewDate})`` → Drizzle binds as `date($6)` parameter
+- PostgreSQL's `date()` function cannot accept parameterized column references
+- Query fails with type/binding error
+
+**Fix Applied:**
+Use `sql.raw()` for column names inside PostgreSQL `date()` function:
+```typescript
+// BEFORE (broken):
+date: sql<string>`date(${words.nextReviewDate})`
+
+// AFTER (fixed):
+date: sql<string>`date(${sql.raw('next_review_date')})`
+```
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/app/api/progress/route.ts` | Use sql.raw() for column names in date() calls |
+
+Three queries fixed:
+- Streak calculation: `date(ended_at)`
+- Forecast data: `date(next_review_date)`
+- Activity heatmap: `date(ended_at)`
+
+**Verification:**
+- ✅ Build passes
+- ✅ 231 unit tests pass
+- ✅ E2E: EN→PT test user - Progress page loads correctly
+- ✅ E2E: EN→SV test user - Progress page loads correctly
+- ✅ E2E: NL→EN test user - Progress page loads correctly
+
+**Commit:** `86523a0` - fix(api): resolve PostgreSQL date() function error in progress endpoint (#77)
+
+---
 
 ### Session 66 - 2026-01-22 - Bingo Bug Fix: Exercise Type Format Mismatch (#78)
 
