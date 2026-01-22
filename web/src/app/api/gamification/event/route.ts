@@ -18,7 +18,8 @@ type GamificationEvent = {
   data: {
     wordId: string;
     rating: 1 | 2 | 3 | 4;
-    exerciseType: 'fill-blank' | 'multiple-choice' | 'type-translation';
+    // Accept both formats: underscore (client) and hyphen (legacy)
+    exerciseType: 'fill-blank' | 'multiple-choice' | 'type-translation' | 'fill_blank' | 'multiple_choice' | 'type_translation';
     category?: string;
     wasCorrect: boolean;
     consecutiveCorrect?: number;
@@ -305,9 +306,11 @@ async function updateBingoSquares(
   }
 
   // Exercise type squares
-  if (data.exerciseType === 'fill-blank') {
+  // Normalize exerciseType to handle both formats: 'fill_blank' (client) and 'fill-blank' (legacy)
+  const normalizedExerciseType = data.exerciseType?.replace(/_/g, '-');
+  if (normalizedExerciseType === 'fill-blank') {
     squaresToUpdate.push('fillBlank');
-  } else if (data.exerciseType === 'multiple-choice') {
+  } else if (normalizedExerciseType === 'multiple-choice') {
     squaresToUpdate.push('multipleChoice');
   }
   // Note: type-translation exercises no longer have a dedicated bingo square

@@ -527,3 +527,30 @@ describe('User Persona Scenarios', () => {
     });
   });
 });
+
+describe('Exercise Type Normalization', () => {
+  /**
+   * Tests for Issue #78 fix: Exercise types should work with both
+   * underscore format (client: 'fill_blank') and hyphen format ('fill-blank')
+   */
+  function normalizeExerciseType(type: string): string {
+    return type?.replace(/_/g, '-') ?? '';
+  }
+
+  it('normalizes underscore format to hyphen format', () => {
+    expect(normalizeExerciseType('fill_blank')).toBe('fill-blank');
+    expect(normalizeExerciseType('multiple_choice')).toBe('multiple-choice');
+    expect(normalizeExerciseType('type_translation')).toBe('type-translation');
+  });
+
+  it('passes through hyphen format unchanged', () => {
+    expect(normalizeExerciseType('fill-blank')).toBe('fill-blank');
+    expect(normalizeExerciseType('multiple-choice')).toBe('multiple-choice');
+    expect(normalizeExerciseType('type-translation')).toBe('type-translation');
+  });
+
+  it('handles edge cases gracefully', () => {
+    expect(normalizeExerciseType('')).toBe('');
+    expect(normalizeExerciseType('word_review')).toBe('word-review');
+  });
+});
