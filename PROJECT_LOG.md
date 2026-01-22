@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Sentence Pre-Generation for Starter Words** - Background sentence generation after starter word injection, Work category fix (Session 64)
 - [x] **Sentence Display in Word Detail** - SentenceHistory component shows practice sentences in Notebook word details (Session 61)
 - [x] **Memory Context E2E Tests** - 5 test cases verified, documentation created (Session 61)
 - [x] **Comprehensive Audit Implementation** - Database indexes, session race condition fix, rate limiting, language validation, network timeout, N+1 query fix, admin query parallelization, polling memory leak fix (Session 52)
@@ -136,6 +137,40 @@ No open bugs. All P0 blockers fixed in Sessions 54-61.
 ---
 
 ## Session Log
+
+### Session 64 - 2026-01-22 - Sentence Pre-Generation & Vercel Fix (#13, #14)
+
+**Focus:** Fix starter word sentence pre-generation and resolve production deployment issues.
+
+**Issues Fixed:**
+- **Finding #13** - Work category starter words (Reunião, Prazo) now correctly injected
+- **Finding #14** - Sentence pre-generation now runs after starter word injection
+
+**Production Issue Resolved:**
+- Corrupted Vercel env vars (`y\n` prefix on SUPABASE keys) caused "Invalid value" fetch error
+- Fixed by removing/re-adding env vars with `printf` to avoid newlines
+- Required manual promotion to llyli.vercel.app alias
+
+**Implementation:**
+1. Created `lib/sentences/pre-generation.ts` - reusable utility for background sentence generation
+2. Added `triggerSentencePreGeneration()` call to starter-words route (fire-and-forget)
+3. Updated `create-test-users.ts` script to inject all 12 starter words including Work category
+
+**E2E Verification:**
+- ✅ Work category visible with Prazo (Deadline) and Reunião (Meeting)
+- ✅ 12 starter words correctly injected for test accounts
+- ✅ Build passes, 228 unit tests pass
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/lib/sentences/pre-generation.ts` | NEW: Shared pre-generation utility |
+| `web/src/lib/sentences/index.ts` | Export triggerSentencePreGeneration |
+| `web/src/app/api/onboarding/starter-words/route.ts` | Call sentence pre-generation |
+| `web/scripts/create-test-users.ts` | Inject all 12 starter words |
+| `findings.md` | Updated #13, #14 status |
+
+---
 
 ### Session 63 - 2026-01-21 - Onboarding Capture UX Improvement (#74)
 
