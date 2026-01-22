@@ -138,6 +138,52 @@ No open bugs. All P0 blockers fixed in Sessions 54-61.
 
 ## Session Log
 
+### Session 65 - 2026-01-22 - Infrastructure Fix: Database Connection & Env Vars
+
+**Focus:** Fix critical production infrastructure issues blocking all API endpoints.
+
+**Root Cause Analysis:**
+All API endpoints returned 500 errors with "password authentication failed for user postgres". Investigation revealed:
+
+1. **Wrong DATABASE_URL pooler endpoint**:
+   - ❌ Old: `aws-0-eu-west-1.pooler.supabase.com:6543` (Transaction pooler)
+   - ✅ Correct: `aws-1-eu-west-1.pooler.supabase.com:5432` (Session pooler)
+
+2. **Supabase JWT keys needed updating**: Keys were in old format, updated to legacy JWT format
+
+**Environment Variables Fixed:**
+
+| Variable | Status | Notes |
+|----------|--------|-------|
+| `DATABASE_URL` | ✅ Fixed | Changed pooler endpoint from aws-0:6543 to aws-1:5432 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Fixed | Updated to legacy JWT format |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Fixed | Updated to legacy JWT format |
+| `OPENAI_API_KEY` | ✅ Verified | Was already correct |
+| `NEXT_PUBLIC_APP_URL` | ✅ Fixed | Changed from web-eta-gold to llyli.vercel.app |
+
+**Cleanup Performed:**
+- Deleted duplicate "web" Vercel project (only "llyli" project remains)
+- Deleted `web/.vercel/project.json` that was linked to wrong project
+- Added reflection learning about folder vs project naming confusion
+
+**E2E Verification:**
+- ✅ Sign in works (test-en-sv@llyli.test)
+- ✅ Onboarding flow completes
+- ✅ Word capture works (hej→hi, tack→thank you, god morgon→good morning)
+- ✅ Today dashboard shows correct data (15 phrases ready for review)
+- ✅ Build passes, 228 unit tests pass
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/.env.local` | Fixed DATABASE_URL and Supabase keys |
+| `web/.vercel/` | DELETED (was linked to wrong project) |
+| Vercel env vars | All 7 production vars verified/updated |
+
+**Key Learning:** Supabase has multiple pooler instances (`aws-0`, `aws-1`, etc.) with different endpoints. The password only works with the correct pooler endpoint. Always use the exact connection string from Supabase Dashboard → Project Settings → Database.
+
+---
+
 ### Session 64 - 2026-01-22 - Sentence Pre-Generation & Vercel Fix (#13, #14)
 
 **Focus:** Fix starter word sentence pre-generation and resolve production deployment issues.
