@@ -156,9 +156,11 @@ export async function GET() {
         .where(eq(streakState.userId, user.id)),
 
       // 4. Streak calculation data (fallback for longest streak calculation)
+      // Note: Using sql.raw() for column names inside PostgreSQL date() function
+      // because Drizzle's parameterized queries can't pass column refs to functions
       db
         .select({
-          date: sql<string>`date(${reviewSessions.endedAt})`,
+          date: sql<string>`date(${sql.raw('ended_at')})`,
         })
         .from(reviewSessions)
         .where(
@@ -167,14 +169,15 @@ export async function GET() {
             sql`${reviewSessions.endedAt} is not null`
           )
         )
-        .groupBy(sql`date(${reviewSessions.endedAt})`)
-        .orderBy(desc(sql`date(${reviewSessions.endedAt})`)),
+        .groupBy(sql`date(${sql.raw('ended_at')})`)
+        .orderBy(desc(sql`date(${sql.raw('ended_at')})`)),
 
       // 5. Forecast data in a single query with date grouping
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
+      // Note: Using sql.raw() for column names inside PostgreSQL date() function
       db
         .select({
-          date: sql<string>`date(${words.nextReviewDate})`,
+          date: sql<string>`date(${sql.raw('next_review_date')})`,
           count: sql<number>`count(*)::int`,
         })
         .from(words)
@@ -194,12 +197,13 @@ export async function GET() {
             lte(words.nextReviewDate, sevenDaysFromNow)
           )
         )
-        .groupBy(sql`date(${words.nextReviewDate})`),
+        .groupBy(sql`date(${sql.raw('next_review_date')})`),
 
       // 6. Activity heatmap
+      // Note: Using sql.raw() for column names inside PostgreSQL date() function
       db
         .select({
-          date: sql<string>`date(${reviewSessions.endedAt})`,
+          date: sql<string>`date(${sql.raw('ended_at')})`,
           count: sql<number>`sum(${reviewSessions.wordsReviewed})::int`,
         })
         .from(reviewSessions)
@@ -209,8 +213,8 @@ export async function GET() {
             gte(reviewSessions.endedAt, ninetyDaysAgo)
           )
         )
-        .groupBy(sql`date(${reviewSessions.endedAt})`)
-        .orderBy(sql`date(${reviewSessions.endedAt})`),
+        .groupBy(sql`date(${sql.raw('ended_at')})`)
+        .orderBy(sql`date(${sql.raw('ended_at')})`),
 
       // 7. Ready to use words
       // ALWAYS filter by user's target language (check both sourceLang and targetLang)
