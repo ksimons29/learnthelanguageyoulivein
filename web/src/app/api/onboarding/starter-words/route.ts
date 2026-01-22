@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { getStarterWords, getTranslation } from '@/lib/data/starter-vocabulary';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
+import { triggerSentencePreGeneration } from '@/lib/sentences';
 
 /**
  * POST /api/onboarding/starter-words
@@ -116,6 +117,12 @@ export async function POST() {
     // Don't await - let it happen async to avoid blocking response
     generateTTSForWords(user.id, insertedWords, targetLanguage).catch((err) => {
       console.error('Background TTS generation failed:', err);
+    });
+
+    // Pre-generate sentences using the new starter words (fire-and-forget)
+    // This ensures users can immediately do sentence-based reviews
+    triggerSentencePreGeneration(user.id, { maxSentences: 5 }).catch((err) => {
+      console.error('Background sentence generation failed:', err);
     });
 
     return NextResponse.json({

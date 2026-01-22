@@ -2,11 +2,18 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import postgres from 'postgres';
+import { getStarterWords, getTranslation } from '../src/lib/data/starter-vocabulary';
 
 /**
  * Create pre-confirmed test users for E2E testing
  *
  * Usage: npx tsx scripts/create-test-users.ts
+ *
+ * This script:
+ * 1. Creates/updates test user accounts in Supabase Auth
+ * 2. Creates/updates user profiles with language preferences
+ * 3. Deletes existing words for clean state
+ * 4. Injects ALL starter words (including work category) directly
  */
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -131,7 +138,77 @@ async function createTestUser(user: TestUser) {
     console.log(`  🧹 Cleaned ${deleted.length} existing words`);
   }
 
+  // Inject starter words directly (including work category)
+  const starterCount = await injectStarterWords(userId, user.targetLanguage, user.nativeLanguage);
+  console.log(`  📚 Injected ${starterCount} starter words`);
+
   return { userId, ...user };
+}
+
+/**
+ * Inject starter words directly into the database
+ * This ensures test accounts have all starter words including work category
+ */
+async function injectStarterWords(
+  userId: string,
+  targetLanguage: string,
+  nativeLanguage: string
+): Promise<number> {
+  const starterWords = getStarterWords(targetLanguage);
+  if (!starterWords) {
+    console.log(`  ⚠️  No starter words for ${targetLanguage}`);
+    return 0;
+  }
+
+  // Insert all starter words
+  for (const word of starterWords) {
+    const lapseCount = word.initialLapseCount ?? 0;
+    // Words with lapses have lower stability (need more review)
+    const stability = lapseCount > 0 ? Math.max(1, 10 - lapseCount * 2) : 1.0;
+    const difficulty = lapseCount > 0 ? Math.min(10, 5 + lapseCount * 0.5) : 5.0;
+
+    await db`
+      INSERT INTO words (
+        user_id,
+        original_text,
+        translation,
+        language,
+        source_lang,
+        target_lang,
+        translation_provider,
+        category,
+        category_confidence,
+        difficulty,
+        stability,
+        retrievability,
+        next_review_date,
+        review_count,
+        lapse_count,
+        consecutive_correct_sessions,
+        mastery_status
+      ) VALUES (
+        ${userId},
+        ${word.text},
+        ${getTranslation(word, nativeLanguage)},
+        'target',
+        ${targetLanguage},
+        ${nativeLanguage},
+        'starter-vocabulary',
+        ${word.category},
+        1.0,
+        ${difficulty},
+        ${stability},
+        1.0,
+        ${new Date().toISOString()},
+        ${lapseCount > 0 ? lapseCount + 1 : 0},
+        ${lapseCount},
+        0,
+        'learning'
+      )
+    `;
+  }
+
+  return starterWords.length;
 }
 
 async function main() {

@@ -900,11 +900,172 @@ const sourceLang = currentWord?.sourceLang;
 
 ---
 
+---
+
+## Finding #13: Work Category Starter Words Not Injected
+
+### Discovery
+- **Location:** Notebook page (llyli.vercel.app)
+- **Time:** Session 63 E2E Testing
+- **Test Account:** test-en-pt@llyli.test
+
+### Observed Behavior
+1. Test account has 34 words across multiple categories
+2. **No "Work" category exists** in the notebook
+3. Searched for "Reunião" (Meeting) - **NOT FOUND**
+4. Searched for "Prazo" (Deadline) - **NOT FOUND**
+5. "Quanto custa?" (Shopping category starter word) - FOUND
+
+### Expected Behavior
+According to `lib/data/starter-vocabulary.ts`:
+- 12 starter words should be injected per language
+- 2 of these should be Work category: "Reunião" and "Prazo"
+- These have `initialLapseCount` for gamification testing
+
+### Impact
+1. **Bingo "Work category" square is unachievable** without manual capture
+2. New users cannot test Boss Round features properly (relies on high lapse count words)
+3. Gamification incomplete from day one
+
+### Root Cause (CONFIRMED)
+Test accounts were created/reset BEFORE work category words were added to `starter-vocabulary.ts`.
+The starter words endpoint is only called during onboarding - existing accounts that completed
+onboarding never received the new work category words.
+
+### Severity: **P2 Medium**
+- Gamification incomplete but app functional
+- Easy workaround: manually capture work words
+
+### Fix Applied (Session 64)
+Modified `scripts/create-test-users.ts` to inject ALL 12 starter words (including work category)
+directly after resetting each test account. This ensures:
+1. Test accounts always have complete starter vocabulary
+2. Work category words (Reunião, Prazo) are injected with proper `initialLapseCount`
+3. Boss Round testing is possible from day one
+
+**Files Changed:**
+- `web/scripts/create-test-users.ts` - Added `injectStarterWords()` function
+
+**To Apply Fix:**
+Run the script with proper credentials:
+```bash
+cd web && npx tsx scripts/create-test-users.ts
+```
+
+**Status:** ✅ **VERIFIED FIXED**
+
+**Session 64 Progress:**
+1. ✅ Modified `create-test-users.ts` to inject starter words
+2. ✅ Fixed corrupted Vercel env vars (`y\n` prefix causing "Invalid value" fetch error)
+3. ✅ Promoted new deployment to production alias
+4. ✅ E2E verification complete after DB circuit breaker recovered
+
+**E2E Verification Results:**
+- Notebook displays "Your Portuguese Journal" (correct language)
+- 12 starter words injected
+- **Work category present with 2 phrases:**
+  - Prazo → Deadline (marked "Struggling" with 3 lapses for Boss Round testing)
+  - Reunião → Meeting (marked "Due")
+
+---
+
+## Finding #14: No Sentence Pre-generation for Starter Words
+
+### Discovery
+- **Location:** API code analysis
+- **Time:** Session 63
+
+### Observed Behavior
+In `/api/onboarding/starter-words/route.ts` line 117:
+```typescript
+generateTTSForWords(user.id, insertedWords, targetLanguage).catch((err) => {
+  console.error('Background TTS generation failed:', err);
+});
+```
+
+TTS is generated, but `triggerSentenceGeneration()` is **NOT called**.
+
+### Expected Behavior
+After starter words injection, sentences should be pre-generated so users can:
+1. Immediately do sentence-based reviews
+2. See the "SENTENCE REVIEW" mode (not just word mode)
+3. Experience the core value proposition from day one
+
+### Impact
+1. New users only see "WORD REVIEW" mode initially
+2. Must wait for background sentence generation (may never trigger)
+3. Core feature (dynamic sentence generation) not immediately visible
+
+### Severity: **P2 Medium**
+- Word review still works
+- Sentence generation happens eventually (after manual captures)
+- But delays "wow moment" for new users
+
+### Fix Applied (Session 64)
+
+Created shared utility `lib/sentences/pre-generation.ts` with `triggerSentencePreGeneration()` function.
+Added call to `/api/onboarding/starter-words/route.ts` after TTS generation:
+
+```typescript
+// Pre-generate sentences using the new starter words (fire-and-forget)
+// This ensures users can immediately do sentence-based reviews
+triggerSentencePreGeneration(user.id, { maxSentences: 5 }).catch((err) => {
+  console.error('Background sentence generation failed:', err);
+});
+```
+
+**Files Changed:**
+- `web/src/lib/sentences/pre-generation.ts` (new) - Shared sentence pre-generation utility
+- `web/src/lib/sentences/index.ts` - Export new utility
+- `web/src/app/api/onboarding/starter-words/route.ts` - Call pre-generation after word injection
+
+**Verification:**
+- ✅ `npm run build` - Passes
+- ✅ `npm run test:run` - 228 tests pass
+
+**Status:** ✅ **FIXED** - Will be included in next deployment
+
+---
+
+## Feature Request: Example Sentence at Capture Time
+
+### User Request
+When a word is captured, each word card should show:
+1. **Word** (target language)
+2. **Translation** (native language)
+3. **Example sentence** (target language)
+4. **Sentence translation** (native language)
+
+### Current State
+- Word cards show only word + translation
+- "Practice Sentences" only appear AFTER review (usedAt IS NOT NULL)
+- No immediate context for newly captured words
+
+### Priority: **P2 Enhancement** (Documented for later)
+
+### Documentation
+Full feature spec created at:
+`docs/product/features/EXAMPLE_SENTENCE_AT_CAPTURE.md`
+
+---
+
+## Updated Findings Summary
+
+| # | Issue | Severity | Status |
+|---|-------|----------|--------|
+| 1-12 | Previous findings | Various | See above |
+| **13** | **Work category starter words not injected** | **P2 Medium** | ✅ VERIFIED (Session 64) |
+| **14** | **No sentence pre-generation for starter words** | **P2 Medium** | ✅ Fixed (Session 64) |
+| **Feature** | **Example sentence at capture time** | **P2 Enhancement** | 📋 Documented |
+
+---
+
 ## Document Created
 - **Date:** 2026-01-21
 - **Session:** Bug documentation and assessment
-- **Finding count:** 17 issues (15 original + 2 new)
+- **Finding count:** 19 issues (17 original + 2 new + 1 feature request)
 - **P0/Blocker count:** 0 remaining (all fixed!)
 - **P1/High count:** 1 remaining (#7a - distractor quality)
-- **Status:** MVP blockers resolved
-- **Last Updated:** Session 60 - Issues #65 verified, #66 fixed
+- **P2/Medium count:** 1 (#6 word limit) - #13, #14 fixed (Session 64)
+- **Status:** MVP blockers resolved, enhancements documented
+- **Last Updated:** Session 64 - Finding #13 fix (work category starter words)

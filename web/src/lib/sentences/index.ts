@@ -38,3 +38,9 @@ export {
   selectWordToBlank,
   type ExerciseType,
 } from './exercise-type';
+
+// Sentence pre-generation utility
+export {
+  triggerSentencePreGeneration,
+  type SentencePreGenerationConfig,
+} from './pre-generation';
