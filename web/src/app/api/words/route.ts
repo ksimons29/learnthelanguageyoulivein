@@ -15,6 +15,7 @@ import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
 import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
 import { generateSentenceWithRetry } from '@/lib/sentences/generator';
 import { determineExerciseType } from '@/lib/sentences/exercise-type';
+import { withRetry } from '@/lib/utils/retry';
 import OpenAI from 'openai';
 import { eq, and, or, ilike, sql, gte } from 'drizzle-orm';
 
@@ -27,28 +28,6 @@ function getOpenAI() {
   return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
-}
-
-/**
- * Retry helper with exponential backoff for transient API failures.
- * Handles OpenAI rate limits and temporary network issues.
- */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelayMs: number = 1000
-): Promise<T> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (attempt === maxRetries) throw error;
-      const delay = baseDelayMs * Math.pow(2, attempt - 1);
-      console.warn(`OpenAI retry ${attempt}/${maxRetries} after ${delay}ms:`, error instanceof Error ? error.message : error);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-  throw new Error('Retry exhausted'); // TypeScript: unreachable but satisfies return type
 }
 
 /**

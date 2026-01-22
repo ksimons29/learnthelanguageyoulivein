@@ -7,6 +7,7 @@ import { getStarterWords, getTranslation } from '@/lib/data/starter-vocabulary';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { triggerSentencePreGeneration } from '@/lib/sentences';
+import { withRetry, sleep } from '@/lib/utils/retry';
 
 /**
  * POST /api/onboarding/starter-words
@@ -141,41 +142,81 @@ export async function POST() {
 }
 
 /**
- * Generate TTS audio for words in background (parallelized)
- * Non-blocking, errors are logged but don't affect the user
+ * Generate TTS audio for starter words in background
  *
- * Uses Promise.allSettled to process all words in parallel while
- * gracefully handling individual failures.
+ * Features:
+ * - Retry logic with exponential backoff (3 retries for TTS, 2 for upload)
+ * - Batch processing to avoid rate limits (3 words at a time)
+ * - Marks words as audioGenerationFailed=true on failure (enables retry button)
+ * - Small delay between batches to respect API rate limits
+ *
+ * This matches the robust audio generation in /api/words/route.ts
  */
 async function generateTTSForWords(
   userId: string,
   wordList: typeof words.$inferSelect[],
   languageCode: string
 ) {
+  const BATCH_SIZE = 3; // Process 3 words at a time to avoid rate limits
+  const BATCH_DELAY_MS = 500; // 500ms delay between batches
+
   const processWord = async (word: typeof words.$inferSelect) => {
-    const audioBuffer = await generateAudio({
-      text: word.originalText,
-      languageCode,
-    });
+    try {
+      // TTS generation with retry (3 retries, 2s base delay)
+      const audioBuffer = await withRetry(
+        () => generateAudio({ text: word.originalText, languageCode }),
+        3,
+        2000
+      );
 
-    const audioUrl = await uploadAudio(userId, word.id, audioBuffer);
+      // Storage upload with retry (2 retries, 1s base delay)
+      const audioUrl = await withRetry(
+        () => uploadAudio(userId, word.id, audioBuffer),
+        2,
+        1000
+      );
 
-    await db
-      .update(words)
-      .set({ audioUrl })
-      .where(eq(words.id, word.id));
+      // Success - update word with audio URL
+      await db
+        .update(words)
+        .set({ audioUrl, audioGenerationFailed: false })
+        .where(eq(words.id, word.id));
 
-    return word.id;
+      return { wordId: word.id, success: true };
+    } catch (error) {
+      console.error(`TTS failed for starter word "${word.originalText}":`, error);
+      // Mark word as failed so client can show retry button
+      await db
+        .update(words)
+        .set({ audioGenerationFailed: true })
+        .where(eq(words.id, word.id));
+
+      return { wordId: word.id, success: false, error };
+    }
   };
 
-  // Process all words in parallel
-  const results = await Promise.allSettled(wordList.map(processWord));
+  // Process words in batches to avoid rate limits
+  for (let i = 0; i < wordList.length; i += BATCH_SIZE) {
+    const batch = wordList.slice(i, i + BATCH_SIZE);
 
-  // Log any failures
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    if (result.status === 'rejected') {
-      console.error(`TTS failed for word ${wordList[i].id}:`, result.reason);
+    // Process batch in parallel
+    const results = await Promise.allSettled(batch.map(processWord));
+
+    // Log batch results
+    const succeeded = results.filter(
+      (r) => r.status === 'fulfilled' && r.value.success
+    ).length;
+    const failed = results.filter(
+      (r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)
+    ).length;
+
+    if (failed > 0) {
+      console.warn(`Starter words TTS batch ${Math.floor(i / BATCH_SIZE) + 1}: ${succeeded} succeeded, ${failed} failed`);
+    }
+
+    // Add delay before next batch (except for last batch)
+    if (i + BATCH_SIZE < wordList.length) {
+      await sleep(BATCH_DELAY_MS);
     }
   }
 }

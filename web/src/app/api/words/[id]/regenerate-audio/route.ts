@@ -6,27 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { getLanguageConfig } from '@/lib/config/languages';
-
-/**
- * Retry helper with exponential backoff for transient API failures.
- */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelayMs: number = 1000
-): Promise<T> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (attempt === maxRetries) throw error;
-      const delay = baseDelayMs * Math.pow(2, attempt - 1);
-      console.warn(`Retry ${attempt}/${maxRetries} after ${delay}ms:`, error instanceof Error ? error.message : error);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-  throw new Error('Retry exhausted');
-}
+import { withRetry } from '@/lib/utils/retry';
 
 /**
  * POST /api/words/[id]/regenerate-audio
