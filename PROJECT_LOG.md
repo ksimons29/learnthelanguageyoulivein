@@ -68,11 +68,17 @@ npm run build             # Production build
 | `web/src/lib/sentences/generator.ts` | Sentence generation with Unicode validation |
 
 ## Open Bugs
-**✅ ALL BUGS RESOLVED** as of Session 62 (2026-01-21)
 
-No open bugs. All P0 blockers fixed in Sessions 54-61.
+### Under Investigation
+| Issue | Description | Status | Notes |
+|-------|-------------|--------|-------|
+| #77 | Progress 500 error | Monitoring | Could not reproduce - page loads correctly |
 
 ### Recently Closed Bugs
+| Issue | Description | Fixed In |
+|-------|-------------|----------|
+| #78 | Bingo squares not tracking | Session 66, `5e661fe` |
+
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
 | #60-62 | Language direction, focus word, missing options | Sessions 54-55 |
@@ -137,6 +143,45 @@ No open bugs. All P0 blockers fixed in Sessions 54-61.
 ---
 
 ## Session Log
+
+### Session 66 - 2026-01-22 - Bingo Bug Fix: Exercise Type Format Mismatch (#78)
+
+**Focus:** Fix bingo squares not tracking despite reviews being counted.
+
+**Bug Analysis:**
+User `db367e9d` had 18 completed reviews but bingo showed 0/9 squares. Database query confirmed:
+- `daily_progress.completed_reviews = 18` ✓
+- `bingo_state.squares_completed = []` ✗ (empty!)
+
+**Root Cause:**
+Exercise type format mismatch between client and API:
+- Client sends: `'fill_blank'` (underscore)
+- API expected: `'fill-blank'` (hyphen)
+
+The comparison `data.exerciseType === 'fill-blank'` never matched `'fill_blank'`, so `fillBlank` and `multipleChoice` squares were never tracked.
+
+**Fix Applied:**
+Normalize exerciseType by replacing underscores with hyphens before comparison:
+```typescript
+const normalizedExerciseType = data.exerciseType?.replace(/_/g, '-');
+```
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/app/api/gamification/event/route.ts` | Normalize exerciseType format before comparison |
+| `web/src/__tests__/lib/gamification.test.ts` | Added 3 tests for exercise type normalization |
+
+**Verification:**
+- ✅ Build passes
+- ✅ 231 unit tests pass (3 new)
+- ✅ Pre-commit hook passes
+- ✅ Production deployment verified
+- ✅ E2E verified: `squaresCompleted` went from `[]` to `["review5", "socialWord"]` after fix
+
+**Commit:** `5e661fe` - fix(gamification): normalize exercise type format for bingo tracking (#78)
+
+---
 
 ### Session 65 - 2026-01-22 - Infrastructure Fix: Database Connection & Env Vars
 
