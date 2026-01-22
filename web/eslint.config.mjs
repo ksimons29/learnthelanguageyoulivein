@@ -12,7 +12,19 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Auto-generated service worker (serwist)
+    "public/sw.js",
+    // Test scripts using CommonJS
+    "scripts/**/*.js",
   ]),
+  // Custom rule overrides
+  {
+    rules: {
+      // Disable overly-strict rule that flags valid patterns like
+      // initializing state from browser APIs in useEffect
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -213,10 +213,12 @@ export async function POST(request: NextRequest) {
     // 6. Auto-translate and auto-assign category in parallel
     // This saves 1-3 seconds compared to sequential calls
     // Wrapped in withRetry for resilience against transient OpenAI failures
-    let [translation, { category, confidence }] = await Promise.all([
+    const [initialTranslation, categoryResult] = await Promise.all([
       withRetry(() => translateText(text, sourceLang, targetLang)),
       withRetry(() => assignCategory(text, context)),
     ]);
+    let translation = initialTranslation;
+    const { category, confidence } = categoryResult;
 
     // 6b. Safety check: If translation equals original, language detection was likely wrong
     // Try the opposite direction as a fallback

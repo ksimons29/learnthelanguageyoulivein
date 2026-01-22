@@ -163,7 +163,7 @@ export default function SciencePage() {
             </div>
 
             <p className="text-sm mb-3" style={{ color: "var(--text-body)" }}>
-              Only 36% stick with traditional flashcard apps. We're built differently:
+              Only 36% stick with traditional flashcard apps. We&apos;re built differently:
             </p>
 
             <ul className="space-y-1.5">

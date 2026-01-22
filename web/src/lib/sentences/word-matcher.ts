@@ -293,7 +293,7 @@ export async function getUnusedWordCombinations(
   );
 
   // 2. Generate combinations for each category
-  let allCombinations: Word[][] = [];
+  const allCombinations: Word[][] = [];
 
   for (const [_category, categoryWords] of categoryGroups) {
     if (categoryWords.length >= config.minWordsPerSentence) {

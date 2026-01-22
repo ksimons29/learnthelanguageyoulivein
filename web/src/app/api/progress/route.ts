@@ -433,7 +433,7 @@ function calculateStreakFromDates(
   // Check if streak is active (studied today or yesterday)
   if (mostRecentDateStr === todayStr || mostRecentDateStr === yesterdayStr) {
     currentStreak = 1;
-    let expectedDate = new Date(dates[0]);
+    const expectedDate = new Date(dates[0]);
 
     for (let i = 1; i < dates.length; i++) {
       expectedDate.setDate(expectedDate.getDate() - 1);
