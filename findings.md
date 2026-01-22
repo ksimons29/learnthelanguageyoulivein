@@ -1,5 +1,53 @@
 # Bug Findings - Session 2026-01-21
 
+## ✅ FIXED: Finding #16: Gamification Daily Goal Always Shows 0/10
+
+### Status: **FIXED** (Session 66 - 2026-01-22)
+
+### Observed Behavior
+1. User completes 18 reviews in a review session
+2. Review completion screen shows "18 words reviewed, 83% accuracy"
+3. Dashboard shows "0/10 Daily Goal" - reviews not counting!
+4. Streak stays at 0 even after completing daily goal
+
+### Root Cause
+**Missing database unique index!** The Drizzle schema defines:
+```typescript
+uniqueIndex('daily_progress_user_date_idx').on(table.userId, table.date)
+```
+
+But this index **was never created in the production database**. This caused:
+1. Multiple `daily_progress` records created for the same user/date (race condition)
+2. Reviews scattered across duplicate records instead of accumulating in one
+3. When UI fetches state, it gets a random record (often one with 0 reviews)
+
+### Evidence
+```sql
+-- Before fix: 8 duplicate records for EN→SV user on 2026-01-22
+SELECT user_id, date, COUNT(*) FROM daily_progress GROUP BY user_id, date HAVING COUNT(*) > 1;
+-- Result: 6 user/date combinations with duplicates, up to 44 duplicates each!
+```
+
+### Fix Applied
+1. Created `scripts/fix-gamification-duplicates.ts`
+2. Consolidated duplicate records (summed completed_reviews)
+3. Added missing unique index: `daily_progress_user_date_idx`
+4. Added missing unique index: `bingo_state_user_date_idx`
+5. Fixed `completed_at` for records that exceeded target but weren't marked complete
+6. Updated streak state for affected users
+
+### Verification
+- Dashboard now shows **18/10 Goal Complete!**
+- Streak now shows **1 Day Streak**
+- Unique index prevents future duplicates
+
+### Prevention
+- Run `npm run db:push` after schema changes to ensure indexes are created
+- Add integration test for gamification state consistency
+- Consider adding a health check that verifies schema indexes exist
+
+---
+
 ## Critical Issue: Recurring Bugs That Were "Fixed"
 
 This document tracks bugs discovered during user testing that appear to be regressions or incomplete fixes. The goal is to:
