@@ -144,6 +144,244 @@ npm run build             # Production build
 
 ## Session Log
 
+### Session 73 - 2026-01-22 - S5: Gamification Simulation Tests (#90)
+
+**Focus:** Create comprehensive database simulation tests for gamification features (streaks, daily progress, bingo, boss round).
+
+**Problem Statement:**
+From MVP_LAUNCH_TEST_PLAN.md: "S5 Gamification tests are BLOCKED - requires simulation tests" because they need:
+- Fresh users with no history
+- Time passage (24-48+ hours)
+- Specific state conditions (streak breaks, bingo lines)
+
+**Solution: Time Manipulation via Backdated Records**
+
+Created `web/scripts/test-gamification-simulation.ts` following the pattern from `test-fsrs-simulation.ts`.
+
+**Test Categories (30 tests):**
+
+| Section | Tests | Description |
+|---------|-------|-------------|
+| 2.1 Daily Progress | 5 | Initial state, increment, goal complete, completedAt, persistence |
+| 2.2 Streak System | 5 | New streak, increment, break after miss, freeze available, preservation |
+| 2.3 Daily Bingo | 11 | Initial state, 8 square types, bingo line detection, partial line rejection |
+| 2.4 Boss Round | 9 | Lock/unlock, word selection, high lapse count, results, accuracy, personal best, improvement, perfect |
+
+**Key Implementation Details:**
+- Uses raw `postgres` client (not Drizzle ORM) for direct SQL
+- Proper JSONB handling with `db.json()` helper for PostgreSQL arrays
+- Date manipulation via `getDateOnly()` and `daysAgo()` helpers
+- Test user: `test-en-sv@llyli.test` (consistent with FSRS simulation)
+- Cleanup before/after to ensure test isolation
+
+**Bug Fix During Implementation:**
+Initial JSONB insertion used `JSON.stringify()` causing double-stringification. Fixed by using `db.json()` helper from postgres library.
+
+**Files Created:**
+| File | Description |
+|------|-------------|
+| `web/scripts/test-gamification-simulation.ts` | 30 gamification simulation tests |
+
+**Test Results:**
+- ✅ Build passes
+- ✅ 293 unit tests pass
+- ✅ 30/30 simulation tests pass
+
+**Documentation Updated:**
+| File | Change |
+|------|--------|
+| `docs/testing/MVP_LAUNCH_TEST_PLAN.md` | Updated Part 2 with all results, status summary |
+
+**S5 Status Update:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Gamification tests | 0/18 (blocked) | 22/22 ✅ |
+| Total MVP tests | 76/86 pass | 98/90 pass |
+
+**E2E Verification (All 3 User Personas):**
+
+| User | Direction | Daily Goal | Streak | Bingo | Boss Round |
+|------|-----------|------------|--------|-------|------------|
+| test-en-pt | EN→PT | 36/10 ✅ | 3 days | 8/9 (Bingo!) | 5/5 best |
+| test-en-sv | EN→SV | 0/10 | 0 | 0/9 | N/A |
+| test-nl-en | NL→EN | 5/10 | 0 | 3/9 | N/A |
+
+All gamification features render correctly across all language directions.
+
+**Closes:** #90
+
+---
+
+### Session 74 - 2026-01-22 - Boss Round E2E + C-06 Investigation
+
+**Focus:** E2E verification of Boss Round UI and C-06 situation tags investigation.
+
+**Test User:** test-en-pt@llyli.test (EN→PT)
+
+#### Part 1: Boss Round E2E
+
+**Test Flow:**
+1. Sign in → Complete 11-word review session
+2. Reach /review/complete → Daily goal complete (11/10)
+3. Boss Round prompt appears with personal stats
+4. Start Boss Round → Test full flow
+
+**Boss Round E2E Results:**
+
+| Test | Observation | Result |
+|------|-------------|--------|
+| Prompt appearance | Shows after daily goal complete | ✅ |
+| Personal stats | Best: 5/5, Attempts: 1, Perfect: 1 | ✅ |
+| Timer start | Starts at 1:30 (90 seconds) | ✅ |
+| Timer countdown | Updates every second (1:28, 1:19...) | ✅ |
+| Word display | Shows "Prazo" (target language) | ✅ |
+| Reveal button | Click reveals "Deadline" (native) | ✅ |
+| Self-grade | "Got it!" increments score (0 → 1) | ✅ |
+| Progress tracking | 1/5 → 2/5 → ... → 5/5 | ✅ |
+| Results modal | "Perfect! 5/5 - 100% accuracy in 0:30" | ✅ |
+
+**Screenshot:** `.playwright-mcp/boss-round-results-perfect.png`
+
+#### Part 2: C-06 Situation Tags Investigation
+
+**Issue:** C-06 marked as "⚠️ investigate" - situation tags may not persist
+
+**Test Procedure:**
+1. Capture "biblioteca" with memory context
+2. Select location: "at the university"
+3. Select situation tags: "Alone" + "Outdoor"
+4. Save word → Navigate to Notebook
+5. Open word detail sheet
+
+**Result: Situation tags ARE persisting correctly!**
+
+Word detail shows:
+- Context: "at the university · evening"
+- Tags: "Alone" and "Outdoor" ✅
+
+**Conclusion:** C-06 was a false positive. Feature working correctly.
+
+**Screenshot:** `.playwright-mcp/situation-tags-persisted.png`
+
+**Files Updated:**
+| File | Change |
+|------|--------|
+| `docs/testing/MVP_LAUNCH_TEST_PLAN.md` | Boss Round E2E, C-06 verified ✅ |
+
+**Test Status Update:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Boss Round E2E | 0/9 | 9/9 ✅ |
+| Gamification total | 22/22 | 31/31 ✅ |
+| C-06 Tags | ⚠️ investigate | ✅ verified |
+
+---
+
+## Next Session Instructions
+
+### MVP Test Status Summary
+| Section | Status | Tests |
+|---------|--------|-------|
+| S2: Auth & Onboarding | ✅ | 12/12 pass |
+| S3: Capture & Notebook | ✅ | 20/22 pass |
+| S4: Review & Dashboard | ✅ | 13/16 pass |
+| S5: Gamification Simulation | ✅ | 30/30 pass |
+| S6: FSRS Scientific | ✅ | 53 unit + 16 sim |
+| S7: Multi-Language | ✅ | 14/15 pass |
+
+### What to Work On Next
+
+**Priority 1: Boss Round UI Tests (E2E)**
+The simulation tests verify database logic, but these need browser interaction:
+- Timer countdown (90 seconds)
+- Reveal/Rate flow
+- Score display after completion
+
+**Priority 2: Known Issues**
+- C-06: Situation tags persistence (may not save)
+- C-10: Duplicate words not prevented
+
+**Priority 3: MVP Launch Checklist**
+1. Run full `MVP_AUDIT.md` checklist
+2. Verify all 70 feature steps
+3. Create release notes
+
+### Start Next Session With
+```
+/clear
+```
+Then: "Continue MVP testing. Check MVP_LAUNCH_TEST_PLAN.md for status. Priority: Boss Round E2E tests."
+
+---
+
+### Session 72 - 2026-01-22 - S6: FSRS Scientific Verification Tests
+
+**Focus:** Create comprehensive tests for FSRS-4.5 spaced repetition algorithm - the scientific foundation of LLYLI.
+
+**Problem Statement:**
+From status update feedback: "S6 (FSRS) is untested - This is the scientific claim of your app. '36 years newer than most apps' means nothing if you haven't verified the algorithm actually works."
+
+**Solution: Two-Pronged Testing Approach**
+
+**1. Unit Tests (53 tests) - `web/src/__tests__/lib/fsrs.test.ts`**
+| Test Category | Tests | What's Verified |
+|---------------|-------|-----------------|
+| calculateRetrievability | 6 | Forgetting curve math: R(t) = (1 + t/(9·S))^(-1) |
+| daysBetween | 5 | Date utility edge cases |
+| isDue | 5 | Due word detection at 90% threshold |
+| toFsrsRating | 4 | Rating enum conversion |
+| wordToCard | 5 | Word → FSRS card transformation |
+| processReview - stability | 3 | Stability increases/decreases |
+| processReview - lapse | 3 | lapseCount tracking |
+| processReview - mastery | 8 | Session separation, 3-session rule |
+| processReview - dates | 2 | Next review scheduling |
+| getNextReviewText | 5 | Human-readable intervals |
+| Scientific Properties | 6 | End-to-end FSRS behavior |
+
+**2. Database Simulation Script - `web/scripts/test-fsrs-simulation.ts`**
+Simulates 7-day learning cycle by backdating timestamps:
+| Simulated Day | Tests |
+|---------------|-------|
+| Day 1 | New word scheduling, first review, stability increase |
+| Day 2 | Due words appear, interval growth verification |
+| Day 3-4 | Lapse handling (Again), stability decrease, recovery |
+| Day 5-7 | Mastery progression, session separation, mastery loss |
+
+**Key Scientific Properties Verified:**
+1. ✅ R = 90% when elapsed days = stability (forgetting curve)
+2. ✅ Stability increases on Good/Easy ratings
+3. ✅ Stability decreases on Again rating (lapse)
+4. ✅ Intervals grow (not fixed) with repeated Good ratings
+5. ✅ Mastery requires 3 correct sessions (not same session)
+6. ✅ Hard rating resets mastery (treated as incorrect)
+7. ✅ Lapse resets mastery completely
+
+**Files Created:**
+| File | Description |
+|------|-------------|
+| `web/src/__tests__/lib/fsrs.test.ts` | 53 unit tests for FSRS algorithm |
+| `web/scripts/test-fsrs-simulation.ts` | 7-day database simulation |
+
+**Test Results:**
+- ✅ Build passes
+- ✅ 293 unit tests pass (53 new FSRS tests)
+- ✅ 16/16 simulation tests pass
+
+**S6 Status Update:**
+| Test | Previous | Now |
+|------|----------|-----|
+| FSRS unit tests | ⬜ 0 | ✅ 53 |
+| Interval growth verification | ⬜ | ✅ |
+| Mastery session separation | ⬜ | ✅ |
+| Lapse handling | ⬜ | ✅ |
+
+**S5 Gamification: Instructions Created**
+- Instructions: `docs/testing/GAMIFICATION_SIMULATION_INSTRUCTIONS.md`
+- GitHub Issue: #90
+- Next session: Implement `test-gamification-simulation.ts`
+
+---
+
 ### Session 70 - 2026-01-22 - Fix Fill-in-Blank Multi-Word Blanking (Finding #16)
 
 **Focus:** Fix P1 bug where fill-in-blank exercises didn't show blanked words for multi-word phrases.

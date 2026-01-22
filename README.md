@@ -221,6 +221,7 @@ LLYLI uses a **Moleskine notebook** aesthetic:
 | [PRODUCT_SPECIFICATION.md](./PRODUCT_SPECIFICATION.md) | Complete product spec |
 | [docs/product/EXECUTIVE_SUMMARY.md](./docs/product/EXECUTIVE_SUMMARY.md) | One-page overview |
 | [docs/product/USER_GUIDE.md](./docs/product/USER_GUIDE.md) | End-user documentation |
+| [docs/product/REVIEW_GAMES.md](./docs/product/REVIEW_GAMES.md) | Review exercises & gamification guide |
 | [docs/product/prd.md](./docs/product/prd.md) | Product requirements |
 | [docs/design/design-system.md](./docs/design/design-system.md) | UI component specs |
 | [docs/engineering/implementation_plan.md](./docs/engineering/implementation_plan.md) | Technical architecture |
