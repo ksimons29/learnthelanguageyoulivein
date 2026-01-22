@@ -2,6 +2,73 @@
 
 Language learning app that turns real-life phrases into smart cards with native audio and spaced repetition.
 
+## Product Context
+
+### The Problem We Solve
+
+**75% of language learners save words but never review them.**
+
+People living abroad encounter useful vocabulary daily but fail to retain it. Traditional apps require too much effort, show repetitive content, and use outdated algorithms.
+
+### How LLYLI Works
+
+| Step | What Happens | Time |
+|------|--------------|------|
+| **Capture** | Type a word → get instant translation + native audio | 2 seconds |
+| **Practice** | AI creates unique sentences combining 2-4 of your words | 10 min/day |
+| **Master** | FSRS-4.5 algorithm schedules reviews at optimal timing | Automatic |
+
+### Key Differentiators
+
+1. **Dynamic Sentence Generation** - AI combines user's words in sentences that NEVER repeat (not isolated flashcards)
+2. **FSRS-4.5 Algorithm** - 2023 ML-based spaced repetition, 36 years newer than most apps
+3. **Memory Context** - Record WHERE/WHEN you learned each phrase (encoding specificity)
+4. **European Portuguese** - pt-PT with proper spelling and "tu" forms (NOT Brazilian)
+
+### Target Users (Personas)
+
+- **Sofia** - Dutch designer in Lisbon, thinks "I'll remember" but doesn't → needs frictionless capture
+- **Ralf** - Goal-setter wanting "3 words/day, 1000/year" → needs gamification + structure
+- **Maria** - Abandoned Duolingo for wrong regional variant → needs correct EU Portuguese
+
+### Supported Language Pairs (MVP)
+
+| From | To |
+|------|-----|
+| English | Portuguese (Portugal) |
+| English | Swedish |
+| Dutch | English |
+
+### What LLYLI Does NOT Do (By Design)
+
+| Anti-Pattern | Why Avoided |
+|--------------|-------------|
+| Isolated word-pair flashcards | Artificial, impedes real-world recall |
+| Fixed intervals (1/3/7 days) | Doesn't adapt to individual forgetting |
+| Sentences > 10 words | Cognitive overload |
+| Repeated example sentences | Novelty loss kills engagement |
+| Brazilian Portuguese (pt-BR) | Primary users need European Portuguese |
+| Heavy currency/store systems | Distracts from learning |
+
+### Core Features
+
+| Feature | Key Details |
+|---------|-------------|
+| **Word Capture** | Auto-translate, auto-categorize (8 categories), TTS audio, optional memory context |
+| **Sentence Review** | Fill-blank, multiple choice, type translation - difficulty adapts to mastery |
+| **Mastery System** | 3 correct recalls on SEPARATE sessions (>2hrs apart) = "Ready to Use" |
+| **Notebook** | Browse by category, search, attention section for struggling words |
+| **Gamification** | Daily goal (10), streaks with freeze, 3x3 bingo, Boss Round |
+
+### FSRS Mastery Rule
+
+A word reaches "Ready to Use" after **3 correct recalls on 3 separate sessions**:
+- Sessions must be >2 hours apart (prevents cramming)
+- If answered wrong after mastery, counter resets to 0
+- This is the core learning mechanic - don't bypass it
+
+**Full specification:** See `PRODUCT_SPECIFICATION.md`
+
 ## Quick Reference
 
 ```bash
@@ -38,6 +105,188 @@ vercel logs <deployment-url> --since 5m
 - **AI:** OpenAI GPT-4o-mini (translation), OpenAI TTS (audio)
 - **Algorithm:** ts-fsrs v5.2.3 (FSRS-4.5 spaced repetition)
 - **iOS:** Capacitor (hybrid app wrapping web in native shell)
+
+## 🚨 MANDATORY: Code Change Protocol (NO EXCEPTIONS)
+
+Claude MUST follow this protocol for EVERY code change. Skipping steps is prohibited.
+
+### Before Writing Any Code
+
+Claude MUST announce in this format:
+
+```
+📋 CHANGE PLAN
+─────────────────────────────────────────────
+Files to change:
+  • path/to/file1.ts
+  • path/to/file2.tsx
+
+Change type: [bug fix / new feature / refactor / styling]
+
+Required tests:
+  ✓ Build (MANDATORY)
+  ✓ Unit tests (MANDATORY)
+  ✓ Integration test: [script name or N/A]
+  ✓ E2E verification: [YES - reason / NO]
+  ✓ Multi-language: [YES - reason / NO]
+
+Estimated impact: [low / medium / high]
+Risk level: [low / medium / high]
+
+Proceed? (waiting for confirmation)
+─────────────────────────────────────────────
+```
+
+**User must type "yes" or "proceed" before Claude writes code.**
+
+### While Writing Code
+
+Claude MUST use TodoWrite to track:
+1. Make code changes
+2. Run build
+3. Run unit tests
+4. [Run integration test if needed]
+5. [Run E2E verification if needed]
+6. [Run multi-language verification if needed]
+7. Update documentation
+
+Mark each todo as in_progress → completed as you go.
+
+### After Writing Code (MANDATORY VERIFICATION)
+
+Claude MUST run these commands and show results:
+
+**Step 1: Build**
+```bash
+cd web && npm run build
+```
+- If FAILS → Stop, fix, re-run. Do not proceed.
+- If PASSES → Continue to Step 2.
+
+**Step 2: Unit Tests**
+```bash
+cd web && npm run test:run
+```
+- If FAILS → Stop, fix, re-run. Do not proceed.
+- If PASSES → Continue to Step 3.
+
+**Step 3: Integration Tests (Conditional)**
+
+Run if you changed:
+- Schema → `npx tsx scripts/test-database.js`
+- Auth → `npx tsx scripts/test-supabase.js`
+- Translation/TTS → `npx tsx scripts/test-openai.js`
+- Major features → `npx tsx scripts/test-comprehensive.ts`
+- Gamification → `npx tsx scripts/test-gamification-api.ts`
+
+**Step 4: E2E Verification (Conditional)**
+
+REQUIRED if changed these paths:
+- `app/review/**` → Full review flow (5+ words)
+- `app/notebook/**` → Browse categories + word detail
+- `app/capture/**` → Capture in both languages
+- `app/today/**` → Dashboard metrics
+- `components/sentence/**` → Sentence generation
+- `lib/fsrs/**` → Verify scheduling
+- `stores/**` → Full flow using that store
+
+Use Playwright MCP:
+1. Navigate to production: https://llyli.vercel.app
+2. Sign in with appropriate test account
+3. Complete the FULL user flow
+4. Take browser_snapshot at each critical step
+5. Verify from USER PERSPECTIVE (not developer perspective)
+
+**Step 5: Multi-Language Verification (Conditional)**
+
+REQUIRED if changed:
+- Translation logic
+- Display logic (what text/language is shown)
+- Word picker/selector
+- Multiple choice options
+- Any component that shows native vs target language
+
+Test with ALL three accounts:
+- `test-en-pt@llyli.test` (EN→PT)
+- `test-en-sv@llyli.test` (EN→SV)
+- `test-nl-en@llyli.test` (NL→EN)
+
+Password: `TestPassword123!`
+
+Verify:
+- Correct language shown in each case
+- No language mixing in UI
+- Native language = language user understands
+- Target language = language user is learning
+
+### Completion Report (MANDATORY)
+
+Claude MUST show this report before saying "done":
+
+```
+✅ VERIFICATION COMPLETE
+─────────────────────────────────────────────
+Changed files:
+  • [list files]
+
+Tests run:
+  ✅ Build: PASSED
+  ✅ Unit tests: PASSED (X tests)
+  [✅/⏭️] Integration: [result or N/A]
+  [✅/⏭️] E2E: [result or N/A]
+  [✅/⏭️] Multi-language: [result or N/A]
+
+Bugs fixed: [bug ID from findings.md or N/A]
+
+Documentation updated:
+  [ ] findings.md [if bug fixed]
+  [ ] PROJECT_LOG.md [if significant change]
+  [ ] MVP_AUDIT.md [if feature completed]
+
+Status: READY FOR REVIEW
+─────────────────────────────────────────────
+```
+
+### Violation Handling
+
+If Claude skips any step:
+1. User should respond: "Run the mandatory tests"
+2. Claude MUST stop and run all required tests
+3. Claude MUST show the completion report
+
+If any test fails:
+1. Claude MUST stop immediately
+2. Claude MUST show the error clearly
+3. Claude MUST fix the issue
+4. Claude MUST re-run ALL tests from the start
+5. Only proceed when everything passes
+
+### Quick Reference Tables
+
+**What Requires E2E?**
+
+| Change Location | E2E Required? | Reason |
+|-----------------|---------------|--------|
+| `app/review/**` | ✅ YES | Critical user flow |
+| `app/notebook/**` | ✅ YES | Critical user flow |
+| `app/capture/**` | ✅ YES | Critical user flow |
+| `app/today/**` | ✅ YES | Dashboard accuracy |
+| `components/ui/**` | ⏭️ NO | UI components only |
+| `lib/fsrs/**` | ✅ YES | Algorithm correctness |
+| `stores/**` | ✅ YES | State management |
+| Styling only | ⏭️ NO | Visual changes |
+
+**What Requires Multi-Language?**
+
+| Change Type | Multi-Language? | Reason |
+|-------------|-----------------|--------|
+| Translation logic | ✅ YES | Language pairs |
+| Display text/language | ✅ YES | Language direction |
+| Word picker | ✅ YES | Native vs target |
+| Multiple choice | ✅ YES | Option language |
+| Review flashcards | ✅ YES | Card language |
+| Styling only | ⏭️ NO | No language impact |
+| FSRS scheduling | ⏭️ NO | Language-agnostic |
 
 ## Key Documentation
 
@@ -199,113 +448,16 @@ await db.update(table).set({ status }).where(inArray(table.id, ids));
 
 See `/docs/design/design-system.md` for full reference.
 
-## Testing (MANDATORY - NO EXCEPTIONS)
+## E2E Test Specs
 
-### The Rule: "It builds" is NOT "it works"
+Detailed E2E test cases for specific features:
 
-TypeScript catches type errors. It does NOT catch:
-- Wrong language displayed
-- Wrong data in UI
-- State synchronization bugs
-- Logic errors
+| Feature | Test File | When to Run |
+|---------|-----------|-------------|
+| Memory Context | `/docs/engineering/e2e-tests/memory-context.md` | Changes to capture, notebook, or memory fields |
+| Full App | `/docs/engineering/TESTING.md` | Major features, releases |
 
-**Every change requires BOTH automated AND manual verification.**
-
----
-
-### Step 1: Automated Tests (REQUIRED)
-
-```bash
-cd web
-npm run build          # Must pass
-npm run test:run       # Must pass
-```
-
----
-
-### Step 2: E2E Verification (REQUIRED - NOT OPTIONAL)
-
-**This is NOT optional. This is NOT "also run". This is REQUIRED.**
-
-For ANY change to these paths, you MUST complete E2E verification:
-- `app/review/**` - Sentence review, flashcards
-- `app/notebook/**` - Word browser, categories
-- `app/today/**` - Dashboard, due counts
-- `app/capture/**` - Phrase capture
-- `components/sentence/**` - Sentence generation
-- `lib/fsrs/**` - Spaced repetition
-- `stores/**` - State management
-
-**E2E Protocol:**
-1. `browser_navigate` to https://llyli.vercel.app
-2. Sign in with test account
-3. Complete the FULL user flow (not just the changed component)
-4. `browser_snapshot` at each step
-5. Verify from USER PERSPECTIVE (not developer perspective)
-
----
-
-### Step 3: Multi-Language Verification (REQUIRED for display logic)
-
-Any change that affects what text/language is shown MUST be tested with ALL language pairs:
-
-| Account | Direction | What to Verify |
-|---------|-----------|----------------|
-| `test-en-pt@llyli.test` | EN→PT | Native=English, Target=Portuguese |
-| `test-en-sv@llyli.test` | EN→SV | Native=English, Target=Swedish |
-| `test-nl-en@llyli.test` | NL→EN | Native=Dutch, Target=English |
-
-Password for all: `TestPassword123!`
-
-**Critical checks:**
-- Word picker shows NATIVE language (what user understands)
-- Flashcard front shows TARGET language (what user is learning)
-- Multiple choice options in NATIVE language
-- Highlighted word matches expected answer
-
----
-
-### Step 4: Semantic Verification (REQUIRED)
-
-Don't just check "does it render?" Check "does it show the RIGHT thing?"
-
-```typescript
-// ❌ BAD: Tests structure only
-expect(wordList).toHaveLength(10);
-expect(component).toBeInTheDocument();
-
-// ✅ GOOD: Tests meaning
-expect(displayedLanguage).toBe(user.nativeLanguage);
-expect(highlightedWord.id).toBe(expectedAnswer.id);
-expect(options).toContain(correctAnswer);
-```
-
----
-
-### Definition of "Fixed"
-
-A bug is NOT fixed until ALL of these are true:
-- [ ] Code change made
-- [ ] Unit test added that catches the bug
-- [ ] Build passes
-- [ ] E2E verification with Playwright MCP
-- [ ] Multi-language verification (if display-related)
-- [ ] Screenshots showing correct behavior
-- [ ] Behavior verified from USER perspective
-
----
-
-### Critical Bug Tracking
-
-**Active bugs:** See `findings.md`
-**MVP readiness:** See `MVP_AUDIT.md`
-
-Before claiming ANY feature works, verify against MVP_AUDIT.md checklist.
-
----
-
-### Integration Test Scripts
-
+**Integration Test Scripts:**
 ```bash
 cd web
 npx tsx scripts/test-database.js      # Database/schema changes
@@ -315,8 +467,6 @@ npx tsx scripts/test-comprehensive.ts # Major features
 ```
 
 **Reset test users:** `npx tsx scripts/create-test-users.ts`
-
-**📖 Full testing guide:** `/docs/engineering/TESTING.md`
 
 ## Session Workflow
 

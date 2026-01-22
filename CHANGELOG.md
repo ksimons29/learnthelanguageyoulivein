@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sentence pre-generation for starter words** - New utility (`lib/sentences/pre-generation.ts`) triggers background sentence generation after onboarding, ensuring users have practice sentences ready immediately
 - **Gamification automated tests** - 120+ new unit tests covering:
   - Bingo board winning conditions (rows, columns, diagonals)
   - Streak calculation logic

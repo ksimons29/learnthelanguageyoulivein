@@ -36,3 +36,4 @@ pnpm-lock.yaml
 
 # Test artifacts
 .playwright-mcp/
+.env*.local

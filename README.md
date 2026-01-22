@@ -1,26 +1,77 @@
 # LLYLI - Learn the Language You Live In
 
-A vocabulary app for language learners living abroad. Capture words from your daily life, get instant translations with native audio, and remember them forever with spaced repetition.
+> Turn real-life phrases into lasting memories through AI-powered sentence practice and scientifically-optimized spaced repetition.
 
 **Live:** https://llyli.vercel.app
 
-## Quick Start
+---
 
-```bash
-cd web
-npm install
-npm run dev     # localhost:3000
-```
+## The Problem
 
-## Features
+**75% of language learners save words but never review them.**
 
-- **Instant Capture** - Type any word, get translation + native audio in <2 seconds
-- **FSRS Algorithm** - Scientifically-proven spaced repetition (ts-fsrs)
-- **Dynamic Sentences** - Fresh example sentences every review
-- **3-Recall Mastery** - Words graduate after 3 correct recalls
-- **Daily Bingo** - Achievable daily challenges
-- **Boss Round** - 90-second speed challenge
-- **Admin Dashboard** - Platform analytics and product KPIs
+People living abroad encounter useful vocabulary daily - at the bakery, in meetings, on signs - but fail to retain it. Traditional apps require too much effort to create cards, show repetitive content, and use outdated algorithms.
+
+---
+
+## The Solution
+
+LLYLI is your **digital language notebook** that makes vocabulary stick:
+
+| Step | What Happens | Time |
+|------|--------------|------|
+| **Capture** | Type a word → get instant translation + native audio | 2 seconds |
+| **Practice** | AI creates unique sentences combining your words | 10 min/day |
+| **Master** | FSRS-4.5 algorithm schedules reviews at optimal timing | Automatic |
+
+---
+
+## Target Users
+
+**Sofia - The Immersed Professional**
+- Dutch designer in Lisbon, thinks "I'll remember" but doesn't
+- Needs: Frictionless capture + automatic review
+
+**Ralf - The Ambitious Goal-Setter**
+- Business developer wanting "3 words/day, 1000/year"
+- Needs: Gamification + progress tracking
+
+**Maria - The Frustrated App User**
+- Abandoned Duolingo for wrong regional variant
+- Needs: Correct EU Portuguese + real-life vocabulary
+
+---
+
+## Key Features
+
+### Dynamic Sentence Generation
+Most apps show isolated word pairs. LLYLI combines 2-4 of your words in AI-generated sentences that **never repeat**. Each review is fresh, building real-world recall.
+
+### FSRS-4.5 Spaced Repetition
+We use a 2023 machine learning-based algorithm - **36 years more advanced** than the algorithm in most apps. It adapts to your personal forgetting curve.
+
+### Memory Context
+Record WHERE and WHEN you learned each phrase. Research shows context-linked memories are stronger.
+
+### European Portuguese
+Unlike apps that teach Brazilian Portuguese, LLYLI enforces European Portuguese (pt-PT) with proper spelling and "tu" forms.
+
+### The 3-Session Mastery Rule
+A word reaches "Ready to Use" after **3 correct recalls on 3 separate sessions** (>2 hours apart). No cramming - real retention.
+
+---
+
+## What LLYLI Does NOT Do
+
+| Anti-Pattern | Why Avoided |
+|--------------|-------------|
+| Isolated word-pair flashcards | Artificial, impedes real-world recall |
+| Fixed intervals (1/3/7 days) | Doesn't adapt to individual forgetting |
+| Repeated example sentences | Novelty loss kills engagement |
+| Brazilian Portuguese | Primary users need European Portuguese |
+| Heavy currency/store systems | Distracts from learning |
+
+---
 
 ## The Science
 
@@ -30,21 +81,51 @@ LLYLI is built on peer-reviewed memory research, not guesswork.
 |-----------|-----------------|----------|
 | **Forgetting Curve** (1885) | Review timing catches you just as you start to forget | 64% → 87% retention after 3 reviews |
 | **FSRS Algorithm** (2023) | Modern ML-based scheduling, not 1987 math | 36 years newer than most apps |
-| **Optimal Sessions** | 5-15 min sessions, 25 word max, clear finish line | +11% retention from immediate feedback |
 | **Interleaved Practice** | Dynamic sentences combine 2-4 of your words | 4-6x faster acquisition |
 | **Encoding Specificity** | YOUR words from YOUR life, with context | r=0.5 novelty-learning correlation |
-| **3-Recall Mastery** | Words graduate after 3 correct recalls | Proven long-term retention |
+| **3-Recall Mastery** | Words graduate after 3 correct recalls across separate sessions | Proven long-term retention |
 
-**Full details:** [docs/product/science.md](docs/product/science.md) | **In-app:** [/science](https://llyli.vercel.app/science)
+**In-app science page:** [/science](https://llyli.vercel.app/science)
+
+---
 
 ## Supported Languages
 
 | From | To | Status |
 |------|-----|--------|
-| English | Portuguese (PT) | Active |
-| Dutch | Portuguese (PT) | Active |
-| Dutch | English | Active |
+| English | Portuguese (Portugal) | Active |
 | English | Swedish | Active |
+| Dutch | English | Active |
+
+---
+
+## Quick Start
+
+```bash
+# Clone and install
+git clone https://github.com/ksimons29/learnthelanguageyoulivein.git
+cd learnthelanguageyoulivein/web
+npm install
+
+# Configure environment
+cp .env.local.example .env.local
+# Edit .env.local with your credentials
+
+# Start development
+npm run dev     # localhost:3000
+```
+
+### Environment Variables
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+DATABASE_URL=your_postgres_connection_string
+OPENAI_API_KEY=your_openai_key
+```
+
+---
 
 ## Tech Stack
 
@@ -52,149 +133,168 @@ LLYLI is built on peer-reviewed memory research, not guesswork.
 |-------|------------|
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind |
 | Components | shadcn/ui + Moleskine design system |
+| State | Zustand (auth, words, review, gamification stores) |
 | Database | PostgreSQL (Supabase) + Drizzle ORM |
 | Auth | Supabase Auth |
-| AI | OpenAI GPT-4o-mini + TTS |
-| Algorithm | ts-fsrs v5.2.3 |
+| AI | OpenAI GPT-4o-mini (translation) + TTS (audio) |
+| Algorithm | ts-fsrs v5.2.3 (FSRS-4.5) |
 | Hosting | Vercel |
+| Mobile | Capacitor (iOS) |
+
+---
 
 ## Project Structure
 
 ```
-web/src/
-├── app/              # Pages: capture, review, notebook, progress, admin
-├── components/       # UI components by feature
-└── lib/
-    ├── db/schema/    # Drizzle schemas
-    ├── fsrs/         # FSRS implementation
-    ├── store/        # Zustand stores
-    └── supabase/     # Auth helpers
-
-docs/
-├── design/           # Moleskine design system
-├── engineering/      # Architecture, testing, iOS setup
-├── product/          # PRD, business model
-└── go-live/          # Launch preparation
+learnthelanguageyoulivein/
+├── web/                          # Next.js application
+│   ├── src/
+│   │   ├── app/                  # Pages: capture, review, notebook, progress, admin
+│   │   ├── components/           # UI components by feature
+│   │   └── lib/
+│   │       ├── db/schema/        # Drizzle schemas
+│   │       ├── fsrs/             # FSRS algorithm implementation
+│   │       ├── store/            # Zustand stores
+│   │       └── supabase/         # Auth helpers
+│   └── ios/                      # Capacitor iOS wrapper
+├── docs/
+│   ├── product/                  # PRD, user guide, executive summary
+│   ├── design/                   # Moleskine design system
+│   ├── engineering/              # Technical documentation
+│   └── go-live/                  # Launch preparation
+├── PRODUCT_SPECIFICATION.md      # Complete product spec
+└── .claude/CLAUDE.md             # AI assistant instructions
 ```
 
-## Admin Dashboard
+---
 
-**URL:** https://llyli.vercel.app/admin
+## Features Deep Dive
 
-**Authentication:** Secret-based via `ADMIN_SECRET` environment variable. Enter the secret on the login page to access.
+### Word Capture
+- Auto-translate in <3 seconds
+- Auto-categorize (8 categories: food, work, social, etc.)
+- Native TTS audio generation
+- Optional memory context (WHERE, WHEN, situation tags)
 
-**Refresh:** Data is fetched on-demand when you load the page or click "Refresh". No automatic polling.
+### Sentence Review
+- Fill-in-blank (medium difficulty)
+- Multiple choice (easiest)
+- Type translation (hardest)
+- Difficulty adapts to mastery level
 
-### Dashboard Sections
+### Notebook
+- Browse by category
+- Global search
+- Attention section (struggling words)
+- Mastery badges (Learning → Learned → Ready to Use)
 
-| Section | Metrics | Purpose |
-|---------|---------|---------|
-| **Product KPIs** | DAU, WAU, MAU, DAU/MAU stickiness, D1/D7/D30 retention, session completion rate | Track user engagement and retention |
-| **Mastery Funnel** | Learning → Learned → Ready to Use counts with conversion % | Monitor 3-recall progression |
-| **User Growth** | Total users, active (7d), new (7d/30d) | Track acquisition |
-| **Word Captures** | Total, today, last 7 days, mastery breakdown | Content engagement |
-| **Audio Health** | Success rate, with audio, pending, failed | Monitor TTS reliability |
-| **Review Sessions** | Total sessions, reviews, accuracy rate, avg words/session | Learning activity |
-| **Gamification** | Users with streaks, avg streak, max streak, 7+/30+ day streaks | Feature engagement |
-| **Language Pairs** | Source → Target distribution with word and user counts | Usage patterns |
-| **User Feedback** | Bug reports, feature requests, recent feedback (anonymous) | Product feedback |
+### Gamification
+- Daily goal: 10 reviews
+- Streaks with freeze protection
+- 3x3 Bingo board
+- Boss Round: 60-90s timed challenge with struggling words
 
-### API Access
+---
 
-```bash
-curl -H "x-admin-secret: YOUR_SECRET" https://llyli.vercel.app/api/admin/stats
-```
+## Design System
 
-### Technical Notes
+LLYLI uses a **Moleskine notebook** aesthetic:
 
-- Queries run sequentially (not parallel) to avoid Supabase connection pool limits
-- Feedback is displayed anonymously (no user IDs exposed)
-- Retention calculated from first word capture to last review session
+| Element | Color | Usage |
+|---------|-------|-------|
+| Surface | #F8F3E7 | Page backgrounds (cream) |
+| Cards | #FFFFFF | Card surfaces (white) |
+| Ribbon | #E85C4A | Primary CTA (coral) |
+| Nav | #0C6B70 | Navigation (teal) |
+
+**Design Rules:**
+- **Ribbon Rule:** Coral appears as ONE dominant element per screen
+- **Binding Rule:** Cards rounded on right, square on left
+- **Typography:** Serif headings (Libre Baskerville), sans-serif UI (Inter)
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [PRODUCT_SPECIFICATION.md](./PRODUCT_SPECIFICATION.md) | Complete product spec |
+| [docs/product/EXECUTIVE_SUMMARY.md](./docs/product/EXECUTIVE_SUMMARY.md) | One-page overview |
+| [docs/product/USER_GUIDE.md](./docs/product/USER_GUIDE.md) | End-user documentation |
+| [docs/product/prd.md](./docs/product/prd.md) | Product requirements |
+| [docs/design/design-system.md](./docs/design/design-system.md) | UI component specs |
+| [docs/engineering/implementation_plan.md](./docs/engineering/implementation_plan.md) | Technical architecture |
+| [docs/engineering/TESTING.md](./docs/engineering/TESTING.md) | Testing guide |
+| [docs/go-live/README.md](./docs/go-live/README.md) | Launch preparation |
+
+---
 
 ## Development
 
 ```bash
 cd web
+
 npm run dev          # Start dev server
-npm run build        # Build (required before deploy)
-npm run test:run     # Run tests
-npm run db:push      # Push schema changes
+npm run build        # Build for production
+npm run test:run     # Run unit tests
+npm run db:push      # Push schema changes (dev only)
+npm run db:studio    # Open Drizzle Studio
 ```
 
-### Deployment
+### Test Accounts
+
+| Account | Language Direction |
+|---------|-------------------|
+| test-en-pt@llyli.test | English → Portuguese |
+| test-en-sv@llyli.test | English → Swedish |
+| test-nl-en@llyli.test | Dutch → English |
+
+Password: `TestPassword123!`
+
+---
+
+## Deployment
 
 Auto-deploys to Vercel on push to `main`.
 
 ```bash
 cd web && vercel --prod     # Manual deploy
+vercel logs <url> --since 5m # Check logs
 ```
 
-## Key Docs
+---
 
-| Doc | Purpose |
-|-----|---------|
-| [Design System](docs/design/design-system.md) | Moleskine tokens & patterns |
-| [Testing Guide](docs/engineering/TESTING.md) | Test cases & accounts |
-| [Implementation Plan](docs/engineering/implementation_plan.md) | Architecture reference |
-| [Go-Live Prep](docs/go-live/GO_LIVE_PREPARATION.md) | Launch checklist |
+## Admin Dashboard
 
-## Recent Changes
+**URL:** https://llyli.vercel.app/admin
 
-### January 2026
-
-**Audio Reliability (v51)**
-- Fixed ~15% audio generation failure rate
-- Added retry logic with exponential backoff (3 retries for TTS, 2 for upload)
-- Fixed critical bug: TTS was using wrong language for bidirectional captures
-- Added 30s timeout, 500-char limit, rate limit detection
-- New retry button UI for failed audio recovery
-
-**Admin Dashboard (v51b)**
-- New `/admin` page with platform-wide analytics
+Requires `ADMIN_SECRET` environment variable. Metrics include:
 - Product KPIs: DAU/WAU/MAU, D1/D7/D30 retention
-- Mastery funnel visualization
+- Mastery funnel: Learning → Learned → Ready to Use
 - Audio health monitoring
-- Anonymous user feedback display
-
-**Gamification Testing (v50)**
-- 186+ automated tests for gamification logic
-- Work category starter words for all languages
-- Boss Round ready from day one with preset lapse counts
-
-**API Stability (v49)**
-- Fixed 5 API vulnerabilities causing 500 errors
-- Safe destructuring, empty array guards
-- OpenAI retry helper with exponential backoff
-- Race-safe insert pattern for gamification state
-
-**UX Bug Fixes (v48)**
-- Fixed duplicate multiple choice options
-- Better handling of untranslatable words (gezellig → "cozy togetherness")
-- PROJECT_LOG archiving system
-
-**Dark Mode (v47)**
-- Fixed 13 hardcoded colors breaking dark mode
-- Full E2E testing of all 3 test language pairs
-
-**Review System Overhaul (v45)**
-- Fixed unrealistic due counts (700+ → ~39)
-- Sentence mode now primary learning mode
-- Fixed mixed languages in multiple choice
-- Added active recall input (type before reveal)
-- 25 words max per session (FSRS best practice)
-
-**Self-Healing Data (v46)**
-- Auto-cleanup of orphaned sentences
-- Mastery progress explanation with link to /science
-
-## Status
-
-**Complete:** Auth, capture, translation, TTS, FSRS reviews, mastery tracking, notebook, onboarding, progress dashboard, gamification, multi-language, admin dashboard
-
-**In Progress:** PWA offline, iOS App Store submission
-
-**Planned:** Stripe payments
+- User feedback (anonymous)
 
 ---
+
+## Recent Highlights
+
+- **Audio Reliability** - Fixed ~15% failure rate with retry logic
+- **Admin Dashboard** - Platform-wide analytics
+- **Gamification** - 186+ automated tests, Boss Round ready day one
+- **Review System** - Realistic due counts, sentence-first learning
+- **Multi-Language** - Full support for EN→PT, EN→SV, NL→EN
+
+---
+
+## License
+
+Proprietary - All rights reserved.
+
+---
+
+<p align="center">
+  <strong>LLYLI - Learn the Language You Live In</strong><br/>
+  <em>Turn real-life phrases into lasting memories</em>
+</p>
 
 **Repository:** https://github.com/ksimons29/learnthelanguageyoulivein
