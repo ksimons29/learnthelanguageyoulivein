@@ -262,6 +262,67 @@ Expected
 
 * All tests pass
 
+### 4.2.1 Unit Test Coverage (293 tests)
+
+The test suite covers core business logic. Tests run automatically via GitHub Actions CI on every push to `main` and on pull requests.
+
+| Test File | Tests | What It Covers |
+|-----------|-------|----------------|
+| `gamification.test.ts` | 44 | Bingo board logic (rows, columns, diagonals), streak calculations, daily progress, consecutive correct tracking, Boss Round word selection, user persona scenarios (Sofia, Ralf, Maria), exercise type normalization |
+| `starter-vocabulary.test.ts` | 79 | Language coverage (pt-PT, sv, es, fr, de, nl), work/social category availability for bingo, Boss Round candidates (lapse counts), category distribution, translation coverage, word uniqueness |
+| `fsrs.test.ts` | 53 | FSRS-4.5 algorithm implementation, spaced repetition scheduling, mastery progression (3 correct sessions rule), interval calculations, stability/difficulty updates |
+| `categories.test.ts` | 26 | Category assignment logic, category validation, category mapping |
+| `distractors.test.ts` | 25 | Multiple choice option generation, shuffle algorithm, bidirectional capture handling, focus word selection, null safety for text helpers |
+| `shuffle.test.ts` | 19 | Fisher-Yates shuffle, priority band shuffling (overdue > due > new), review queue deduplication |
+| `categories-cognitive.test.ts` | 17 | Cognitive load balancing, category mixing in review sessions |
+| `exercise-type.test.ts` | 13 | Exercise type determination based on mastery level |
+| `sentence-card.test.tsx` | 9 | Sentence card component rendering, fill-in-blank display, answer validation |
+| `due-count.test.ts` | 8 | Due word calculation, new card limits, review scheduling |
+
+**Total: 293 tests**
+
+#### Key Test Categories
+
+**Gamification (44 tests)**
+- Bingo win detection: 8 winning patterns (3 rows, 3 columns, 2 diagonals)
+- Streak logic: increment, reset, freeze behavior
+- Daily progress: goal completion, exceeding targets
+- Boss Round: selects words by highest lapse count
+
+**FSRS Algorithm (53 tests)**
+- Core mastery rule: 3 correct recalls on SEPARATE sessions (>2hrs apart)
+- Wrong answer after mastery resets counter to 0
+- Same-session reviews don't count toward mastery
+- Stability and difficulty calculations match FSRS-4.5 spec
+
+**Starter Vocabulary (79 tests)**
+- All 6 languages have 10+ starter words
+- Each language has work + social category words (for bingo)
+- Boss Round candidates exist (words with lapse counts > 0)
+- No duplicate words within a language
+
+### 4.2.2 GitHub Actions CI Pipeline
+
+CI runs automatically on:
+- Every push to `main`
+- Every pull request targeting `main`
+
+**Pipeline steps:**
+1. **Lint** - ESLint checks (warnings allowed, errors block)
+2. **Build** - Next.js production build
+3. **Test** - Vitest unit tests (293 tests)
+
+**Configuration:** `.github/workflows/ci.yml`
+
+**Required secrets (configured in GitHub):**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DATABASE_URL`
+- `OPENAI_API_KEY`
+
+**Monitoring:** https://github.com/ksimons29/learnthelanguageyoulivein/actions
+
 ### 4.3 Integration test scripts (run when changing related systems)
 
 ```bash
