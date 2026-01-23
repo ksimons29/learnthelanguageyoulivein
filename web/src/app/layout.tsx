@@ -4,6 +4,7 @@ import "./globals.css";
 import { BottomNav, FloatingActionButton, FeedbackButton } from "@/components/navigation";
 import { AuthProvider, ThemeProvider } from "@/components/providers";
 import { OfflineIndicator } from "@/components/ui/offline-indicator";
+import { Toast } from "@/components/ui/toast";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -59,6 +60,9 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
+            {/* Global toast notifications */}
+            <Toast />
+
             {/* PWA: Offline status indicator */}
             <OfflineIndicator />
 
