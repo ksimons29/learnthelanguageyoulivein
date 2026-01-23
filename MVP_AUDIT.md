@@ -240,20 +240,21 @@ A feature step FAILS when:
 1. **Settings & Profile** - 4 untested steps (account deletion, language change)
 2. **Onboarding flow** - 5 untested steps (requires fresh user)
 3. **Audio offline caching** - PWA feature (post-MVP)
-4. **P1 #7a Distractor quality** - Enhancement (distractors are user vocab)
-5. **P2 #15 Duplicate capture** - Minor UX issue
+4. **P1 #7a Distractor quality** - Enhancement (GitHub #99, deferred post-MVP)
+5. ~~**P2 #15 Duplicate capture**~~ - ✅ Fixed (Session 76)
 
 ---
 
 ## Document Info
 - **Created:** 2026-01-21
-- **Last Updated:** 2026-01-23 (Session 76)
+- **Last Updated:** 2026-01-23 (Session 77)
 - **Purpose:** Comprehensive MVP readiness tracking
 - **Status:** MVP Ready - 69% verified, 0 blockers
 
 ### Update History
 | Session | Changes |
 |---------|---------|
+| 77 | Fixed P2 #15 (duplicate capture), created GitHub #99 for distractor quality (deferred post-MVP) |
 | 76 | Comprehensive E2E testing: 48/70 steps verified (69%), all critical flows pass |
 | 62 | Updated status for 10 fixed bugs, added Gamification flow, corrected summary |
 | 54 | Initial creation with 60 steps across 10 flows |
