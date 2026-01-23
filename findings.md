@@ -1186,9 +1186,9 @@ Full feature spec created at:
 
 ---
 
-## Finding #15: Duplicate Word Capture Allowed
+## ✅ FIXED: Finding #15: Duplicate Word Capture Allowed
 
-### Status: **P2 Enhancement** (Session 69)
+### Status: **FIXED** (Session 76 - 2026-01-23)
 
 ### Observed Behavior
 1. User captures "sorvete" with memory context
@@ -1201,12 +1201,41 @@ System should either:
 - Prevent duplicate capture with "Already in your notebook" message
 - Or merge with existing entry and update context
 
-### Impact
-- Minor UX issue - user may accidentally add duplicates
-- Not a blocker - delete functionality works to remove duplicates
-- Could be intentional for users wanting multiple contexts for same word
+### Fix Applied
+Changed `/api/words/route.ts` to block duplicate captures:
+- API returns 409 Conflict if word already exists in user's notebook
+- Error message: "Already in notebook" with existing word info
+- Check is case-insensitive using `ilike()` to catch "Café" vs "café"
+- Applies to ALL words (not just 24-hour window)
 
-### Priority: **P2 Enhancement** (Post-MVP)
+```typescript
+// Check for existing word (case-insensitive)
+const [existingWord] = await db
+  .select({ id, originalText, translation, createdAt })
+  .from(words)
+  .where(and(
+    eq(words.userId, user.id),
+    ilike(words.originalText, text.trim())
+  ))
+  .limit(1);
+
+if (existingWord) {
+  return NextResponse.json({
+    error: 'Already in notebook',
+    message: `"${existingWord.originalText}" is already in your notebook`,
+    existingWord: { id, originalText, translation },
+  }, { status: 409 });
+}
+```
+
+### Verification
+- ✅ Build passes
+- ✅ 302 unit tests pass
+- Client displays error via toast notification
+
+### Impact
+- Prevents accidental duplicate captures
+- Users who want multiple contexts for same word should edit existing entry instead
 
 ---
 
