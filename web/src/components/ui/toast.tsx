@@ -36,7 +36,7 @@ export function Toast() {
   };
 
   return (
-    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div
         className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-xl ${bgColors[toast.type]}`}
         style={{ maxWidth: "calc(100vw - 2rem)", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}
