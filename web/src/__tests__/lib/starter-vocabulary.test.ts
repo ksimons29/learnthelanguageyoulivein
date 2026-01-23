@@ -19,7 +19,8 @@ import {
  */
 
 describe('Starter Vocabulary', () => {
-  const supportedLanguages = ['pt-PT', 'sv', 'es', 'fr', 'de', 'nl'] as const;
+  // All target languages including English for NL→EN users
+  const supportedLanguages = ['pt-PT', 'sv', 'es', 'fr', 'de', 'nl', 'en'] as const;
 
   describe('Language coverage', () => {
     it.each(supportedLanguages)('has starter words for %s', (lang) => {
@@ -158,6 +159,32 @@ describe('Starter Vocabulary', () => {
 
       const deadline = workWords.find((w) => w.text.toLowerCase() === 'deadline');
       expect(deadline).toBeDefined();
+    });
+  });
+
+  describe('NL→EN language pair (Issue #97)', () => {
+    it('English target language has starter words for Dutch speakers', () => {
+      // This test would have caught Issue #97
+      // NL→EN users need English starter words with Dutch translations
+      const words = getStarterWords('en');
+      expect(words).toBeDefined();
+      expect(words!.length).toBeGreaterThanOrEqual(10);
+    });
+
+    it('English starter words have Dutch translations', () => {
+      const words = getStarterWords('en')!;
+      for (const word of words) {
+        expect(word.translations.nl).toBeDefined();
+        expect(word.translations.nl.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('FAILURE TEST: getStarterWords returns undefined for non-existent language', () => {
+      // This ensures we detect missing language support early
+      // If this test ever fails with a false positive, we may have added
+      // an incomplete language entry
+      expect(getStarterWords('xx')).toBeUndefined();
+      expect(getStarterWords('invalid')).toBeUndefined();
     });
   });
 

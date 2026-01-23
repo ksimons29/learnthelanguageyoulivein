@@ -31,7 +31,7 @@ export interface StarterWord {
   initialLapseCount?: number;
 }
 
-type TargetLanguage = 'pt-PT' | 'sv' | 'es' | 'fr' | 'de' | 'nl';
+type TargetLanguage = 'pt-PT' | 'sv' | 'es' | 'fr' | 'de' | 'nl' | 'en';
 
 export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
   'pt-PT': [
@@ -1003,6 +1003,169 @@ export const STARTER_VOCABULARY: Record<TargetLanguage, StarterWord[]> = {
         'pt-PT': 'Prazo',
       },
       initialLapseCount: 3,
+    },
+  ],
+
+  // English starter words for Dutch speakers learning English (NL→EN)
+  en: [
+    {
+      text: 'Good morning',
+      category: 'social',
+      translations: {
+        en: 'Good morning',
+        nl: 'Goedemorgen',
+        de: 'Guten Morgen',
+        fr: 'Bonjour',
+        sv: 'God morgon',
+        es: 'Buenos días',
+        'pt-PT': 'Bom dia',
+      },
+    },
+    {
+      text: 'Thank you',
+      category: 'social',
+      translations: {
+        en: 'Thank you',
+        nl: 'Dank je wel',
+        de: 'Danke',
+        fr: 'Merci',
+        sv: 'Tack',
+        es: 'Gracias',
+        'pt-PT': 'Obrigado',
+      },
+    },
+    {
+      text: 'The bill, please',
+      category: 'food_dining',
+      translations: {
+        en: 'The bill, please',
+        nl: 'De rekening, alstublieft',
+        de: 'Die Rechnung, bitte',
+        fr: "L'addition, s'il vous plaît",
+        sv: 'Notan, tack',
+        es: 'La cuenta, por favor',
+        'pt-PT': 'A conta, por favor',
+      },
+    },
+    {
+      text: 'A coffee',
+      category: 'food_dining',
+      translations: {
+        en: 'A coffee',
+        nl: 'Een koffie',
+        de: 'Ein Kaffee',
+        fr: 'Un café',
+        sv: 'En kaffe',
+        es: 'Un café',
+        'pt-PT': 'Um café',
+      },
+    },
+    {
+      text: 'Where is...?',
+      category: 'transport',
+      translations: {
+        en: 'Where is...?',
+        nl: 'Waar is...?',
+        de: 'Wo ist...?',
+        fr: 'Où est...?',
+        sv: 'Var ligger...?',
+        es: '¿Dónde está...?',
+        'pt-PT': 'Onde fica...?',
+      },
+    },
+    {
+      text: 'To the right',
+      category: 'transport',
+      translations: {
+        en: 'To the right',
+        nl: 'Naar rechts',
+        de: 'Nach rechts',
+        fr: 'À droite',
+        sv: 'Till höger',
+        es: 'A la derecha',
+        'pt-PT': 'À direita',
+      },
+    },
+    {
+      text: 'How much does it cost?',
+      category: 'shopping',
+      translations: {
+        en: 'How much does it cost?',
+        nl: 'Hoeveel kost het?',
+        de: 'Wie viel kostet es?',
+        fr: 'Combien ça coûte?',
+        sv: 'Hur mycket kostar det?',
+        es: '¿Cuánto cuesta?',
+        'pt-PT': 'Quanto custa?',
+      },
+    },
+    {
+      text: 'Excuse me',
+      category: 'social',
+      translations: {
+        en: 'Excuse me',
+        nl: 'Pardon',
+        de: 'Entschuldigung',
+        fr: 'Excusez-moi',
+        sv: 'Ursäkta',
+        es: 'Disculpe',
+        'pt-PT': 'Desculpe',
+      },
+    },
+    {
+      text: 'A glass of water',
+      category: 'food_dining',
+      translations: {
+        en: 'A glass of water',
+        nl: 'Een glas water',
+        de: 'Ein Glas Wasser',
+        fr: "Un verre d'eau",
+        sv: 'Ett glas vatten',
+        es: 'Un vaso de agua',
+        'pt-PT': 'Um copo de água',
+      },
+    },
+    {
+      text: 'Goodbye',
+      category: 'social',
+      translations: {
+        en: 'Goodbye',
+        nl: 'Tot ziens',
+        de: 'Auf Wiedersehen',
+        fr: 'Au revoir',
+        sv: 'Hej då',
+        es: 'Adiós',
+        'pt-PT': 'Adeus',
+      },
+    },
+    // Work category words for bingo squares
+    {
+      text: 'Meeting',
+      category: 'work',
+      translations: {
+        en: 'Meeting',
+        nl: 'Vergadering',
+        de: 'Besprechung',
+        fr: 'Réunion',
+        sv: 'Möte',
+        es: 'Reunión',
+        'pt-PT': 'Reunião',
+      },
+      initialLapseCount: 2, // Simulates a word user struggles with (Boss Round candidate)
+    },
+    {
+      text: 'Deadline',
+      category: 'work',
+      translations: {
+        en: 'Deadline',
+        nl: 'Deadline',
+        de: 'Frist',
+        fr: 'Délai',
+        sv: 'Deadline',
+        es: 'Plazo',
+        'pt-PT': 'Prazo',
+      },
+      initialLapseCount: 3, // Higher lapse = higher Boss Round priority
     },
   ],
 };
