@@ -21,6 +21,47 @@ Non goals
 
 ---
 
+## 0. Production-First Testing Philosophy
+
+**CRITICAL: Treat Vercel PRODUCTION as the source of truth, not localhost.**
+
+### Why Production First?
+
+- "Works on my machine" doesn't mean it works for users
+- Local dev mode (`npm run dev`) behaves differently than production
+- Environment variable differences can cause bugs
+- Edge caching and serverless behavior differs
+
+### Testing Priority Order
+
+1. **Production** (`https://llyli.vercel.app`) - Always verify here FIRST
+2. **Local Production Build** (`npm run start:prod`) - For debugging prod issues
+3. **Local Dev** (`npm run dev`) - Only for active development
+
+### Quick Commands
+
+```bash
+# Production-like local testing (USE THIS for bug verification)
+cd web && npm run start:prod
+# This runs: npm run build && npm run start
+
+# Check what's deployed to production
+vercel ls --prod
+vercel inspect <deployment-url>
+
+# Check production logs
+vercel logs https://llyli.vercel.app --since 30m
+```
+
+### Before Claiming "Fixed"
+
+1. Verify the fix on **production** (deployed)
+2. NOT just local dev
+3. NOT just "build passes"
+4. Take a screenshot or record the verification
+
+---
+
 ## 1. Environments
 
 You will test in three environments.
@@ -151,6 +192,14 @@ B Onboarding
    * Portuguese learner: target Portuguese, native English
    * Swedish learner: target Swedish, native English
    * English learner: target English, native Dutch
+
+3. Verify starter vocabulary was injected (12 words per language)
+   * Check Notebook shows correct journal title:
+     - Portuguese learner: "Your Portuguese Journal"
+     - Swedish learner: "Your Swedish Journal"
+     - English learner: "Your English Journal"
+   * Verify Work category exists with 2 phrases (for bingo squares)
+   * Verify words show correct language direction (target → native translation)
 
 C Capture in both directions (this is critical)
 
@@ -1826,3 +1875,63 @@ Before you call a release ready:
   * language direction correctness
   * offline sanity
   * iOS wrapper sanity if shipping iOS
+
+---
+
+## 12. Quick Regression Checklist (5-Minute Sanity)
+
+Run this BEFORE every deploy and AFTER every deploy to production.
+
+### Pre-Deploy Checklist
+
+```bash
+cd web
+npm run build                    # Must pass
+npm run test:run                 # All tests must pass
+npm run log:check                # PROJECT_LOG not too large
+```
+
+### Post-Deploy Verification (Production)
+
+Use Playwright MCP or manual browser testing on `https://llyli.vercel.app`:
+
+| Test | Steps | Expected |
+|------|-------|----------|
+| **Auth** | Sign in as `test-en-pt@llyli.test` | Redirects to Today page |
+| **Today Page** | Check "Review Due" count | Shows a number (not blank/error) |
+| **Capture** | Capture "obrigado" | Shows translation "thank you", audio button appears |
+| **Review** | Start review, answer one question | Feedback appears, can rate recall |
+| **Notebook** | Open notebook, check journal title | Shows "Your Portuguese Journal" |
+| **Progress** | Open progress page | Loads without 500 error |
+
+### Multi-Language Spot Check
+
+Test at least 2 of 3 language pairs:
+
+| Account | Target Lang | Quick Test |
+|---------|-------------|------------|
+| `test-en-pt@llyli.test` | Portuguese | Capture "café", see Portuguese audio |
+| `test-en-sv@llyli.test` | Swedish | Capture "tack", see Swedish audio |
+| `test-nl-en@llyli.test` | English | Capture "hello", see English audio |
+
+Password for all: `TestPassword123!`
+
+### Red Flags (Stop and Investigate)
+
+- [ ] 500 errors on any page
+- [ ] "All caught up" when user has due words
+- [ ] Wrong language shown (e.g., Dutch for Portuguese learner)
+- [ ] Review submission fails
+- [ ] Due count mismatch between pages
+- [ ] Console errors mentioning "undefined" or "null"
+
+### If Regression Found
+
+1. **Do NOT deploy more changes** until fixed
+2. Create GitHub issue immediately with:
+   - Production URL where bug occurs
+   - Exact steps to reproduce
+   - Expected vs actual behavior
+   - Console errors (if any)
+   - Screenshot
+3. Roll back if critical (Vercel: promote previous deployment)
