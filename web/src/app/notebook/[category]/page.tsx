@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Search, X, BookOpen, Inbox } from "lucide-react";
-import { useWordsStore } from "@/lib/store/words-store";
+import { useWordsStore, type WordWithSentence } from "@/lib/store/words-store";
 import { getCategoryConfig, INBOX_ICON } from "@/lib/config/categories";
 import {
   SearchBar,
@@ -11,7 +11,6 @@ import {
   WordDetailSheet,
   CategoryDetailSkeleton,
 } from "@/components/notebook";
-import type { Word } from "@/lib/db/schema";
 
 /**
  * CategoryDetailPage Component
@@ -27,7 +26,7 @@ export default function CategoryDetailPage() {
   const category = params.category as string;
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
+  const [selectedWord, setSelectedWord] = useState<WordWithSentence | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const { words, isLoading, error, fetchWords, setFilter } = useWordsStore();
@@ -41,9 +40,9 @@ export default function CategoryDetailPage() {
     : getCategoryConfig(category);
   const CategoryIcon = categoryConfig.icon;
 
-  // Fetch words for this category on mount
+  // Fetch words for this category on mount (with sentences for notebook display)
   const loadWords = useCallback(() => {
-    setFilter({ category, search: undefined });
+    setFilter({ category, search: undefined, includeSentences: true });
     fetchWords();
   }, [category, setFilter, fetchWords]);
 
@@ -61,8 +60,8 @@ export default function CategoryDetailPage() {
     );
   });
 
-  // Handle word click
-  const handleWordClick = (word: Word) => {
+  // Handle word click (for detail sheet)
+  const handleWordClick = (word: WordWithSentence) => {
     setSelectedWord(word);
     setSheetOpen(true);
   };
@@ -218,6 +217,8 @@ export default function CategoryDetailPage() {
               <WordCard
                 key={word.id}
                 word={word}
+                sentence={word.sentence}
+                expandable={true}
                 onClick={() => handleWordClick(word)}
               />
             ))}

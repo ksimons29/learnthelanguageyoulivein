@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
  *
  * List user's words with pagination and filtering.
  *
- * Query params: page, limit, category, masteryStatus, search
+ * Query params: page, limit, category, masteryStatus, search, includeSentences
  */
 export async function GET(request: NextRequest) {
   try {
@@ -347,6 +347,7 @@ export async function GET(request: NextRequest) {
     const masteryStatus = searchParams.get('masteryStatus');
     const search = searchParams.get('search');
     const excludeId = searchParams.get('excludeId');
+    const includeSentences = searchParams.get('includeSentences') === 'true';
 
     // 4. Build query with filters - filter by BOTH native and target language
     // This ensures only words from the user's configured language pair are included.
@@ -417,9 +418,53 @@ export async function GET(request: NextRequest) {
       .where(and(...conditions));
     const count = countResult[0]?.count ?? 0;
 
+    // 6. Optionally fetch one sentence per word for notebook display
+    let wordsWithSentences = userWords;
+    if (includeSentences && userWords.length > 0) {
+      const wordIds = userWords.map((w) => w.id);
+
+      // Get one sentence per word (most recently used, or unused if available)
+      // Using a subquery to get the first matching sentence for each word
+      const sentenceResults = await db
+        .select({
+          id: generatedSentences.id,
+          text: generatedSentences.text,
+          translation: generatedSentences.translation,
+          wordIds: generatedSentences.wordIds,
+        })
+        .from(generatedSentences)
+        .where(
+          and(
+            eq(generatedSentences.userId, user.id),
+            sql`${generatedSentences.wordIds} && ARRAY[${sql.join(wordIds.map(id => sql`${id}::uuid`), sql`, `)}]`
+          )
+        )
+        .orderBy(sql`${generatedSentences.usedAt} DESC NULLS FIRST`)
+        .limit(100); // Get enough sentences to cover all words
+
+      // Build a map of wordId -> first matching sentence
+      const wordSentenceMap = new Map<string, { text: string; translation: string | null }>();
+      for (const sentence of sentenceResults) {
+        for (const wordId of sentence.wordIds) {
+          if (!wordSentenceMap.has(wordId)) {
+            wordSentenceMap.set(wordId, {
+              text: sentence.text,
+              translation: sentence.translation,
+            });
+          }
+        }
+      }
+
+      // Attach sentence to each word
+      wordsWithSentences = userWords.map((word) => ({
+        ...word,
+        sentence: wordSentenceMap.get(word.id) || null,
+      }));
+    }
+
     return NextResponse.json({
       data: {
-        words: userWords,
+        words: wordsWithSentences,
         total: count,
         page,
         limit,

@@ -80,15 +80,27 @@ export interface CategoryStats {
   dueCount: number;
 }
 
+/** Sentence data attached to a word for notebook display */
+export interface WordSentence {
+  text: string;
+  translation: string | null;
+}
+
+/** Word with optional sentence for notebook display */
+export interface WordWithSentence extends Word {
+  sentence?: WordSentence | null;
+}
+
 interface WordsState {
   // State
-  words: Word[];
+  words: WordWithSentence[];
   isLoading: boolean;
   error: string | null;
   currentFilter: {
     category?: string;
     masteryStatus?: string;
     search?: string;
+    includeSentences?: boolean;
   };
 
   // Audio generation tracking
@@ -189,6 +201,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       if (currentFilter.category) params.set('category', currentFilter.category);
       if (currentFilter.masteryStatus) params.set('masteryStatus', currentFilter.masteryStatus);
       if (currentFilter.search) params.set('search', currentFilter.search);
+      if (currentFilter.includeSentences) params.set('includeSentences', 'true');
 
       const response = await fetch(`/api/words?${params.toString()}`);
       if (!response.ok) {

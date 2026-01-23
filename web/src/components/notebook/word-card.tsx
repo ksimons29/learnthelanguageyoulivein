@@ -47,6 +47,8 @@ interface WordCardProps {
   } | null;
   /** Whether the card is expandable (shows chevron and expanded content) */
   expandable?: boolean;
+  /** Whether to show sentence inline (always visible, for notebook) */
+  showSentenceInline?: boolean;
 }
 
 /**
@@ -64,6 +66,7 @@ export function WordCard({
   className,
   sentence,
   expandable = false,
+  showSentenceInline = false,
 }: WordCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { play, isPlaying, isLoading, currentUrl } = useAudioPlayer();
@@ -89,9 +92,9 @@ export function WordCard({
   };
 
   const handleCardClick = () => {
-    if (expandable) {
-      setIsExpanded(!isExpanded);
-    } else if (onClick) {
+    // When expandable, the chevron button handles expand/collapse.
+    // Card click always opens the detail sheet (if onClick provided).
+    if (onClick) {
       onClick();
     }
   };
@@ -201,6 +204,31 @@ export function WordCard({
           </button>
         )}
       </div>
+
+      {/* Inline sentence display (always visible when showSentenceInline is true) */}
+      {showSentenceInline && sentence && (
+        <div
+          className="px-4 pb-4 pt-0"
+          style={{ borderTop: "1px dashed var(--notebook-stitch)" }}
+        >
+          <div className="mt-3">
+            <p
+              className="text-sm italic"
+              style={{ color: "var(--text-body)" }}
+            >
+              &ldquo;{sentence.text}&rdquo;
+            </p>
+            {sentence.translation && (
+              <p
+                className="text-xs mt-1"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {sentence.translation}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Expanded content */}
       {expandable && isExpanded && (
