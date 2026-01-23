@@ -12,7 +12,9 @@ import { getStarterWords, getTranslation } from '../src/lib/data/starter-vocabul
  * This script:
  * 1. Creates/updates test user accounts in Supabase Auth
  * 2. Creates/updates user profiles with language preferences
- * 3. Deletes existing words for clean state
+ * 3. Deletes ALL existing data for clean state:
+ *    - Words, sentences, review sessions
+ *    - Gamification: daily progress, streaks, bingo, boss round history
  * 4. Injects ALL starter words (including work category) directly
  */
 
@@ -129,13 +131,61 @@ async function createTestUser(user: TestUser) {
     console.log(`  ✅ Profile created`);
   }
 
-  // Delete any existing words for clean test state
-  const deleted = await db`
+  // Delete ALL existing data for clean test state
+  // Order matters: delete dependent tables first
+
+  // 1. Delete generated sentences (references words via wordIds)
+  const deletedSentences = await db`
+    DELETE FROM generated_sentences WHERE user_id = ${userId}
+    RETURNING id
+  `;
+
+  // 2. Delete review sessions
+  const deletedSessions = await db`
+    DELETE FROM review_sessions WHERE user_id = ${userId}
+    RETURNING id
+  `;
+
+  // 3. Delete gamification data
+  const deletedDailyProgress = await db`
+    DELETE FROM daily_progress WHERE user_id = ${userId}
+    RETURNING id
+  `;
+
+  const deletedStreakState = await db`
+    DELETE FROM streak_state WHERE user_id = ${userId}
+    RETURNING id
+  `;
+
+  const deletedBingoState = await db`
+    DELETE FROM bingo_state WHERE user_id = ${userId}
+    RETURNING id
+  `;
+
+  const deletedBossRound = await db`
+    DELETE FROM boss_round_history WHERE user_id = ${userId}
+    RETURNING id
+  `;
+
+  // 4. Delete words (after sentences that reference them)
+  const deletedWords = await db`
     DELETE FROM words WHERE user_id = ${userId}
     RETURNING id
   `;
-  if (deleted.length > 0) {
-    console.log(`  🧹 Cleaned ${deleted.length} existing words`);
+
+  // Log cleanup summary
+  const cleanupCounts = [
+    deletedWords.length > 0 ? `${deletedWords.length} words` : null,
+    deletedSentences.length > 0 ? `${deletedSentences.length} sentences` : null,
+    deletedSessions.length > 0 ? `${deletedSessions.length} sessions` : null,
+    deletedDailyProgress.length > 0 ? `${deletedDailyProgress.length} daily_progress` : null,
+    deletedStreakState.length > 0 ? `${deletedStreakState.length} streak_state` : null,
+    deletedBingoState.length > 0 ? `${deletedBingoState.length} bingo_state` : null,
+    deletedBossRound.length > 0 ? `${deletedBossRound.length} boss_round` : null,
+  ].filter(Boolean);
+
+  if (cleanupCounts.length > 0) {
+    console.log(`  🧹 Cleaned: ${cleanupCounts.join(', ')}`);
   }
 
   // Inject starter words directly (including work category)

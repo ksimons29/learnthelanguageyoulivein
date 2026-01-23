@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Gamification Data Reset Fix** - Test user script now clears all gamification data (daily_progress, streaks, bingo, boss_round) (Session 75)
 - [x] **Sentence Pre-Generation for Starter Words** - Background sentence generation after starter word injection, Work category fix (Session 64)
 - [x] **Sentence Display in Word Detail** - SentenceHistory component shows practice sentences in Notebook word details (Session 61)
 - [x] **Memory Context E2E Tests** - 5 test cases verified, documentation created (Session 61)
@@ -77,6 +78,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #95 | Gamification data not reset with test users | Session 75 |
 | #77 | Progress 500 error | Session 67, `86523a0` |
 | #78 | Bingo squares not tracking | Session 66, `5e661fe` |
 
@@ -143,6 +145,46 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 75 - 2026-01-23 - Fix Gamification Data Reset (#95) + E2E Verification
+
+**Focus:** Fix test user reset script to clear gamification data, verify Finding #16 (multi-word fill-blank).
+
+**Issues Fixed:**
+- **#95** - Gamification data not reset with test users
+
+**Root Cause:**
+`create-test-users.ts` script deleted words but not gamification tables. Test accounts had stale gamification state (streaks, bingo progress, boss round history) from previous sessions.
+
+**Fix Applied:**
+Added DELETE statements for all gamification tables in `create-test-users.ts`:
+- `daily_progress` - Daily goal progress
+- `streak_state` - Streak info
+- `bingo_state` - Bingo board state
+- `boss_round_history` - Boss round history
+- `review_sessions` - Review session history
+- `generated_sentences` - Sentences (reference deleted words)
+
+**E2E Verification:**
+- ✅ Script cleans all gamification data (verified via DB query)
+- ✅ Test accounts reset: 0/10 daily goal, 0 streak, 0/9 bingo
+- ✅ Multi-word phrases work in word review: "Bom dia", "Um café", "A conta, por favor"
+- ✅ Sentence multiple-choice exercises work correctly
+- ✅ Finding #16 unit tests (9 tests) pass - multi-word blanking logic verified
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/scripts/create-test-users.ts` | Added gamification data cleanup |
+
+**Tests:**
+- ✅ Build passes
+- ✅ 302 unit tests pass
+- ✅ Script execution verified
+
+**Closes:** #95
+
+---
 
 ### Session 73 - 2026-01-22 - S5: Gamification Simulation Tests (#90)
 
