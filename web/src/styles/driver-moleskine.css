@@ -1,0 +1,404 @@
+/**
+ * Moleskine Theme for Driver.js Product Tours
+ *
+ * Design system integration:
+ * - Teal overlay (not black) for focus
+ * - Coral accent for primary actions (ribbon rule)
+ * - Cream paper background for popovers
+ * - Serif headings, sans-serif body
+ * - Rounded right, square left corners (binding rule)
+ *
+ * Dark mode: "Notebook by Candlelight"
+ * - Rich leather background
+ * - Brighter coral and teal accents
+ * - Warm cream text
+ */
+
+/* ======================
+   OVERLAY - Teal Focus
+   ====================== */
+
+.driver-overlay {
+  /* Light mode: Teal with transparency */
+  background: rgba(12, 107, 112, 0.75) !important;
+}
+
+.dark .driver-overlay {
+  /* Dark mode: Darker teal, slightly more opaque */
+  background: rgba(15, 70, 75, 0.85) !important;
+}
+
+/* ======================
+   HIGHLIGHT STAGE
+   ====================== */
+
+.driver-active-element {
+  /* Ensure highlighted element is above overlay */
+  z-index: 10001 !important;
+}
+
+/* ======================
+   POPOVER - Notebook Paper
+   ====================== */
+
+.driver-popover.moleskine-tour-popover {
+  /* Light mode: Cream paper */
+  background: #f8f3e7;
+
+  /* Teal border for notebook binding feel */
+  border: 2px solid #0c6b70;
+
+  /* Binding rule: square left, rounded right */
+  border-radius: 0 12px 12px 0;
+
+  /* Page shadow */
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 10px 20px rgba(0, 0, 0, 0.08);
+
+  /* Padding */
+  padding: 20px;
+
+  /* Max width for readability */
+  max-width: 340px;
+
+  /* Font */
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.dark .driver-popover.moleskine-tour-popover {
+  /* Dark mode: Warm paper in dim light */
+  background: #2d3035;
+
+  /* Brighter teal border */
+  border-color: #3db4bb;
+
+  /* Deeper shadow */
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ======================
+   POPOVER ARROW
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-arrow {
+  border: 2px solid #0c6b70;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-arrow {
+  border-color: #3db4bb;
+}
+
+/* Arrow fill matches popover background */
+.driver-popover.moleskine-tour-popover .driver-popover-arrow-side-top {
+  border-bottom-color: #f8f3e7;
+}
+
+.driver-popover.moleskine-tour-popover .driver-popover-arrow-side-bottom {
+  border-top-color: #f8f3e7;
+}
+
+.driver-popover.moleskine-tour-popover .driver-popover-arrow-side-left {
+  border-right-color: #f8f3e7;
+}
+
+.driver-popover.moleskine-tour-popover .driver-popover-arrow-side-right {
+  border-left-color: #f8f3e7;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-arrow-side-top {
+  border-bottom-color: #2d3035;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-arrow-side-bottom {
+  border-top-color: #2d3035;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-arrow-side-left {
+  border-right-color: #2d3035;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-arrow-side-right {
+  border-left-color: #2d3035;
+}
+
+/* ======================
+   TITLE - Serif Heading
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-title {
+  /* Serif font for notebook feel */
+  font-family:
+    "Libre Baskerville",
+    Georgia,
+    serif;
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+
+  /* Light mode: Ink black */
+  color: #1d262a;
+
+  /* Spacing */
+  margin-bottom: 8px;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-title {
+  /* Dark mode: Warm cream */
+  color: #f2ede4;
+}
+
+/* ======================
+   DESCRIPTION - Body Text
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-description {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+
+  /* Light mode: Soft ink */
+  color: #2d3436;
+
+  /* Spacing */
+  margin-bottom: 16px;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-description {
+  /* Dark mode: Soft taupe */
+  color: #d4cfc5;
+}
+
+/* ======================
+   PROGRESS INDICATOR
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-progress-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  /* Light mode: Muted */
+  color: #6c7275;
+
+  /* Spacing */
+  margin-bottom: 12px;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-progress-text {
+  /* Dark mode: Warmer muted */
+  color: #a09a90;
+}
+
+/* ======================
+   NAVIGATION BUTTONS
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-navigation-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Base button styles */
+.driver-popover.moleskine-tour-popover .driver-popover-prev-btn,
+.driver-popover.moleskine-tour-popover .driver-popover-next-btn {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 150ms ease;
+  cursor: pointer;
+  border: none;
+}
+
+/* Previous button - Ghost/Teal style */
+.driver-popover.moleskine-tour-popover .driver-popover-prev-btn {
+  /* Light mode */
+  background: transparent;
+  color: #0c6b70;
+  border: 1px solid #0c6b70;
+}
+
+.driver-popover.moleskine-tour-popover .driver-popover-prev-btn:hover {
+  background: #0c6b70;
+  color: #f8f3e7;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-prev-btn {
+  /* Dark mode */
+  background: transparent;
+  color: #3db4bb;
+  border: 1px solid #3db4bb;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-prev-btn:hover {
+  background: #3db4bb;
+  color: #1a1d20;
+}
+
+/* Next/Done button - Coral Ribbon accent */
+.driver-popover.moleskine-tour-popover .driver-popover-next-btn {
+  /* Light mode: Coral */
+  background: #e85c4a !important;
+  color: white !important;
+  border: none;
+}
+
+.driver-popover.moleskine-tour-popover .driver-popover-next-btn:hover {
+  background: #d94e3e !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(232, 92, 74, 0.3);
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-next-btn {
+  /* Dark mode: Brighter coral */
+  background: #f06b5b !important;
+  color: white !important;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-next-btn:hover {
+  background: #f7867a !important;
+  box-shadow: 0 2px 12px rgba(240, 107, 91, 0.4);
+}
+
+/* ======================
+   CLOSE BUTTON
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-close-btn {
+  /* Position in top right */
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  /* Size */
+  width: 28px;
+  height: 28px;
+  padding: 0;
+
+  /* Style */
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  /* Center the X */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Light mode */
+  color: #6c7275;
+}
+
+.driver-popover.moleskine-tour-popover .driver-popover-close-btn:hover {
+  background: rgba(12, 107, 112, 0.1);
+  color: #0c6b70;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-close-btn {
+  color: #a09a90;
+}
+
+.dark .driver-popover.moleskine-tour-popover .driver-popover-close-btn:hover {
+  background: rgba(61, 180, 187, 0.15);
+  color: #3db4bb;
+}
+
+/* ======================
+   FOOTER
+   ====================== */
+
+.driver-popover.moleskine-tour-popover .driver-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+/* ======================
+   MOBILE OPTIMIZATIONS
+   Touch-friendly sizing
+   ====================== */
+
+@media (max-width: 640px) {
+  .driver-popover.moleskine-tour-popover {
+    /* Full width on mobile with margins */
+    max-width: calc(100vw - 32px);
+    margin: 0 16px;
+  }
+
+  /* Larger touch targets */
+  .driver-popover.moleskine-tour-popover .driver-popover-prev-btn,
+  .driver-popover.moleskine-tour-popover .driver-popover-next-btn {
+    padding: 12px 20px;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .driver-popover.moleskine-tour-popover .driver-popover-close-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* ======================
+   ANIMATIONS
+   ====================== */
+
+.driver-popover.moleskine-tour-popover {
+  animation: popoverFadeIn 200ms ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ======================
+   ACCESSIBILITY
+   ====================== */
+
+/* Focus visible states */
+.driver-popover.moleskine-tour-popover .driver-popover-prev-btn:focus-visible,
+.driver-popover.moleskine-tour-popover .driver-popover-next-btn:focus-visible,
+.driver-popover.moleskine-tour-popover .driver-popover-close-btn:focus-visible {
+  outline: 2px solid #0c6b70;
+  outline-offset: 2px;
+}
+
+.dark
+  .driver-popover.moleskine-tour-popover
+  .driver-popover-prev-btn:focus-visible,
+.dark
+  .driver-popover.moleskine-tour-popover
+  .driver-popover-next-btn:focus-visible,
+.dark
+  .driver-popover.moleskine-tour-popover
+  .driver-popover-close-btn:focus-visible {
+  outline-color: #3db4bb;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .driver-popover.moleskine-tour-popover {
+    animation: none;
+  }
+
+  .driver-popover.moleskine-tour-popover .driver-popover-next-btn:hover {
+    transform: none;
+  }
+}
