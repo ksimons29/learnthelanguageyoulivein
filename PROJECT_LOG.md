@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **NL→EN Starter Vocabulary** - Dutch speakers learning English now receive 12 starter words during onboarding (Session 80, Issue #97)
 - [x] **API Usage Analytics Dashboard** - Full OpenAI cost tracking for translation, TTS, language detection, and sentence generation. Table + indexes created, all API calls instrumented (Session 78)
 - [x] **Duplicate Word Capture Prevention** - API returns 409 Conflict if word already in notebook, case-insensitive check (Session 77)
 - [x] **MVP E2E Testing Complete** - 48/70 steps verified (69%), all critical flows pass (Session 76-77)
@@ -39,6 +40,7 @@ npm run build             # Production build
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 
 ### In Progress
+- [ ] **Product Tours (Driver.js)** - Planned and broken into 12 issues (#102-#113). Blocked by #91. Start with infrastructure (#102) after bug fix. Track via #114.
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission
@@ -62,7 +64,7 @@ npm run build             # Production build
 | `docs/product/features/MEMORY_CONTEXT.md` | Memory Context feature documentation |
 | `web/src/lib/db/schema/user-feedback.ts` | User feedback schema for bug reports and feature requests |
 | `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
-| `web/src/lib/data/starter-vocabulary.ts` | Curated starter words for 6 target languages |
+| `web/src/lib/data/starter-vocabulary.ts` | Curated starter words for 7 target languages (pt-PT, sv, es, fr, de, nl, en) |
 | `web/src/app/api/onboarding/starter-words/route.ts` | API to inject starter words during onboarding |
 | `web/src/lib/store/gamification-store.ts` | Gamification state management |
 | `web/src/lib/db/schema/gamification.ts` | Daily progress, streaks, bingo tables |
@@ -73,14 +75,20 @@ npm run build             # Production build
 
 ## Open Bugs
 
+### Priority: Next Session
+| Issue | Description | Priority | Notes |
+|-------|-------------|----------|-------|
+| #91 | Report issue button for words in review | P1-High | **BLOCKING** product tours implementation |
+
 ### Under Investigation
 | Issue | Description | Status | Notes |
 |-------|-------------|--------|-------|
-| - | - | - | No bugs under investigation |
+| - | - | - | No other bugs under investigation |
 
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #97 | NL→EN has no starter vocabulary | Session 80, `2076213` |
 | #95 | Gamification data not reset with test users | Session 75 |
 | #77 | Progress 500 error | Session 67, `86523a0` |
 | #78 | Bingo squares not tracking | Session 66, `5e661fe` |
@@ -128,6 +136,14 @@ npm run build             # Production build
 - ~~#50~~ **P0-critical** - Fixed: E2E User Flow Verification - all 3 test users pass (Session 30)
 
 ## Open Feature Issues
+
+### Product Tours (Planned)
+| Issue | Feature | Priority | Status |
+|-------|---------|----------|--------|
+| #114 | **Master tracker** for product tours | P2-normal | ⬜ Blocked by #91 |
+| #102-#113 | Driver.js tours (12 issues) | P2-normal | ⬜ Ready after #91 |
+
+### Other Features
 | Issue | Feature | Priority |
 |-------|---------|----------|
 | #73 | Memory Context improvements (gamification, visual feedback) | P3-low |
@@ -148,6 +164,101 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 80 - 2026-01-23 - Fix NL→EN Starter Vocabulary (Issue #97)
+
+**Focus:** Production-first bug fix for Dutch speakers learning English who received no starter words.
+
+**Root Cause:** `TargetLanguage` type in `starter-vocabulary.ts` excluded `'en'`, so `getStarterWords('en')` returned `undefined`.
+
+**Tasks Completed:**
+1. ✅ Verified production gate (test-en-pt user: "Your Portuguese Journal" ✓)
+2. ✅ Confirmed bug: `TargetLanguage` type missing `'en'`
+3. ✅ Added 12 English starter words with Dutch translations
+4. ✅ Added `'en'` to test suite `supportedLanguages` array
+5. ✅ Added 3 regression tests for Issue #97
+6. ✅ E2E verified: test-nl-en shows "Your English Journal" + Work category
+7. ✅ Updated TESTING.md with starter vocabulary verification steps
+
+**Files Changed:**
+| File | Change |
+|------|--------|
+| `web/src/lib/data/starter-vocabulary.ts` | Added `'en'` to type, added 12 English words |
+| `web/src/__tests__/lib/starter-vocabulary.test.ts` | Added English to test coverage (+15 tests) |
+| `docs/engineering/TESTING.md` | Added starter vocabulary verification steps |
+
+**Test Results:**
+- Build: ✅ PASSED
+- Unit tests: ✅ 317 passing (was 302)
+- E2E: ✅ NL→EN user verified on production
+
+**Commits:**
+- `2076213` - fix(#97): add English starter vocabulary for NL→EN users
+- `faca944` - docs: add starter vocabulary verification to testing guide
+
+**Issues Closed:** #97
+
+---
+
+### Session 79 - 2026-01-23 - Product Tours Planning & Issue Breakdown
+
+**Focus:** Plan Driver.js product tour implementation to address Issue #93 (UX-04: App explanation/intro section).
+
+**Tasks Completed:**
+1. ✅ Analyzed PRD, MVP audit, existing onboarding flow, and design system
+2. ✅ Evaluated Driver.js vs alternatives (Shepherd.js, Intro.js, Reactour)
+3. ✅ Created comprehensive technical specification in Issue #101
+4. ✅ Broke down epic into 12 focused, Claude-optimized issues (#102-#113)
+5. ✅ Created master tracker issue (#114) with progress dashboard
+6. ✅ Closed epic #101 with breakdown comment linking to all sub-issues
+
+**Issues Created:**
+| Issue | Title | Time | Phase |
+|-------|-------|------|-------|
+| #102 | Setup Driver.js core infrastructure | 1h | Infrastructure |
+| #103 | Add database schema | 30m | Infrastructure |
+| #104 | Create API routes | 45m | Infrastructure |
+| #105 | Create React hook | 45m | Infrastructure |
+| #106 | Today Dashboard tour | 1h | Tours |
+| #107 | Capture tour | 45m | Tours |
+| #108 | Review tour | 1h | Tours |
+| #109 | Notebook tour | 45m | Tours |
+| #110 | Progress tour | 30m | Tours |
+| #111 | Feedback widget integration | 1h | Integration |
+| #112 | E2E testing | 2h | QA |
+| #113 | Documentation updates | 30m | QA |
+| #114 | Master tracker | - | Meta |
+
+**Decision Rationale:**
+- **Driver.js selected** over alternatives for: 5KB size, mobile-first design, Moleskine customization, MIT license
+- **Feedback widget integration** instead of separate help button for cleaner UX
+- **Progressive disclosure** strategy - tours appear as users explore, not all at once
+- **Basics only** approach - core loop explanation, skip advanced features
+
+**Implementation Strategy:**
+- Phase 1 (Infrastructure): #102-#105 sequential (3 hours)
+- Phase 2 (Tours): #106-#110 parallel (4 hours, can run simultaneously)
+- Phase 3 (Integration): #111 (1 hour)
+- Phase 4 (QA): #112-#113 sequential (2.5 hours)
+- **Total:** ~10.5 hours
+
+**Blocking Issue:**
+- Issue #91 must be fixed first (P1-High: Report issue button for words in review)
+
+**Next Steps:**
+1. Close this session
+2. Start next session with Issue #91
+3. After #91 fixed, proceed with tours starting at #102
+4. Track progress using GitHub issues and #114 master tracker
+
+**Files Created:**
+- None (planning only - no code written this session)
+
+**Related Issues:**
+- Addresses #93 (UX-04: App explanation/intro section)
+- Supersedes #101 (original epic, closed in favor of breakdown)
+
+---
 
 ### Session 78 - 2026-01-23 - API Usage Analytics Dashboard
 
@@ -395,43 +506,6 @@ Word detail shows:
 
 ---
 
-## Next Session Instructions
-
-### MVP Test Status Summary
-| Section | Status | Tests |
-|---------|--------|-------|
-| S2: Auth & Onboarding | ✅ | 12/12 pass |
-| S3: Capture & Notebook | ✅ | 20/22 pass |
-| S4: Review & Dashboard | ✅ | 13/16 pass |
-| S5: Gamification Simulation | ✅ | 30/30 pass |
-| S6: FSRS Scientific | ✅ | 53 unit + 16 sim |
-| S7: Multi-Language | ✅ | 14/15 pass |
-
-### What to Work On Next
-
-**Priority 1: Boss Round UI Tests (E2E)**
-The simulation tests verify database logic, but these need browser interaction:
-- Timer countdown (90 seconds)
-- Reveal/Rate flow
-- Score display after completion
-
-**Priority 2: Known Issues**
-- C-06: Situation tags persistence (may not save)
-- C-10: Duplicate words not prevented
-
-**Priority 3: MVP Launch Checklist**
-1. Run full `MVP_AUDIT.md` checklist
-2. Verify all 70 feature steps
-3. Create release notes
-
-### Start Next Session With
-```
-/clear
-```
-Then: "Continue MVP testing. Check MVP_LAUNCH_TEST_PLAN.md for status. Priority: Boss Round E2E tests."
-
----
-
 ### Session 72 - 2026-01-22 - S6: FSRS Scientific Verification Tests
 
 **Focus:** Create comprehensive tests for FSRS-4.5 spaced repetition algorithm - the scientific foundation of LLYLI.
@@ -594,1191 +668,4 @@ blankedWord.toLowerCase().split(' ').some(
 
 ---
 
-### Session 67 - 2026-01-22 - Progress Page 500 Error Fix (#77)
-
-**Focus:** Fix `/api/progress` endpoint returning 500 error due to PostgreSQL `date()` function incompatibility.
-
-**Root Cause:**
-When using Drizzle ORM's `sql` template literal with PostgreSQL functions:
-- `sql`date(${words.nextReviewDate})`` → Drizzle binds as `date($6)` parameter
-- PostgreSQL's `date()` function cannot accept parameterized column references
-- Query fails with type/binding error
-
-**Fix Applied:**
-Use `sql.raw()` for column names inside PostgreSQL `date()` function:
-```typescript
-// BEFORE (broken):
-date: sql<string>`date(${words.nextReviewDate})`
-
-// AFTER (fixed):
-date: sql<string>`date(${sql.raw('next_review_date')})`
-```
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/app/api/progress/route.ts` | Use sql.raw() for column names in date() calls |
-
-Three queries fixed:
-- Streak calculation: `date(ended_at)`
-- Forecast data: `date(next_review_date)`
-- Activity heatmap: `date(ended_at)`
-
-**Verification:**
-- ✅ Build passes
-- ✅ 231 unit tests pass
-- ✅ E2E: EN→PT test user - Progress page loads correctly
-- ✅ E2E: EN→SV test user - Progress page loads correctly
-- ✅ E2E: NL→EN test user - Progress page loads correctly
-
-**Commit:** `86523a0` - fix(api): resolve PostgreSQL date() function error in progress endpoint (#77)
-
----
-
-### Session 66 - 2026-01-22 - Bingo Bug Fix: Exercise Type Format Mismatch (#78)
-
-**Focus:** Fix bingo squares not tracking despite reviews being counted.
-
-**Bug Analysis:**
-User `db367e9d` had 18 completed reviews but bingo showed 0/9 squares. Database query confirmed:
-- `daily_progress.completed_reviews = 18` ✓
-- `bingo_state.squares_completed = []` ✗ (empty!)
-
-**Root Cause:**
-Exercise type format mismatch between client and API:
-- Client sends: `'fill_blank'` (underscore)
-- API expected: `'fill-blank'` (hyphen)
-
-The comparison `data.exerciseType === 'fill-blank'` never matched `'fill_blank'`, so `fillBlank` and `multipleChoice` squares were never tracked.
-
-**Fix Applied:**
-Normalize exerciseType by replacing underscores with hyphens before comparison:
-```typescript
-const normalizedExerciseType = data.exerciseType?.replace(/_/g, '-');
-```
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/app/api/gamification/event/route.ts` | Normalize exerciseType format before comparison |
-| `web/src/__tests__/lib/gamification.test.ts` | Added 3 tests for exercise type normalization |
-
-**Verification:**
-- ✅ Build passes
-- ✅ 231 unit tests pass (3 new)
-- ✅ Pre-commit hook passes
-- ✅ Production deployment verified
-- ✅ E2E verified: `squaresCompleted` went from `[]` to `["review5", "socialWord"]` after fix
-
-**Commit:** `5e661fe` - fix(gamification): normalize exercise type format for bingo tracking (#78)
-
----
-
-### Session 65 - 2026-01-22 - Infrastructure Fix: Database Connection & Env Vars
-
-**Focus:** Fix critical production infrastructure issues blocking all API endpoints.
-
-**Root Cause Analysis:**
-All API endpoints returned 500 errors with "password authentication failed for user postgres". Investigation revealed:
-
-1. **Wrong DATABASE_URL pooler endpoint**:
-   - ❌ Old: `aws-0-eu-west-1.pooler.supabase.com:6543` (Transaction pooler)
-   - ✅ Correct: `aws-1-eu-west-1.pooler.supabase.com:5432` (Session pooler)
-
-2. **Supabase JWT keys needed updating**: Keys were in old format, updated to legacy JWT format
-
-**Environment Variables Fixed:**
-
-| Variable | Status | Notes |
-|----------|--------|-------|
-| `DATABASE_URL` | ✅ Fixed | Changed pooler endpoint from aws-0:6543 to aws-1:5432 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Fixed | Updated to legacy JWT format |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Fixed | Updated to legacy JWT format |
-| `OPENAI_API_KEY` | ✅ Verified | Was already correct |
-| `NEXT_PUBLIC_APP_URL` | ✅ Fixed | Changed from web-eta-gold to llyli.vercel.app |
-
-**Cleanup Performed:**
-- Deleted duplicate "web" Vercel project (only "llyli" project remains)
-- Deleted `web/.vercel/project.json` that was linked to wrong project
-- Added reflection learning about folder vs project naming confusion
-
-**E2E Verification:**
-- ✅ Sign in works (test-en-sv@llyli.test)
-- ✅ Onboarding flow completes
-- ✅ Word capture works (hej→hi, tack→thank you, god morgon→good morning)
-- ✅ Today dashboard shows correct data (15 phrases ready for review)
-- ✅ Build passes, 228 unit tests pass
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/.env.local` | Fixed DATABASE_URL and Supabase keys |
-| `web/.vercel/` | DELETED (was linked to wrong project) |
-| Vercel env vars | All 7 production vars verified/updated |
-
-**Key Learning:** Supabase has multiple pooler instances (`aws-0`, `aws-1`, etc.) with different endpoints. The password only works with the correct pooler endpoint. Always use the exact connection string from Supabase Dashboard → Project Settings → Database.
-
----
-
-### Session 64 - 2026-01-22 - Sentence Pre-Generation & Vercel Fix (#13, #14)
-
-**Focus:** Fix starter word sentence pre-generation and resolve production deployment issues.
-
-**Issues Fixed:**
-- **Finding #13** - Work category starter words (Reunião, Prazo) now correctly injected
-- **Finding #14** - Sentence pre-generation now runs after starter word injection
-
-**Production Issue Resolved:**
-- Corrupted Vercel env vars (`y\n` prefix on SUPABASE keys) caused "Invalid value" fetch error
-- Fixed by removing/re-adding env vars with `printf` to avoid newlines
-- Required manual promotion to llyli.vercel.app alias
-
-**Implementation:**
-1. Created `lib/sentences/pre-generation.ts` - reusable utility for background sentence generation
-2. Added `triggerSentencePreGeneration()` call to starter-words route (fire-and-forget)
-3. Updated `create-test-users.ts` script to inject all 12 starter words including Work category
-
-**E2E Verification:**
-- ✅ Work category visible with Prazo (Deadline) and Reunião (Meeting)
-- ✅ 12 starter words correctly injected for test accounts
-- ✅ Build passes, 228 unit tests pass
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/lib/sentences/pre-generation.ts` | NEW: Shared pre-generation utility |
-| `web/src/lib/sentences/index.ts` | Export triggerSentencePreGeneration |
-| `web/src/app/api/onboarding/starter-words/route.ts` | Call sentence pre-generation |
-| `web/scripts/create-test-users.ts` | Inject all 12 starter words |
-| `findings.md` | Updated #13, #14 status |
-
----
-
-### Session 63 - 2026-01-21 - Onboarding Capture UX Improvement (#74)
-
-**Focus:** Improve onboarding capture step UX to make 3-word minimum clearer and encourage adding more words.
-
-**Problem Identified:**
-- 4 fixed progress dots suggested users MUST add exactly 4 words (confusing)
-- Single "Continue" button after reaching minimum rushed users out
-- No encouragement to add more words beyond the minimum
-
-**Solution Implemented:**
-1. **Dynamic counter** replaces fixed dots: "0 of 3 minimum" → "5 words added ✓"
-2. **Dual buttons** after minimum reached: "Add more" + "I'm done →"
-3. **Encouragement message**: "The more you add, the better your practice sessions!"
-4. **"Add more" focuses input** for quick continuation
-
-**Testing:**
-- ✅ Build passes
-- ✅ 228 unit tests pass
-- ✅ E2E tested on production (all 3 MVP language pairs):
-
-| Account | Direction | Words Tested | Translations | Result |
-|---------|-----------|--------------|--------------|--------|
-| test-en-pt@llyli.test | EN→PT | olá, obrigado, café | hello, thank you, coffee | ✅ PASS |
-| test-en-sv@llyli.test | EN→SV | hej, tack, fika | hi, thank you, coffee break | ✅ PASS |
-| test-nl-en@llyli.test | NL→EN | breakfast, meeting, schedule | ontbijt, vergadering, schema | ✅ PASS |
-
-- Counter shows "X of 3 minimum" before threshold
-- Counter shows "X words added ✓" after threshold (teal background)
-- Dual buttons appear after 3 words
-- "Add more" focuses input field
-- "I'm done" navigates to /onboarding/complete
-
-**Also Documented:**
-- `docs/product/features/EXAMPLE_SENTENCE_AT_CAPTURE.md` - Future feature: show example sentence per word card
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/app/onboarding/capture/page.tsx` | New UX with dynamic counter and dual buttons |
-| `docs/product/features/EXAMPLE_SENTENCE_AT_CAPTURE.md` | Feature spec for future implementation |
-
-**GitHub:** Issue #74 created with full test scenarios for Claude
-
----
-
-### Session 62 - 2026-01-21 - Project Status Audit & Documentation Update
-
-**Focus:** Audit project status, update MVP_AUDIT.md, close resolved issues, prepare for next work.
-
-**GitHub Issue Updates:**
-- Closed #71 (Memory Context E2E Tests) - completed in Session 61
-- Verified #44 (Progress API 500) - already fixed in Session 20
-
-**MVP_AUDIT.md Major Update:**
-- Updated 10 bug findings to reflect FIXED status (Sessions 54-61)
-- Added Flow 11: Gamification System (10 new verification steps)
-- Corrected summary: 10 passing, 0 failing, 1 known P2 issue, 59 untested
-- Added blocking issues resolution table
-
-**Current State:**
-- **0 open bugs** - All P0 blockers resolved
-- **228 unit tests passing**
-- **70 MVP feature steps** (10 pass, 59 untested)
-- **Gamification ready** for E2E testing (#59)
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `MVP_AUDIT.md` | Updated status for 10 fixed bugs, added gamification flow |
-| `PROJECT_LOG.md` | Updated Open Bugs section, added Session 62 |
-
-**Next Priority Options:**
-1. #59 - Gamification E2E Testing
-2. #67 - Word selection limit (quick win)
-3. #23 - iOS App Store submission
-
----
-
-### Session 61 - 2026-01-21 - Memory Context E2E & Sentence Display Feature (Issues #70, #71)
-
-**Focus:** Run Memory Context E2E tests, implement Sentence Display in Word Detail feature.
-
-**Memory Context E2E Tests (Issue #71):**
-All 5 test cases executed:
-- ✅ TC1: Capture with full context (location, tags, note) - PASS
-- ✅ TC2: Display in Word Detail - Memory section shows location, tags, note
-- ✅ TC3: Capture without context - Auto `time_of_day` triggers context section (expected)
-- ⚠️ TC4: Memory hint in review - Code exists, needs words with context in queue
-- ✅ TC5: Tag limit (max 3) - PASS, 4th click ignored
-
-**Sentence Display Feature (Issue #70):**
-New feature: Show practice sentences in Word Detail sheet.
-- Created `SentenceHistory` component with teal left border Moleskine styling
-- Created `/api/words/[id]/sentences` endpoint with PostgreSQL array contains query
-- Integrated into `word-detail-sheet.tsx` below Memory Context section
-- When no sentences exist, section hidden (cleaner UX)
-
-**Documentation Created:**
-- `/docs/product/features/MEMORY_CONTEXT.md` - Full feature documentation
-- `/docs/product/features/SENTENCE_DISPLAY_WORD_DETAIL.md` - Feature spec (marked IMPLEMENTED)
-- `/docs/engineering/e2e-tests/memory-context.md` - E2E test specification
-- GitHub Issue #73 - Memory Context improvements (gamification integration, etc.)
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/components/notebook/sentence-history.tsx` | **NEW** - Sentence display component |
-| `web/src/app/api/words/[id]/sentences/route.ts` | **NEW** - Sentences API endpoint |
-| `web/src/components/notebook/word-detail-sheet.tsx` | Import + integrate SentenceHistory |
-| `docs/product/features/MEMORY_CONTEXT.md` | **NEW** - Feature documentation |
-| `docs/product/features/SENTENCE_DISPLAY_WORD_DETAIL.md` | **NEW** - Feature spec |
-| `docs/engineering/e2e-tests/memory-context.md` | **NEW** - E2E test spec |
-
-**Tests:**
-- ✅ Build passes
-- ✅ 228 unit tests pass
-- ✅ E2E verified: API returns `{ sentences: [] }` for words without practice history
-
-**Closes:** #70, #71
-
----
-
-### Session 60 - 2026-01-21 - Inbox Fix & Bug Verification (Issues #65, #66)
-
-**Focus:** Fix P1 bugs blocking MVP - Notebook Inbox and Captured Today persistence.
-
-**Investigation Findings:**
-- #65 (Captured Today): E2E testing showed this is actually working correctly. Captured words persist after navigation. The original report may have been a one-time issue or was fixed incidentally.
-- #66 (Notebook Inbox): Root cause found - `/notebook/inbox` route passes "inbox" as category, but "inbox" isn't a real DB category. The API was filtering by `category='inbox'` which returned 0 results.
-
-**Solution for #66:**
-1. Added special handling in GET `/api/words` for `category=inbox`
-2. When inbox requested, filter by: `reviewCount=0 AND createdAt >= 24 hours ago`
-3. Updated `[category]/page.tsx` to show "Inbox" label with correct icon
-
-**Files Changed:**
-- `web/src/app/api/words/route.ts` - inbox filter logic
-- `web/src/app/notebook/[category]/page.tsx` - inbox label/icon
-
-**E2E Verification:**
-- ✅ Inbox page shows 6 phrases correctly
-- ✅ All items display with "New" badge
-- ✅ Title shows "Inbox" (not "Other")
-- ✅ No 500 errors
-
-**Commit:** ffef140 - fix(notebook): handle inbox as special category in word fetching (#66)
-
----
-
-### Session 59 - 2026-01-21 - Review Queue Shuffle Fix (Issue #64)
-
-**Focus:** Fix P1 bug where review queue had no shuffling, making word order predictable.
-
-**Investigation Findings:**
-1. **No true duplicates** - Database primary keys prevent duplicate word IDs
-2. **Perceived duplicates** - Same word appearing in multiple sentences back-to-back
-3. **No shuffling** - Words sorted strictly by `nextReviewDate` (most overdue first)
-
-**What Was Fixed:**
-Added "priority band shuffling" that maintains FSRS priority while adding variety:
-1. Words are grouped into priority bands: **overdue** (>7 days past due), **due** (past due), **new** (never reviewed)
-2. Each band is shuffled using Fisher-Yates algorithm
-3. Bands are concatenated in priority order: overdue → due → new
-
-This ensures overdue words still appear first (FSRS compliance) while preventing users from memorizing word positions.
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/lib/review/shuffle.ts` | **NEW** - Fisher-Yates shuffle, priority band logic |
-| `web/src/app/api/reviews/route.ts` | Import shuffle, replace sort with shuffleWithinPriorityBands |
-| `web/src/__tests__/lib/shuffle.test.ts` | **NEW** - 19 tests for shuffle utilities |
-| `findings.md` | Updated Finding #3, #3a status to FIXED |
-
-**Tests:**
-- Added 19 new tests for shuffle utilities
-- All 228 tests pass
-- Build passes
-
-**E2E Verification:**
-- ✅ Local dev server: Review page loads, shows 5 words
-- ✅ Review session starts successfully with shuffled queue
-
-**Closes:** #64
-
----
-
-### Session 58 - 2026-01-21 - Crash on Close Review Fix (Issue #69)
-
-**Focus:** Fix P0 Critical crash when user clicks "Close review" mid-session.
-
-**Root Cause Identified:**
-1. **Null guard missing in text helpers:** `getNativeLanguageText()` and `getTargetLanguageText()` crashed when given undefined word
-2. **Race condition:** When `resetSession()` cleared state, the `useEffect` saw `!sessionId` and tried to start a NEW session during navigation
-
-**What Was Fixed:**
-1. Added null guards to `getNativeLanguageText()` and `getTargetLanguageText()` - return empty string instead of crashing
-2. Added `isClosing` state flag to prevent session restart race condition
-3. Updated useEffect to check `isClosing` before starting new session
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/lib/review/distractors.ts` | Null guards for text helpers |
-| `web/src/app/review/page.tsx` | isClosing flag, race condition fix |
-| `web/src/__tests__/lib/distractors.test.ts` | 6 new tests for null safety |
-
-**Tests:**
-- Added 6 new tests for null safety (209 total tests pass)
-- Build passes
-
-**E2E Verification:**
-| User | Language Pair | Close Review | Result |
-|------|---------------|--------------|--------|
-| test-en-pt | EN→PT | ✅ | No crash, navigates home |
-| test-en-sv | EN→SV | ✅ | No crash, navigates home |
-| test-nl-en | NL→EN | ✅ | No crash, navigates home |
-
-**Closes:** #69
-
----
-
-### Session 57 - 2026-01-21 - Due Count Mismatch Fix (Issue #63)
-
-**Focus:** Fix P0 Critical bug where Today page showed 0 due while Notebook showed 49 due for the same user.
-
-**Root Cause Identified:**
-Two different calculation methods were used:
-- **Today page (client-side):** `words.filter(w => nextReviewDate <= now).length` - counted ALL words past their review date
-- **Notebook page (API):** `/api/words/stats` - used FSRS scientific formula: `min(newCards, 15) + reviewDue`
-
-The API caps new cards at 15/day to prevent learner burnout from bulk imports.
-
-**What Was Fixed:**
-1. Added server stats fetch to Today page using `/api/words/stats`
-2. Use `serverStats.dueToday` as the displayed due count
-3. Fall back to client-side calculation if API fails
-4. Added unit tests for FSRS due count formula
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/app/page.tsx` | Fetch due count from API, use as single source of truth |
-| `web/src/__tests__/lib/due-count.test.ts` | 8 new tests for FSRS formula validation |
-| `findings.md` | Updated Finding #10 with fix verification |
-
-**Tests:**
-- Added 8 new tests verifying FSRS due count calculation
-- All 203 tests pass
-- Build passes
-
-**E2E Verification:**
-| User | Today | Notebook | Match |
-|------|-------|----------|-------|
-| test-en-pt (EN→PT) | 7 | 7 | ✅ |
-| test-en-sv (EN→SV) | 15 | 15 | ✅ |
-| test-nl-en (NL→EN) | 5 | 5* | ✅ |
-
-*Notebook had separate 500 error on categories endpoint (unrelated issue)
-
-**Closes:** #63
-
----
-
-### Session 56 - 2026-01-21 - Word Review Same-Word Bug Fix (Issue #68)
-
-**Focus:** Fix P0 BLOCKER where word review showed same word as expected answer for native→target captures.
-
-**Root Cause Identified:**
-For words captured in native→target direction (e.g., EN→PT user types "butterfly" → gets "borboleta"):
-- Display used `currentWord.originalText` directly = "butterfly"
-- Expected answer used `getNativeLanguageText()` = "butterfly"
-- Both were the same word, making the exercise impossible!
-
-**What Was Fixed:**
-1. Changed word mode display from `currentWord.originalText` → `getTargetLanguageText(currentWord, targetLanguage)`
-2. This ensures Portuguese is always shown (target language) for EN→PT users
-3. Expected answer remains `getNativeLanguageText()` = English (native language)
-4. Added null checks to prevent crash on close review (partial fix for #69)
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/app/review/page.tsx` | Fixed display to use target language, added null checks |
-| `web/src/__tests__/lib/distractors.test.ts` | Added 3 tests for display/answer invariant |
-| `findings.md` | Documented Finding #11 (same-word bug) and #12 (crash on close) |
-
-**Tests:**
-- Added 3 new tests verifying display ≠ expected answer for all capture directions
-- All 195 tests pass
-- Build passes
-
-**E2E Verification:**
-- ✅ EN→PT user: All reviews show Portuguese (target) and expect English (native)
-- ✅ Captured "butterfly" → "borboleta" to test native→target direction
-- ✅ Screenshots captured: `e2e-word-review-fix-verified.png`
-
-**Closes:** #68
-**Created:** #68, #69 (new bugs discovered during E2E testing)
-
----
-
-### Session 55 - 2026-01-21 - Focus Word Selection Fix (Issues #61 & #62)
-
-**Focus:** Fix P0 BLOCKER bugs where sentence exercises showed wrong highlighted word and missing correct answer in options.
-
-**Root Cause Identified:**
-The sentence review system had no single source of truth for "which word is being tested":
-- `sentenceTargetWords[0]` was used for loading distractors (arbitrary array order)
-- `selectWordToBlank()` was used for fill-blank exercises (lowest mastery word)
-- ALL target words were highlighted (confusing for user)
-
-Result: User sees word A highlighted, but options are for word B, making exercises impossible.
-
-**What Was Fixed:**
-1. Created `focusWord = selectWordToBlank(sentenceTargetWords)` as single source of truth
-2. Changed `loadDistractors(sentenceTargetWords[0])` → `loadDistractors(focusWord)`
-3. Changed highlighting from ALL target words → ONLY the focus word
-4. Updated answer feedback to use `focusWord` for correct answer display
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/app/review/page.tsx` | Added focusWord state, fixed 4 code locations |
-| `web/src/__tests__/lib/distractors.test.ts` | Added 3 tests for focus word invariant |
-| `findings.md` | Updated fix status for Priority 2 & 3 |
-| `PROJECT_LOG.md` | Session 55 documentation |
-
-**Tests:**
-- Added 3 new tests verifying focus word selection invariant
-- All 192 tests pass
-- Build passes
-
-**Verification:**
-- ✅ `npm run build` - Passes
-- ✅ `npm run test:run` - 192 tests pass
-- ⚠️ E2E on local - No pre-generated sentences available (word mode tested successfully)
-- 🔲 E2E on production - Requires deployment
-
-**Closes:** #61, #62
-
----
-
-### Session 54 - 2026-01-21 - MVP Bug Audit and Language Direction Fix
-
-**Focus:** Comprehensive bug documentation and TDD fix for language direction bug.
-
-**What was done:**
-1. Created `findings.md` - documented 15 bugs with root cause analysis
-2. Created `MVP_AUDIT.md` - 60 feature verification steps across 10 user flows
-3. Updated `CLAUDE.md` with stricter testing requirements (E2E REQUIRED)
-4. Created 8 GitHub issues (#60-#67) for all P0-P2 bugs
-5. **FIXED #60** - Language direction bug in review page using TDD approach:
-   - Wrote failing tests first in `distractors.test.ts`
-   - Fixed `review/page.tsx` to use `getTargetLanguageText()` and `getNativeLanguageText()`
-   - All 189 tests pass
-6. **FIXED language mixing bug** - Words from wrong language pairs were appearing:
-   - Root cause: Filtering only checked ONE language field, not BOTH
-   - Fix: All word queries now filter by BOTH native AND target language
-   - Updated 12 files: reviews, sentences, words APIs, progress, word-matcher
-   - Added `isWordInUserLanguagePair()` helper to languages.ts
-
-**Root cause of #60:** Bidirectional capture means `originalText` isn't always in target language.
-Words can be captured EN→PT (user types English) or PT→EN (user types Portuguese).
-Fix: Use language-aware helpers that check `sourceLang`/`targetLang` fields.
-
-**Root cause of language mixing:** Word queries used `OR(sourceLang=target, targetLang=target)` which
-allowed words from other language pairs to slip through. Fix: Use `AND` to require BOTH languages match.
-
-**Files changed:**
-- `web/src/app/review/page.tsx` - Fixed 4 places using raw `originalText`
-- `web/src/__tests__/lib/distractors.test.ts` - Added 3 tests for translation hint formatting
-- `findings.md` (NEW) - Bug tracking document
-- `MVP_AUDIT.md` (NEW) - Feature verification checklist
-- `.claude/CLAUDE.md` - Stricter testing requirements
-
-**MVP Status:** 0 passing, 12 failing, 48 untested (60 total steps)
-
----
-
-### Session 53 - 2026-01-21 - Vercel React Best Practices Implementation
-
-**Context**: Applied Vercel's React/Next.js performance guidelines (45 rules) to optimize the codebase.
-
-**What Changed**:
-
-1. **Async Waterfall Elimination (CRITICAL)**:
-   - `api/sentences/generate/route.ts` - Parallelized sentence generation with batched `Promise.allSettled` (5 concurrent) → **5x faster**
-   - `api/onboarding/starter-words/route.ts` - Parallelized TTS generation → **10x faster**
-   - `api/gamification/event/route.ts` - Batched bingo square updates to single read/write → **6→2 DB queries**
-
-2. **Bundle Size Optimization (CRITICAL)**:
-   - `app/page.tsx` - Added `next/dynamic` for gamification components (BingoBoard, BossRoundGame, etc.)
-   - Converted barrel imports to direct imports across 5 files
-
-3. **Documentation**:
-   - Added "React/Next.js Performance (MANDATORY)" section to `.claude/CLAUDE.md`
-   - Installed `vercel-react-best-practices` skill with 45 detailed rules
-
-**Files Changed**:
-| File | Change |
-|------|--------|
-| `.claude/CLAUDE.md` | Added performance guidelines section |
-| `web/src/app/page.tsx` | Dynamic imports for gamification |
-| `web/src/app/layout.tsx` | Direct import for OfflineIndicator |
-| `web/src/app/api/sentences/generate/route.ts` | Parallelized with batched Promise.allSettled |
-| `web/src/app/api/onboarding/starter-words/route.ts` | Parallelized TTS generation |
-| `web/src/app/api/gamification/event/route.ts` | Batched bingo updates |
-| `web/src/app/api/words/route.ts` | Direct sentences imports |
-| `web/src/app/api/dev/test-sentences/route.ts` | Direct sentences imports |
-| `web/src/lib/hooks/use-audio-player.ts` | Direct capacitor import |
-
-**Verification**:
-- `npm run build` ✅
-- `npm run test:run` ✅ (186 tests pass)
-
----
-
-### Session 52 - 2026-01-21 - Comprehensive Audit Implementation (P0-P2 Fixes)
-
-**Context**: Independent codebase audit identified critical issues across 9 priority areas. Implemented all fixes in a single session.
-
-**What Changed**:
-1. **P0 - Database Indexes**: Added composite indexes to all schema files (`words.ts`, `sessions.ts`, `gamification.ts`, `sentences.ts`) for query optimization. Critical indexes include `(userId, nextReviewDate)`, `(userId, targetLang)`, `(userId, masteryStatus)`, `(userId, createdAt)`.
-
-2. **P0 - Session Race Condition**: Wrapped `getOrCreateSession()` in `db.transaction()` to prevent duplicate sessions from concurrent requests.
-
-3. **P1 - Rate Limiting**: Created `web/src/lib/rate-limit.ts` with subscription-based limits (free tier: 50 words/day, 10 reviews/day). Integrated into capture endpoint.
-
-4. **P1 - Language Validation**: Added `isLanguageSupported()` validation for explicit language parameters in capture endpoint.
-
-5. **P1 - Network Timeout**: Added `fetchWithTimeout()` helper with 10s timeout to words-store.ts capture flow.
-
-6. **P1 - 401 Handling**: Added auth expiry detection with redirect to `/auth/sign-in` on 401 responses.
-
-7. **P2 - N+1 Query Fix**: Refactored `/api/sentences/next` to batch fetch all words in ONE query instead of per-sentence queries. Uses `Map` for O(1) lookups.
-
-8. **P2 - Admin Query Parallelization**: Converted 15 sequential admin stats queries into 3 parallel batches using `Promise.all()`.
-
-9. **P2 - Polling Memory Leak**: Added `AbortController` tracking for audio polling. Controllers are stored in a module-level `Map` and properly cleaned up on completion/cancellation.
-
-**Files Changed**:
-| File | Change |
-|------|--------|
-| `web/src/lib/db/schema/words.ts` | Added 7 composite indexes |
-| `web/src/lib/db/schema/sessions.ts` | Added 2 composite indexes |
-| `web/src/lib/db/schema/gamification.ts` | Added 3 unique/composite indexes |
-| `web/src/lib/db/schema/sentences.ts` | Added 2 composite indexes |
-| `web/src/app/api/reviews/route.ts` | Transaction wrapping, active session validation |
-| `web/src/lib/rate-limit.ts` | **NEW** - Rate limiting utilities |
-| `web/src/app/api/words/route.ts` | Rate limit check, language validation |
-| `web/src/lib/store/words-store.ts` | Network timeout, 401 handling, AbortController for polling |
-| `web/src/app/api/sentences/next/route.ts` | N+1 query fix with batch loading |
-| `web/src/app/api/admin/stats/route.ts` | Parallelized queries with Promise.all |
-
-**Verification**:
-- `npm run build` ✅ (TypeScript clean)
-- `npm run test:run` ✅ (186 tests pass)
-
-**Next Steps**:
-- Push schema changes: `npm run db:push` (adds indexes to production DB)
-- Verify capture timing < 3s after indexes are applied
-- Scale test with 500+ words to confirm performance improvement
-
----
-
-### Session 51 - 2026-01-21 - Audio Reliability Fix (Issue #57)
-
-**Problem:** ~15% of audio generation requests were failing, leaving users without pronunciation audio.
-
-**Root Causes Fixed:**
-1. **Critical language bug** - `regenerate-audio` endpoint used `sourceLang` instead of `targetLanguage` for TTS
-2. **No retry logic** - TTS generation had no retries (translation had `withRetry()` but audio didn't)
-3. **30s client timeout too short** - Server might still be working when client gives up
-4. **No failure visibility** - Users had no way to retry failed audio
-
-**Changes:**
-- `web/src/lib/db/schema/words.ts` - Added `audioGenerationFailed` boolean column
-- `web/src/app/api/words/[id]/regenerate-audio/route.ts` - Fixed language direction bug, added retry logic
-- `web/src/app/api/words/route.ts` - Added `withRetry()` to TTS generation (3 retries) and storage upload (2 retries)
-- `web/src/lib/audio/tts.ts` - Added 30s timeout, 500-char limit, rate limit detection
-- `web/src/lib/store/words-store.ts` - Exponential backoff polling (1s→5s cap), 60s total timeout, early termination on server failure
-- `web/src/components/audio/audio-retry-button.tsx` - New component for failed audio recovery
-- `web/src/components/home/phrase-card.tsx` - Integrated retry button
-- `web/src/components/home/captured-today-list.tsx` - Connected retry functionality
-
-**E2E Testing (all passed):**
-- EN→PT: English capture → Portuguese audio ✓
-- EN→PT: Portuguese capture → Portuguese audio ✓
-- NL→EN: Dutch capture → English audio ✓
-
-**Closes:** #57
-
-### Session 51b - 2026-01-21 - Admin Dashboard & Vercel Cleanup
-
-**Focus:** Build admin dashboard for product analytics and clean up duplicate Vercel projects.
-
-**Admin Dashboard (`/admin`):**
-- Created admin stats API (`/api/admin/stats`) with secret-based auth (ADMIN_SECRET)
-- Aggregates: users, words, audio health, reviews, gamification, anonymous feedback
-- Product KPIs: DAU/WAU/MAU, D1/D7/D30 retention, session completion rate
-- Mastery funnel visualization (learning → learned → mastered)
-- Language pair distribution
-- Recent feedback (anonymous, no user_id exposed)
-
-**Vercel Cleanup:**
-- Deleted duplicate `learnthelanguageyoulivein` project (was deploying alongside `llyli`)
-- Root cause: `.vercel/project.json` existed in both root and `/web` directories
-- Fixed by removing root `.vercel/` directory (`.vercel` already in `.gitignore`)
-
-**Fixed Issues:**
-- Timestamp parameter binding: Used `sql.raw()` for date values
-- Connection pool exhaustion: Changed from `Promise.all` to sequential queries (Supabase session mode has limited concurrent connections)
-
-**Files Changed:**
-- `web/src/app/api/admin/stats/route.ts` (new)
-- `web/src/app/admin/page.tsx` (new)
-- Vercel env: Added `ADMIN_SECRET` production variable
-
----
-
-### Session 51c - 2026-01-21 - Admin Dashboard Data Quality Fixes
-
-**Problem:** Dashboard data was misleading and difficult for PMs to understand:
-- Session duration showing 467+ minutes (browser tabs left open)
-- Audio success rate 6.7% (bulk imports included)
-- Invalid language pair "sv → sv" showing in list
-- No explanation of metric methodology
-
-**Fixes Applied:**
-1. **Session duration capped at 30 min** - Uses PostgreSQL `LEAST()` function to cap outliers (abandoned tabs)
-2. **Added median session duration** - More accurate than mean for skewed data
-3. **Audio success rate based on last 7 days only** - Excludes bulk imports without audio
-4. **Filter invalid language pairs** - `WHERE source_lang != target_lang` removes data quality issues
-5. **"Understanding These Metrics" section** - Explains methodology at bottom of dashboard
-
-**Guardrails Added:**
-- Audio metrics now show `recent_total`, `recent_with_audio`, `recent_failed` separately
-- Data quality notes in API response (`dataQualityNotes` object)
-- UI explanations for each metric type
-
-**Files Changed:**
-- `web/src/app/api/admin/stats/route.ts` - Query fixes, data quality notes
-- `web/src/app/admin/page.tsx` - UI updates, metric explanations
-
----
-
-### Session 51d - 2026-01-21 - Exclude Test Users from Analytics
-
-**Problem:** Analytics included test account data, polluting real user metrics.
-
-**Solution:** Filter all dashboard queries to exclude test users by email pattern.
-
-**Convention Established:**
-- Test account emails end with `@llyli.test` (e.g., `test-en-pt@llyli.test`)
-- Apple review accounts use `@apple-review.test` (future iOS)
-- Real users and TestFlight beta testers use real emails
-
-**Implementation:**
-```sql
-WHERE user_id NOT IN (
-  SELECT id FROM auth.users
-  WHERE email LIKE '%@llyli.test'
-     OR email LIKE '%@apple-review.test'
-)
-```
-
-**Queries Updated (11 total):**
-- userStats, wordStats, audioStats, reviewStats
-- gamificationStats, feedbackStats, languagePairStats
-- recentFeedback, productKpis, retentionStats, activeUsersResult
-
-**Files Changed:**
-- `web/src/app/api/admin/stats/route.ts` - Added test user filter to all queries
-- `web/src/app/admin/page.tsx` - Added testUsers note to data quality section
-
----
-
-### Session 51e - 2026-01-21 - Science Verification Metrics
-
-**Focus:** Add metrics to prove the science behind LLYLI is actually working, plus documentation.
-
-**Science Verification Metrics Added:**
-1. **FSRS Health** - Interval distribution, avg stability by mastery status
-2. **Mastery Validation** - Avg reviews to mastery, words stuck in learning, lapse rate
-3. **Session Quality** - Optimal 5-15 min percentage, overload detection
-4. **Data Quality Guardrails** - Suspicious patterns (mastered <3 reviews, 0% accuracy users)
-
-**Documentation Created:**
-- `docs/product/science.md` - Full science documentation with research references
-- Updated `README.md` with Science section highlighting differentiators
-
-**Admin Dashboard Updates:**
-- New "Science Verification" section with FSRS health visualization
-- Guardrails panel that highlights anomalies in orange
-- Interval distribution breakdown
-
-**Bug Fixes Required:**
-- `next_review_at` → `next_review_date` (column didn't exist in schema)
-- Restructured `dataGuardrails` query: Original incorrectly referenced `stability` from `review_sessions` table (it's in `words`). Fixed with isolated scalar subqueries for each metric.
-
-**Files Changed:**
-- `web/src/app/api/admin/stats/route.ts` - 4 new science metric queries + bug fixes
-- `web/src/app/admin/page.tsx` - Science Verification UI section
-- `docs/product/science.md` (new) - Research documentation
-- `README.md` - Added Science section
-
----
-
-### Session 50 - 2026-01-21 - Gamification Automated Testing & Starter Data
-
-**Focus**: Create comprehensive automated tests for gamification and ensure new users have gamification-ready data from day one.
-
-**Changes**:
-- Added 120+ unit tests for gamification logic (bingo, streaks, Boss Round, user personas)
-- Added 79 tests for starter vocabulary gamification readiness
-- Added work category words to all 6 languages (Meeting/Deadline translations)
-- Added `initialLapseCount` to starter words for immediate Boss Round availability
-- Updated onboarding API to apply lapse counts from starter vocabulary
-- Created test data seeding script (`seed-gamification-test-data.ts`)
-- Created API integration test script (`test-gamification-api.ts`)
-- Added gamification testing section (6F-2) to TESTING.md
-- Created CHANGELOG.md to track project changes
-
-**Files Changed**:
-- `web/src/__tests__/lib/gamification.test.ts` (new)
-- `web/src/__tests__/lib/starter-vocabulary.test.ts` (new)
-- `web/scripts/seed-gamification-test-data.ts` (new)
-- `web/scripts/test-gamification-api.ts` (new)
-- `web/src/lib/data/starter-vocabulary.ts` (added work category, lapse counts)
-- `web/src/app/api/onboarding/starter-words/route.ts` (apply lapse counts)
-- `docs/engineering/TESTING.md` (added section 6F-2)
-- `docs/testing/GAMIFICATION_USER_TEST_PLAN.md` (new)
-- `CHANGELOG.md` (new)
-
-**Key Decisions**:
-- Added 2 work words per language to enable "Review work word" bingo square
-- Words with `initialLapseCount: 2-3` ensure Boss Round available immediately
-- Test suite covers user personas (Sofia, Ralf, Maria) from user research
-
----
-
-### Session 49 - 2026-01-21 - API 500 Error Fixes (Issue #58)
-
-**Focus**: Fix 5 API vulnerabilities causing intermittent 500 errors.
-
-**Changes:**
-1. **Safe destructuring** (`/api/words GET`) - `countResult[0]?.count ?? 0` prevents crash on empty results
-2. **Empty array guard** (`/api/sentences/next`) - Guard before `inArray()` prevents SQL crash on empty wordIds
-3. **OpenAI retry helper** (`/api/words POST`) - Exponential backoff (1s→2s→4s) for transient failures
-4. **TOCTOU race conditions** (`/api/gamification/state`) - Insert-first pattern eliminates race condition on dailyProgress, streakState, and bingoState creation
-
-**Files modified:**
-- `web/src/app/api/words/route.ts` - Safe destructuring, withRetry helper
-- `web/src/app/api/sentences/next/route.ts` - Empty array guard
-- `web/src/app/api/gamification/state/route.ts` - Race-safe insert-first pattern
-
-**Testing:** Build passes, all 66 tests pass.
-
----
-
-### Session 48 - 2026-01-20 - UX Review Bug Fixes & PROJECT_LOG Archiving
-
-**Focus**: Fix 3 critical bugs from comprehensive UX review, create GitHub issue for audio timeout, archive PROJECT_LOG.
-
-#### Bug Fixes
-
-**1. Duplicate Multiple Choice Options** (`web/src/lib/review/distractors.ts`)
-- **Problem**: Same translation text could appear as multiple buttons (e.g., two "good morning" options)
-- **Root Cause**: `buildMultipleChoiceOptions()` didn't deduplicate by text value
-- **Fix**: Added `seenTexts` Set to track normalized text values; skip distractors with duplicate text
-- **Result**: Correct answer always appears; no duplicate buttons
-
-**2. Missing Translation Options**
-- **Problem**: Correct answer sometimes not visible in multiple choice
-- **Root Cause**: Same as Bug #1 - if correct answer's text matched a distractor, confusion
-- **Fix**: Same fix - correct answer added first, duplicates filtered from distractors
-
-**3. Untranslatable Word Handling** (`web/src/app/api/words/route.ts`)
-- **Problem**: Words like "gezellig" showed identical original and translation
-- **Root Cause**: GPT returning original word unchanged; fallback swap also failing
-- **Fix**: Added final check (6c) - if translation still equals original after both attempts, append "(Dutch expression)" or equivalent
-- **Verified**: New "gezellig" capture → "cozy togetherness" (GPT now follows CRITICAL instruction)
-
-#### GitHub Issue Created
-
-**#57 - Audio generation timeout (~15% failure rate)**
-- P2-normal priority
-- Word capture works, audio is nice-to-have with retry option
-- Deferred to post-MVP audio improvements
-
-#### PROJECT_LOG Archiving
-
-- Reduced from 1,561 → 408 lines (under 500 limit)
-- Archived sessions 15-41 to PROJECT_LOG_ARCHIVE.md
-- Added archiving rule: keep only 10 most recent sessions
-
-#### Files Modified
-
-| File | Change |
-|------|--------|
-| `web/src/lib/review/distractors.ts` | Text deduplication in buildMultipleChoiceOptions, fetch more distractors |
-| `web/src/app/api/words/route.ts` | Final fallback for untranslatable words |
-| `PROJECT_LOG.md` | Trimmed + added archiving rule |
-| `PROJECT_LOG_ARCHIVE.md` | Compressed entries for sessions 15-41 |
-
-#### Testing
-
-- `npm run build` ✅ Passed
-- `npm run test:run` ✅ 66 tests passed
-- E2E via Playwright: Verified "gezellig" → "cozy togetherness", "uitwaaien" → "to get some fresh air"
-
----
-
-### Session 47 - 2026-01-20 - Dark Mode Fixes & Full E2E Testing
-
-**Focus**: Fix hardcoded colors breaking dark mode, comprehensive E2E testing of all 3 test users, verify gamification system.
-
-#### Dark Mode Fixes
-
-Fixed 13 hardcoded color values across 3 files that broke dark mode:
-
-| File | Issues Fixed |
-|------|--------------|
-| `words-overview-card.tsx` | bg-white, #e2e8f0, text-gray-* classes, hover:bg-gray-50 |
-| `boss-round.tsx` | hover:bg-gray-100 |
-| `page.tsx` (home) | hover:bg-gray-100, rgba(255,255,255,0.4) in stitch pattern |
-
-**Fix Pattern**: Replaced hardcoded colors with CSS variables:
-- `bg-white` → `var(--surface-page)`
-- `text-gray-*` → `var(--text-muted)`, `var(--text-heading)`, `var(--text-body)`
-- `hover:bg-gray-*` → `hover:bg-[var(--surface-elevated)]`
-- `#e2e8f0` → `var(--notebook-stitch)`
-
-#### E2E Testing Results
-
-| User | Languages | Auth | Capture | Notebook | Review | Progress | Dark Mode |
-|------|-----------|------|---------|----------|--------|----------|-----------|
-| test-en-pt | EN→PT | ✅ | ✅ bidirectional | ✅ 26 words | ✅ sentence mode | ✅ | ✅ |
-| test-en-sv | EN→SV | ✅ | ✅ "varsågod" | ✅ Swedish Journal | ✅ | ✅ | ✅ |
-| test-nl-en | NL→EN | ✅ | ✅ "thank you"→"hartelijk dank" | ✅ English Journal | ✅ | ✅ | ✅ |
-
-#### Gamification Verification
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Daily Goal Progress Ring | ✅ | Shows X/10, checkmark at completion |
-| Streak Display | ✅ | Flame icon, day count, celebration |
-| Bingo Board | ✅ | 9 squares, teal completion, 5/9 test user |
-| Celebration Modal | ✅ | PartyPopper, streak message |
-
-#### Untranslatable Words Fix
-
-Fixed GPT translation returning original word unchanged for culturally-specific words like "gezellig".
-
-| File | Change |
-|------|--------|
-| `api/words/route.ts` | Added CRITICAL instruction to NEVER return original word unchanged |
-
-**New Translation Rules**:
-- For untranslatable words (gezellig, saudade, lagom), always provide closest equivalent or brief explanation
-- Examples added: "gezellig" → "cozy togetherness", "saudade" → "nostalgic longing"
-- Max 2-4 word explanatory phrases when no equivalent exists
-
-#### Files Modified
-
-- `web/src/components/progress/words-overview-card.tsx` - 10 color fixes
-- `web/src/components/gamification/boss-round.tsx` - 1 color fix
-- `web/src/app/page.tsx` - 2 color fixes
-- `web/src/app/api/words/route.ts` - Untranslatable words handling
-
-#### Build & Testing
-
-- `npm run build` ✅ Passed
-- E2E via Playwright MCP: All 3 test users verified
-- Dark mode screenshots captured and verified
-
----
-
-### Session 46 - 2026-01-20 - Bug Fixes & Self-Healing Guardrails
-
-**Focus**: Add self-healing guardrail for orphaned sentences, add mastery progress explanation
-
-#### Changes
-
-**Self-Healing Guardrail for Orphaned Sentences**
-- **File**: `src/app/api/sentences/next/route.ts`
-- **Problem**: Orphaned sentences (referencing deleted words) caused confusing error messages
-- **Fix**: Auto-detect and delete orphaned sentences when encountered
-- **Result**: System self-heals over time, no manual database cleanup needed
-
-**Mastery Progress Explanation (Issue #8)**
-- **Files**: `src/app/review/page.tsx`, `src/app/science/page.tsx`
-- **Problem**: "1/3 correct sessions" was unclear to users
-- **Fix**:
-  - Added "Mastery Progress" section to /science page
-  - Made progress indicator tappable (links to /science#mastery)
-  - Shows help icon for discoverability
-- **Result**: Users can tap to learn what 3 correct sessions means
-
-#### Files Changed
-- `src/app/api/sentences/next/route.ts` - Self-healing orphan cleanup
-- `src/app/science/page.tsx` - Added Mastery Progress section
-- `src/app/review/page.tsx` - Made progress indicator tappable with Link
-
----
-
-### Session 45b - 2026-01-20 - Sentence Generation Language Filter Fix
-
-**Focus**: Fix bug where sentence generation picked words without language filter, causing orphaned sentences.
-
-#### Bug Fixed
-
-**Sentence Generation Language Mismatch**
-- **Root Cause**: `getDueWordsGroupedByCategory()` didn't filter by language, but `sentences/next` API did
-- **Symptom**: "Pre-generated sentences exist but their words may have been deleted"
-- **Fix**: Added `targetLanguage` parameter to word matcher, same filter as retrieval
-
-#### Files Changed
-- `src/lib/sentences/word-matcher.ts` - Added targetLanguage filter to getDueWordsGroupedByCategory
-- `src/app/api/sentences/generate/route.ts` - Pass targetLanguage to word matcher
-- `src/app/api/words/route.ts` - Pass targetLanguage in triggerSentenceGeneration
-- `src/app/api/dev/test-sentences/route.ts` - Updated test endpoint
-
----
-
-### Session 45 - 2026-01-20 - Critical Review System Bug Fixes
-
-**Focus**: Fix 6 critical issues with the review system discovered during manual testing. Test-driven approach with verification after each fix.
-
-#### Issues Fixed
-
-**Bug #1: Due Today Count Unrealistic (700+ words)**
-- **Files**: `api/words/stats/route.ts`, `api/progress/route.ts`
-- **Root Cause**: Due calculation included ALL words where `retrievability < 0.9 OR nextReviewDate <= now`. For bulk-imported words, every unreviewed word counted as "due."
-- **Fix**: Separate "new cards" (never reviewed) from "review cards" (reviewed, now due). Cap new cards at 15/day.
-- **Formula**: `dueToday = MIN(newCards, DAILY_NEW_CARDS_LIMIT) + reviewDue`
-- **Result**: 912 words → shows ~39 due (15 new + 24 reviews) instead of 724
-
-**Bug #2: Sentence Mode Never Triggers**
-- **File**: `api/sentences/next/route.ts`
-- **Root Cause**: `allWordsDue` check blocked sentences when ANY word was already reviewed individually
-- **Fix**: Removed `allWordsDue` requirement. Any unused sentence is now returned regardless of individual word due status
-- **Result**: Sentences now show as primary learning mode as designed
-
-**Bug #3: Mixed Languages in Multiple Choice**
-- **Files**: `lib/review/distractors.ts`, `api/reviews/route.ts`, `lib/store/review-store.ts`, `app/review/page.tsx`
-- **Root Cause**: `buildMultipleChoiceOptions()` didn't account for bidirectional word capture direction
-- **Fix**: Added `getNativeLanguageText()` helper that checks `sourceLang`/`targetLang` to return text in user's native language
-- **Result**: All multiple choice options now consistently in same language
-
-**Bug #4: Recall Mode Missing Active Input**
-- **File**: `app/review/page.tsx`
-- **Root Cause**: Word mode only had "Reveal" button - passive recognition instead of active recall
-- **Fix**: Added `FillBlankInput` for word mode. User must type answer before rating
-- **Result**: True active recall experience matching sentence mode
-
-**Bug #5: Session Never Completes with 700+ Words**
-- **File**: `api/reviews/route.ts`
-- **Root Cause**: With 700+ due words, user never reaches `currentIndex >= dueWords.length - 1`
-- **Fix**: Added `MAX_SESSION_WORDS = 25` limit following FSRS scientific principles (20-30 items per session optimal)
-- **Result**: Session completes at 25 words, showing completion page
-
-**Bug #6: UI Polish**
-- **File**: `app/notebook/page.tsx`
-- **Fix**: Added iOS safe-area-inset-top padding using `style={{ paddingTop: "max(24px, env(safe-area-inset-top, 24px))" }}`
-- **Verified**: "On Track" logic (journal-header.tsx) acceptable with new due calculation
-- **Verified**: Word translation visible in detail sheet (word-detail-sheet.tsx:156)
-
-#### Testing Documentation Added
-
-**New sections in TESTING.md**:
-- Section 6E-2: FSRS & Due Calculation Verification
-  - E6: Due count sanity check
-  - E7: Session word limit
-  - E8: Multiple choice language consistency
-  - E9: Session completion triggers
-  - E10: Sentence mode priority
-- Section 6E-3: Word Detail & Display Tests
-  - E11: Word detail shows translation
-  - E12: Word detail shows context
-
-#### Files Modified Summary
-
-| File | Change |
-|------|--------|
-| `api/words/stats/route.ts` | Added DAILY_NEW_CARDS_LIMIT, separated new/review cards |
-| `api/progress/route.ts` | Added DAILY_NEW_CARDS_LIMIT, reviewDue calculation |
-| `api/reviews/route.ts` | Added MAX_SESSION_WORDS=25, return language preferences |
-| `api/sentences/next/route.ts` | Removed allWordsDue blocking check |
-| `lib/review/distractors.ts` | Added getNativeLanguageText(), updated buildMultipleChoiceOptions() |
-| `lib/store/review-store.ts` | Added nativeLanguage/targetLanguage to store |
-| `app/review/page.tsx` | Added active recall input, use nativeLanguage for distractors |
-| `app/notebook/page.tsx` | Added iOS safe-area padding |
-| `src/__tests__/lib/distractors.test.ts` | Added bidirectional capture test |
-| `docs/engineering/TESTING.md` | Added sections 6E-2, 6E-3 with tests E6-E12 |
-
-#### Key Design Decisions
-
-1. **FSRS Scientific Principles**: 15 new cards/day + 25 max session words follows Anki/FSRS research for optimal retention
-2. **Sentence Priority**: Sentences are primary learning mode; word mode is fallback only
-3. **Language Normalization**: Multiple choice always in native language for consistent testing
-4. **Active Recall**: Type-to-reveal enforces retrieval practice vs passive recognition
-
-#### Testing
-
-- `npm run build` ✅ Passed
-- `npm run test:run` ✅ 66 tests passed
-- Each fix verified via Playwright MCP before proceeding to next
-
----
-
-### Session 44 - 2026-01-20 - Translation & Audio Fixes
-
-**Focus**: Fix translation failures and ensure audio is always in target language.
-
-#### Bug Fixes
-
-**1. Login Error Message** (`web/src/app/auth/sign-in/page.tsx`)
-- Removed misleading "check your email to confirm" text
-- Now shows clearer "check your credentials" message
-
-**2. Translation Fallback** (`web/src/app/api/words/route.ts`)
-- Added safety check: if translation equals original text, retry with swapped languages
-- Fixes cases where language detection fails (e.g., "Trainwreck" detected as Portuguese)
-- Prevents identical original/translation entries in database
-
-**3. Audio Always in Target Language** (`web/src/app/api/words/route.ts`)
-- Audio now ALWAYS generated in the language being learned
-- If user enters native language text → audio is the translation
-- If user enters target language text → audio is the original
-- Examples:
-  - en→pt-PT: "trainwreck" → audio is Portuguese "desastre"
-  - nl→en: "hallo" → audio is English "hello"
-
-#### Files Modified
-- `web/src/app/auth/sign-in/page.tsx` - Error message clarity
-- `web/src/app/api/words/route.ts` - Translation fallback + audio language fix
-
----
-
-### Session 43 - 2026-01-20 - Language Auto-Detection + Translation Quality
-
-**Focus**: Add smart language detection and improve translation quality with idiom handling and B2 level targeting.
-
-#### Features Added
-
-**1. Language Auto-Detection** (`web/src/app/api/words/route.ts`)
-- Added `detectLanguage()` function using OpenAI GPT-4o-mini
-- Detects whether input text is in user's native or target language
-- Automatically adjusts translation direction:
-  - English input → translate TO Portuguese (for EN→PT learners)
-  - Portuguese input → translate TO English (existing behavior)
-- Works for all supported language pairs (EN→PT, EN→SV, NL→EN)
-
-**2. Improved Translation Prompts** (`web/src/app/api/words/route.ts`)
-- Core guidelines for handling idioms, slang, and colloquialisms
-- Find equivalent expressions rather than literal translations
-- Language-specific rules for each target language:
-  - **PT-PT**: European Portuguese only, "tu" forms, European vocab
-  - **SV**: Standard Swedish (rikssvenska), natural phrasing
-  - **EN**: Natural conversational English, Dutch idiom equivalents
-  - **NL**: Standard Dutch, natural word order
-- Examples: "piece of cake" → "canja" (PT), "lätt som en plätt" (SV)
-
-**3. B2 Level Sentence Generation** (`web/src/lib/sentences/generator.ts`)
-- Target B2 (Upper Intermediate) CEFR level
-- Sentences are challenging but comprehensible
-- Include idiomatic expressions and natural phrasing
-- Avoid overly simple (A1-A2) or complex (C1-C2) constructions
-- Language-specific rules for PT-PT, SV, EN
-
-#### Examples
-- "Trainwreck" → "desastre" (detected as English, found Portuguese equivalent)
-- "butterfly" → "borboleta" (detected as English, translated to Portuguese)
-
-#### Files Modified
-- `web/src/app/api/words/route.ts` - Language detection + translation prompts
-- `web/src/lib/sentences/generator.ts` - B2 level + language rules
-
-#### Testing
-- `npm run build` ✓
-- `npm run test:run` ✓ (65 tests)
-- E2E: Verified "trainwreck" → "desastre", "butterfly" → "borboleta"
-
----
-
-### Session 42 - 2026-01-20 - E2E Bug Fixes: Auth Protection + Sentence Generation
-
-**Focus**: Fix issues found during E2E testing - background 500 errors and unprotected capture route.
-
-#### Issues Fixed
-
-**1. Sentence Generation Language Bug** (`web/src/app/api/words/route.ts:455`)
-- Problem: `triggerSentenceGeneration()` used `DEFAULT_LANGUAGE_PREFERENCE` instead of user's actual language settings
-- Impact: Background sentence generation was using wrong language, causing 500 errors
-- Fix: Changed to `await getUserLanguagePreference(userId)` to fetch user's actual preference
-
-**2. Capture Route Auth Protection** (`web/src/app/capture/page.tsx`)
-- Problem: `/capture` route accessible while signed out (showed UI, but save would fail)
-- Fix: Added auth check using same pattern as review page:
-  - Import `useAuthStore`
-  - Track `user` and `authLoading` state
-  - `useEffect` redirect to `/auth/sign-in` when `!authLoading && !user`
-  - Guard `if (authLoading || !user) return null` to prevent UI flash
-
-#### E2E Verification Results
-
-| Test | Result |
-|------|--------|
-| Capture route auth protection | ✅ Redirects to sign-in when no user |
-| Word capture ("bom dia") | ✅ Captured with translation |
-| Notebook word search ("obrigado") | ✅ 3 results found |
-| Search by translation ("thank") | ✅ 3 results found |
-| Science page new section | ✅ "Words That Connect" visible |
-
-#### Files Modified
-- `web/src/app/api/words/route.ts` - Fixed `triggerSentenceGeneration` language preference
-- `web/src/app/capture/page.tsx` - Added auth protection
-
-#### Testing
-- `npm run build` ✓
-- `npm run test:run` ✓ (65 tests)
-- E2E via Playwright MCP: All verification tests pass
-
----
-
-> **Archive**: Sessions 1-41 in [PROJECT_LOG_ARCHIVE.md](./PROJECT_LOG_ARCHIVE.md)
+> **Archive**: Sessions 1-67 in [PROJECT_LOG_ARCHIVE.md](./PROJECT_LOG_ARCHIVE.md)
