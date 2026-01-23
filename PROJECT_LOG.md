@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **API Usage Analytics Dashboard** - Full OpenAI cost tracking for translation, TTS, language detection, and sentence generation. Table + indexes created, all API calls instrumented (Session 78)
 - [x] **Duplicate Word Capture Prevention** - API returns 409 Conflict if word already in notebook, case-insensitive check (Session 77)
 - [x] **MVP E2E Testing Complete** - 48/70 steps verified (69%), all critical flows pass (Session 76-77)
 - [x] **Gamification Data Reset Fix** - Test user script now clears all gamification data (daily_progress, streaks, bingo, boss_round) (Session 75)
@@ -147,6 +148,45 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 78 - 2026-01-23 - API Usage Analytics Dashboard
+
+**Focus:** Implement comprehensive API usage tracking for cost monitoring.
+
+**Tasks Completed:**
+1. ✅ Created `api_usage_log` table with proper schema and indexes
+2. ✅ Instrumented translation API with `withGPTUsageTracking()`
+3. ✅ Instrumented language detection API with `withGPTUsageTracking()`
+4. ✅ Instrumented TTS API with `withTTSUsageTracking()`
+5. ✅ Instrumented sentence generation API with `withGPTUsageTracking()`
+6. ✅ Full end-to-end verification passed
+
+**Files Changed/Created:**
+| File | Change |
+|------|--------|
+| `web/src/lib/db/schema/api-usage.ts` | New schema for API usage tracking |
+| `web/src/lib/api-usage/logger.ts` | Helper functions for usage tracking |
+| `web/src/app/api/words/route.ts` | Instrumented translation, language detection, TTS |
+| `web/src/lib/audio/tts.ts` | Instrumented TTS generation |
+| `web/src/lib/sentences/generator.ts` | Instrumented sentence generation |
+| `web/src/app/api/sentences/generate/route.ts` | Pass userId for tracking |
+| `web/src/app/api/admin/stats/route.ts` | Already had queries (from Session 77) |
+| `web/scripts/create-api-usage-table.ts` | Safe migration script |
+| `web/scripts/verify-api-usage-setup.ts` | End-to-end verification script |
+
+**Technical Notes:**
+- Used direct postgres migration instead of drizzle-kit push (timeout issues)
+- Fire-and-forget logging pattern - won't crash on errors
+- Cost calculated using Jan 2025 pricing: GPT-4o-mini $0.15/$0.60 per 1M tokens, TTS-1 $15/1M chars
+
+**Admin Dashboard Features:**
+- Total API calls by type (translation, TTS, sentence generation, language detection)
+- Token usage breakdown
+- Cost tracking (today, 7d, 30d, total)
+- Success/failure rates
+- Per-user average cost
+
+---
 
 ### Session 77 - 2026-01-23 - MVP E2E Completion + Bug Fixes
 

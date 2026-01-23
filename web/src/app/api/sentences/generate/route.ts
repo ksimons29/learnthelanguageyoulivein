@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
         words: wordGroup,
         targetLanguage: languagePreference.targetLanguage,
         nativeLanguage: languagePreference.nativeLanguage,
+        userId: user.id,
       });
 
       if (!result) {
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
         const audioBuffer = await generateAudio({
           text: result.text,
           languageCode: languagePreference.targetLanguage,
+          userId: user.id,
         });
         audioUrl = await uploadSentenceAudio(user.id, audioBuffer);
       } catch (audioError) {

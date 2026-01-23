@@ -12,3 +12,4 @@ export * from './tags';
 export * from './user-profiles';
 export * from './gamification';
 export * from './user-feedback';
+export * from './api-usage';

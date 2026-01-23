@@ -16,6 +16,7 @@ import { generateSentenceWithRetry } from '@/lib/sentences/generator';
 import { determineExerciseType } from '@/lib/sentences/exercise-type';
 import { generateAndStoreExampleSentence } from '@/lib/sentences/example-sentence';
 import { withRetry } from '@/lib/utils/retry';
+import { withGPTUsageTracking } from '@/lib/api-usage/logger';
 import OpenAI from 'openai';
 import { eq, and, or, ilike, sql, gte } from 'drizzle-orm';
 
@@ -170,7 +171,7 @@ export async function POST(request: NextRequest) {
         languagePreference.nativeLanguage,
         languagePreference.targetLanguage,
       ];
-      const detectedLang = await detectLanguage(text, possibleLanguages);
+      const detectedLang = await detectLanguage(text, possibleLanguages, user.id);
 
       if (
         detectedLang &&
@@ -203,7 +204,7 @@ export async function POST(request: NextRequest) {
     // This saves 1-3 seconds compared to sequential calls
     // Wrapped in withRetry for resilience against transient OpenAI failures
     const [initialTranslation, categoryResult] = await Promise.all([
-      withRetry(() => translateText(text, sourceLang, targetLang)),
+      withRetry(() => translateText(text, sourceLang, targetLang, user.id)),
       withRetry(() => assignCategory(text, context)),
     ]);
     let translation = initialTranslation;
@@ -218,7 +219,7 @@ export async function POST(request: NextRequest) {
       // Swap directions
       const swappedSourceLang = targetLang;
       const swappedTargetLang = sourceLang;
-      translation = await translateText(text, swappedSourceLang, swappedTargetLang);
+      translation = await translateText(text, swappedSourceLang, swappedTargetLang, user.id);
 
       // If this worked (translation is different), update the language direction
       if (translation.toLowerCase().trim() !== text.toLowerCase().trim()) {
@@ -463,49 +464,65 @@ export async function GET(request: NextRequest) {
  */
 async function detectLanguage(
   text: string,
-  possibleLanguages: string[]
+  possibleLanguages: string[],
+  userId?: string
 ): Promise<string | null> {
-  const openai = getOpenAI();
+  return withGPTUsageTracking(
+    'language_detection',
+    userId,
+    async () => {
+      const openai = getOpenAI();
 
-  // Map language codes to readable names for the prompt
-  const langNames = possibleLanguages.map((code) => {
-    const name = getTranslationName(code);
-    return `${code}: ${name}`;
-  });
+      // Map language codes to readable names for the prompt
+      const langNames = possibleLanguages.map((code) => {
+        const name = getTranslationName(code);
+        return `${code}: ${name}`;
+      });
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'system',
-        content: `You are a language detection expert. Identify which language the text is written in.
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a language detection expert. Identify which language the text is written in.
 Respond with ONLY the language code from this list: ${possibleLanguages.join(', ')}
 If uncertain, respond with the most likely match.
 Language codes: ${langNames.join(', ')}`,
-      },
-      {
-        role: 'user',
-        content: text,
-      },
-    ],
-    temperature: 0,
-    max_tokens: 10,
-  });
+          },
+          {
+            role: 'user',
+            content: text,
+          },
+        ],
+        temperature: 0,
+        max_tokens: 10,
+      });
 
-  const detected = response.choices[0].message.content?.trim().toLowerCase();
+      const detected = response.choices[0].message.content?.trim().toLowerCase();
 
-  // Normalize pt-PT/pt-BR to just check the base
-  const normalizedDetected = detected?.split('-')[0];
+      // Normalize pt-PT/pt-BR to just check the base
+      const normalizedDetected = detected?.split('-')[0];
 
-  // Find matching language from possible options
-  for (const lang of possibleLanguages) {
-    const normalizedLang = lang.split('-')[0];
-    if (normalizedLang === normalizedDetected) {
-      return lang;
-    }
-  }
+      // Find matching language from possible options
+      let result: string | null = null;
+      for (const lang of possibleLanguages) {
+        const normalizedLang = lang.split('-')[0];
+        if (normalizedLang === normalizedDetected) {
+          result = lang;
+          break;
+        }
+      }
 
-  return null;
+      return {
+        result,
+        usage: {
+          prompt_tokens: response.usage?.prompt_tokens || 0,
+          completion_tokens: response.usage?.completion_tokens || 0,
+        },
+      };
+    },
+    { text }
+  );
 }
 
 /**
@@ -518,13 +535,18 @@ Language codes: ${langNames.join(', ')}`,
 async function translateText(
   text: string,
   sourceLangCode: string,
-  targetLangCode: string
+  targetLangCode: string,
+  userId?: string
 ): Promise<string> {
-  const sourceLangName = getTranslationName(sourceLangCode);
-  const targetLangName = getTranslationName(targetLangCode);
+  return withGPTUsageTracking(
+    'translation',
+    userId,
+    async () => {
+      const sourceLangName = getTranslationName(sourceLangCode);
+      const targetLangName = getTranslationName(targetLangCode);
 
-  // Core instructions for handling idioms, slang, and expressions
-  const coreInstructions = `
+      // Core instructions for handling idioms, slang, and expressions
+      const coreInstructions = `
 TRANSLATION GUIDELINES:
 - For idioms, slang, and colloquialisms: Find the equivalent expression in ${targetLangName} that conveys the same meaning and tone, rather than translating literally.
 - For single words: Provide the most common, natural translation.
@@ -540,11 +562,11 @@ CRITICAL: NEVER return the original word unchanged as the translation.
   - Example: "lagom" → "just right" or "the perfect amount"
 - If truly no equivalent exists, provide a concise explanatory phrase (2-4 words max)`;
 
-  // Build language-specific instructions
-  let languageInstructions = '';
+      // Build language-specific instructions
+      let languageInstructions = '';
 
-  if (targetLangCode === 'pt-PT') {
-    languageInstructions = `
+      if (targetLangCode === 'pt-PT') {
+        languageInstructions = `
 
 EUROPEAN PORTUGUESE RULES:
 - Use European Portuguese (Portugal) ONLY - never Brazilian Portuguese
@@ -552,50 +574,61 @@ EUROPEAN PORTUGUESE RULES:
 - Use European spelling (e.g., "facto" not "fato", "autocarro" not "ônibus", "comboio" not "trem")
 - Use European vocabulary (e.g., "pequeno-almoço" not "café da manhã", "telemóvel" not "celular")
 - For English slang/idioms, find Portuguese equivalents used in Portugal (e.g., "trainwreck" → "desastre", "piece of cake" → "canja")`;
-  } else if (targetLangCode === 'sv') {
-    languageInstructions = `
+      } else if (targetLangCode === 'sv') {
+        languageInstructions = `
 
 SWEDISH RULES:
 - Use standard Swedish (rikssvenska)
 - For English slang/idioms, find Swedish equivalents (e.g., "piece of cake" → "lätt som en plätt", "raining cats and dogs" → "det öser ner")
 - Use natural Swedish word order and phrasing
 - Keep informal expressions informal (e.g., use "kul" for "fun" in casual contexts)`;
-  } else if (targetLangCode === 'en') {
-    languageInstructions = `
+      } else if (targetLangCode === 'en') {
+        languageInstructions = `
 
 ENGLISH RULES:
 - Use natural, conversational English
 - For Dutch idioms/expressions, find English equivalents (e.g., "Nu komt de aap uit de mouw" → "Now the cat's out of the bag")
 - Preserve the tone and register of the original
 - Use common expressions that native English speakers would actually use`;
-  } else if (targetLangCode === 'nl') {
-    languageInstructions = `
+      } else if (targetLangCode === 'nl') {
+        languageInstructions = `
 
 DUTCH RULES:
 - Use standard Dutch (Nederlands)
 - For English slang/idioms, find Dutch equivalents where they exist
 - Use natural Dutch phrasing and word order
 - Keep informal expressions informal`;
-  }
+      }
 
-  const openai = getOpenAI();
+      const openai = getOpenAI();
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'system',
-        content: `You are a professional translator specializing in ${sourceLangName} to ${targetLangName}. Translate the given text. Provide ONLY the translation, no explanations or additional text.${coreInstructions}${languageInstructions}`,
-      },
-      {
-        role: 'user',
-        content: text,
-      },
-    ],
-    temperature: 0.3,
-  });
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a professional translator specializing in ${sourceLangName} to ${targetLangName}. Translate the given text. Provide ONLY the translation, no explanations or additional text.${coreInstructions}${languageInstructions}`,
+          },
+          {
+            role: 'user',
+            content: text,
+          },
+        ],
+        temperature: 0.3,
+      });
 
-  return response.choices[0].message.content?.trim() || text;
+      const translatedText = response.choices[0].message.content?.trim() || text;
+
+      return {
+        result: translatedText,
+        usage: {
+          prompt_tokens: response.usage?.prompt_tokens || 0,
+          completion_tokens: response.usage?.completion_tokens || 0,
+        },
+      };
+    },
+    { text, sourceLang: sourceLangCode, targetLang: targetLangCode }
+  );
 }
 
 /**
@@ -680,7 +713,7 @@ async function generateAudioInBackground(
   try {
     // TTS generation with retry (3 retries, 2s base delay)
     const audioBuffer = await withRetry(
-      () => generateAudio({ text, languageCode }),
+      () => generateAudio({ text, languageCode, userId }),
       3,
       2000
     );
@@ -742,6 +775,7 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
         words: wordGroup,
         targetLanguage: languagePreference.targetLanguage,
         nativeLanguage: languagePreference.nativeLanguage,
+        userId,
       });
 
       if (!result) {
@@ -754,6 +788,7 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
         const audioBuffer = await generateAudio({
           text: result.text,
           languageCode: languagePreference.targetLanguage,
+          userId,
         });
         audioUrl = await uploadSentenceAudio(userId, audioBuffer);
       } catch {

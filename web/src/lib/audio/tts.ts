@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { getTTSVoice, type LanguageConfig } from '@/lib/config/languages';
+import { withTTSUsageTracking } from '@/lib/api-usage/logger';
 
 /**
  * Text-to-Speech Service
@@ -38,6 +39,7 @@ export interface TTSOptions {
   languageCode?: string; // ISO language code (e.g., 'pt-PT', 'en', 'sv')
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   speed?: number; // 0.25 to 4.0, default 1.0
+  userId?: string; // Optional user ID for usage tracking
 }
 
 /**
@@ -47,13 +49,14 @@ export interface TTSOptions {
  * - Text length validation (max 500 chars)
  * - 30s timeout to prevent hung requests
  * - Rate limit detection for retry logic
+ * - API usage tracking for cost monitoring
  *
  * @param options - TTS configuration options
  * @returns Audio buffer in MP3 format
  * @throws Error if text is too long, timeout occurs, or API fails
  */
 export async function generateAudio(options: TTSOptions): Promise<Buffer> {
-  const { text, languageCode, voice, speed = 1.0 } = options;
+  const { text, languageCode, voice, speed = 1.0, userId } = options;
 
   // Validate text length
   if (!text || text.trim().length === 0) {
@@ -65,46 +68,55 @@ export async function generateAudio(options: TTSOptions): Promise<Buffer> {
 
   // Use provided voice, or get voice based on language code, or default to 'nova'
   const selectedVoice = voice || (languageCode ? getTTSVoice(languageCode) : 'nova');
-  const openai = getOpenAI();
 
-  // Create AbortController for timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
+  // Wrap TTS API call with usage tracking
+  return withTTSUsageTracking(
+    userId,
+    text,
+    async () => {
+      const openai = getOpenAI();
 
-  try {
-    const response = await openai.audio.speech.create(
-      {
-        model: 'tts-1', // Use 'tts-1-hd' for higher quality (2x cost)
-        voice: selectedVoice,
-        input: text,
-        response_format: 'mp3', // AAC preferred but MP3 widely supported
-        speed,
-      },
-      { signal: controller.signal }
-    );
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TTS_TIMEOUT_MS);
 
-    clearTimeout(timeoutId);
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error) {
-    clearTimeout(timeoutId);
+      try {
+        const response = await openai.audio.speech.create(
+          {
+            model: 'tts-1', // Use 'tts-1-hd' for higher quality (2x cost)
+            voice: selectedVoice,
+            input: text,
+            response_format: 'mp3', // AAC preferred but MP3 widely supported
+            speed,
+          },
+          { signal: controller.signal }
+        );
 
-    // Handle abort (timeout)
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`TTS request timed out after ${TTS_TIMEOUT_MS / 1000}s`);
-    }
+        clearTimeout(timeoutId);
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      } catch (error) {
+        clearTimeout(timeoutId);
 
-    // Handle rate limiting (OpenAI returns 429)
-    if (error instanceof OpenAI.RateLimitError) {
-      const retryAfter = error.headers?.get?.('retry-after');
-      throw new Error(`TTS rate limited${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
-    }
+        // Handle abort (timeout)
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error(`TTS request timed out after ${TTS_TIMEOUT_MS / 1000}s`);
+        }
 
-    console.error('TTS generation failed:', error);
-    throw new Error(
-      `Failed to generate audio: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  }
+        // Handle rate limiting (OpenAI returns 429)
+        if (error instanceof OpenAI.RateLimitError) {
+          const retryAfter = error.headers?.get?.('retry-after');
+          throw new Error(`TTS rate limited${retryAfter ? `, retry after ${retryAfter}s` : ''}`);
+        }
+
+        console.error('TTS generation failed:', error);
+        throw new Error(
+          `Failed to generate audio: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
+    },
+    { languageCode, voice: selectedVoice, speed }
+  );
 }
 
 /**

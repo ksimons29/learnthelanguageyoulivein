@@ -11,6 +11,7 @@
 
 import OpenAI from 'openai';
 import { getTranslationName } from '@/lib/config/languages';
+import { withGPTUsageTracking } from '@/lib/api-usage/logger';
 import type { Word } from '@/lib/db/schema';
 
 /**
@@ -34,6 +35,7 @@ export interface SentenceGenerationRequest {
   words: Word[];
   targetLanguage: string; // e.g., 'pt-PT'
   nativeLanguage: string; // e.g., 'en'
+  userId?: string; // Optional user ID for usage tracking
 }
 
 /**
@@ -108,46 +110,55 @@ OUTPUT FORMAT (JSON only, no markdown code blocks):
 
   const userPrompt = `Generate a natural sentence using these ${targetLangName} words: ${wordList}`;
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7, // Some creativity, but not too random
-      response_format: { type: 'json_object' },
-    });
+  // Wrap in usage tracking
+  return withGPTUsageTracking(
+    'sentence_generation',
+    request.userId,
+    async () => {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7, // Some creativity, but not too random
+        response_format: { type: 'json_object' },
+      });
 
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error('Empty response from GPT');
-    }
+      const content = response.choices[0].message.content;
+      if (!content) {
+        throw new Error('Empty response from GPT');
+      }
 
-    const parsed = JSON.parse(content) as {
-      sentence: string;
-      translation: string;
-      wordsUsed?: string[];
-    };
+      const parsed = JSON.parse(content) as {
+        sentence: string;
+        translation: string;
+        wordsUsed?: string[];
+      };
 
-    // Validate sentence contains all target words
-    const isValid = validateSentenceContainsWords(
-      parsed.sentence,
-      request.words.map((w) => w.originalText)
-    );
+      // Validate sentence contains all target words
+      const isValid = validateSentenceContainsWords(
+        parsed.sentence,
+        request.words.map((w) => w.originalText)
+      );
 
-    return {
-      text: parsed.sentence,
-      translation: parsed.translation,
-      wordsUsed: parsed.wordsUsed || request.words.map((w) => w.originalText),
-      isValid,
-    };
-  } catch (error) {
-    console.error('Sentence generation error:', error);
-    throw new Error(
-      `Failed to generate sentence: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  }
+      const result = {
+        text: parsed.sentence,
+        translation: parsed.translation,
+        wordsUsed: parsed.wordsUsed || request.words.map((w) => w.originalText),
+        isValid,
+      };
+
+      return {
+        result,
+        usage: {
+          prompt_tokens: response.usage?.prompt_tokens || 0,
+          completion_tokens: response.usage?.completion_tokens || 0,
+        },
+      };
+    },
+    { wordCount: request.words.length, targetLanguage: request.targetLanguage }
+  );
 }
 
 /**
