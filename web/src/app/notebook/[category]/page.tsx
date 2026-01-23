@@ -40,9 +40,10 @@ export default function CategoryDetailPage() {
     : getCategoryConfig(category);
   const CategoryIcon = categoryConfig.icon;
 
-  // Fetch words for this category on mount (with sentences for notebook display)
+  // Fetch words for this category on mount
+  // Note: Example sentences are now stored directly on word entities (exampleSentence, exampleTranslation)
   const loadWords = useCallback(() => {
-    setFilter({ category, search: undefined, includeSentences: true });
+    setFilter({ category, search: undefined });
     fetchWords();
   }, [category, setFilter, fetchWords]);
 
@@ -217,7 +218,6 @@ export default function CategoryDetailPage() {
               <WordCard
                 key={word.id}
                 word={word}
-                sentence={word.sentence}
                 expandable={true}
                 onClick={() => handleWordClick(word)}
               />

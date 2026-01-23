@@ -40,7 +40,7 @@ interface WordCardProps {
   word: Word;
   onClick?: () => void;
   className?: string;
-  /** Optional sentence context for the word */
+  /** @deprecated - sentences are now on word.exampleSentence. This prop is kept for backwards compatibility */
   sentence?: {
     text: string;
     translation: string | null;
@@ -64,7 +64,7 @@ export function WordCard({
   word,
   onClick,
   className,
-  sentence,
+  sentence: sentenceProp,
   expandable = false,
   showSentenceInline = false,
 }: WordCardProps) {
@@ -72,6 +72,11 @@ export function WordCard({
   const { play, isPlaying, isLoading, currentUrl } = useAudioPlayer();
 
   const isThisPlaying = isPlaying && currentUrl === word.audioUrl;
+
+  // Use word's built-in example sentence, falling back to sentence prop for backwards compatibility
+  const sentence = word.exampleSentence
+    ? { text: word.exampleSentence, translation: word.exampleTranslation }
+    : sentenceProp;
 
   const handleAudioClick = () => {
     if (word.audioUrl) {

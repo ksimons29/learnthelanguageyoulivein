@@ -5,7 +5,6 @@ import { words, generatedSentences } from '@/lib/db/schema';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadAudio, uploadSentenceAudio } from '@/lib/audio/storage';
 import {
-  DEFAULT_LANGUAGE_PREFERENCE,
   getTranslationName,
   isDirectionSupported,
   isLanguageSupported,
@@ -15,6 +14,7 @@ import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
 import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
 import { generateSentenceWithRetry } from '@/lib/sentences/generator';
 import { determineExerciseType } from '@/lib/sentences/exercise-type';
+import { generateAndStoreExampleSentence } from '@/lib/sentences/example-sentence';
 import { withRetry } from '@/lib/utils/retry';
 import OpenAI from 'openai';
 import { eq, and, or, ilike, sql, gte } from 'drizzle-orm';
@@ -308,6 +308,21 @@ export async function POST(request: NextRequest) {
       // Silently fail - this is an optimization, not critical
     });
 
+    // 12. Generate example sentence in background (fire-and-forget)
+    // Uses same pattern as audio generation - doesn't block capture
+    // Determine which text to use: we want the sentence in the TARGET language
+    // If user entered in target language (e.g., "obrigado"), use that
+    // If user entered in native language (e.g., "thank you"), use the translation
+    const sentenceText = isInputInTargetLanguage ? text : translation;
+    generateAndStoreExampleSentence(
+      newWord.id,
+      sentenceText,
+      languagePreference.targetLanguage,
+      languagePreference.nativeLanguage
+    ).catch((err) => {
+      console.error('Background example sentence generation failed:', err);
+    });
+
     return response;
   } catch (error) {
     console.error('Word capture error:', error);
@@ -325,8 +340,9 @@ export async function POST(request: NextRequest) {
  * GET /api/words
  *
  * List user's words with pagination and filtering.
+ * Example sentences are now stored directly on the word entity (exampleSentence, exampleTranslation).
  *
- * Query params: page, limit, category, masteryStatus, search, includeSentences
+ * Query params: page, limit, category, masteryStatus, search
  */
 export async function GET(request: NextRequest) {
   try {
@@ -347,7 +363,7 @@ export async function GET(request: NextRequest) {
     const masteryStatus = searchParams.get('masteryStatus');
     const search = searchParams.get('search');
     const excludeId = searchParams.get('excludeId');
-    const includeSentences = searchParams.get('includeSentences') === 'true';
+    // Note: includeSentences param is deprecated - sentences are now on word entity
 
     // 4. Build query with filters - filter by BOTH native and target language
     // This ensures only words from the user's configured language pair are included.
@@ -401,7 +417,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 4. Query words with pagination
+    // 5. Query words with pagination
+    // Words now include exampleSentence and exampleTranslation directly
     const offset = (page - 1) * limit;
     const userWords = await db
       .select()
@@ -411,60 +428,16 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // 5. Count total for pagination (safe destructuring to handle empty results)
+    // 6. Count total for pagination (safe destructuring to handle empty results)
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(words)
       .where(and(...conditions));
     const count = countResult[0]?.count ?? 0;
 
-    // 6. Optionally fetch one sentence per word for notebook display
-    let wordsWithSentences = userWords;
-    if (includeSentences && userWords.length > 0) {
-      const wordIds = userWords.map((w) => w.id);
-
-      // Get one sentence per word (most recently used, or unused if available)
-      // Using a subquery to get the first matching sentence for each word
-      const sentenceResults = await db
-        .select({
-          id: generatedSentences.id,
-          text: generatedSentences.text,
-          translation: generatedSentences.translation,
-          wordIds: generatedSentences.wordIds,
-        })
-        .from(generatedSentences)
-        .where(
-          and(
-            eq(generatedSentences.userId, user.id),
-            sql`${generatedSentences.wordIds} && ARRAY[${sql.join(wordIds.map(id => sql`${id}::uuid`), sql`, `)}]`
-          )
-        )
-        .orderBy(sql`${generatedSentences.usedAt} DESC NULLS FIRST`)
-        .limit(100); // Get enough sentences to cover all words
-
-      // Build a map of wordId -> first matching sentence
-      const wordSentenceMap = new Map<string, { text: string; translation: string | null }>();
-      for (const sentence of sentenceResults) {
-        for (const wordId of sentence.wordIds) {
-          if (!wordSentenceMap.has(wordId)) {
-            wordSentenceMap.set(wordId, {
-              text: sentence.text,
-              translation: sentence.translation,
-            });
-          }
-        }
-      }
-
-      // Attach sentence to each word
-      wordsWithSentences = userWords.map((word) => ({
-        ...word,
-        sentence: wordSentenceMap.get(word.id) || null,
-      }));
-    }
-
     return NextResponse.json({
       data: {
-        words: wordsWithSentences,
+        words: userWords,
         total: count,
         page,
         limit,

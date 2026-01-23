@@ -80,27 +80,30 @@ export interface CategoryStats {
   dueCount: number;
 }
 
-/** Sentence data attached to a word for notebook display */
+/**
+ * @deprecated Sentence data is now stored directly on Word entity (exampleSentence, exampleTranslation)
+ * This type is kept for backwards compatibility
+ */
 export interface WordSentence {
   text: string;
   translation: string | null;
 }
 
-/** Word with optional sentence for notebook display */
-export interface WordWithSentence extends Word {
-  sentence?: WordSentence | null;
-}
+/**
+ * @deprecated Example sentences are now on Word entity directly (exampleSentence, exampleTranslation)
+ * This type alias is kept for backwards compatibility
+ */
+export type WordWithSentence = Word;
 
 interface WordsState {
   // State
-  words: WordWithSentence[];
+  words: Word[];
   isLoading: boolean;
   error: string | null;
   currentFilter: {
     category?: string;
     masteryStatus?: string;
     search?: string;
-    includeSentences?: boolean;
   };
 
   // Audio generation tracking
@@ -201,7 +204,7 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       if (currentFilter.category) params.set('category', currentFilter.category);
       if (currentFilter.masteryStatus) params.set('masteryStatus', currentFilter.masteryStatus);
       if (currentFilter.search) params.set('search', currentFilter.search);
-      if (currentFilter.includeSentences) params.set('includeSentences', 'true');
+      // Note: includeSentences param is deprecated - sentences are now on word entity
 
       const response = await fetch(`/api/words?${params.toString()}`);
       if (!response.ok) {

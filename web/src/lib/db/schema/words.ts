@@ -57,6 +57,11 @@ export const words = pgTable('words', {
   situationTags: text('situation_tags').array(), // ['alone', 'with_partner', 'nervous']
   personalNote: text('personal_note'), // "My first time ordering alone!"
 
+  // Example Sentence (generated at capture time)
+  // A single example sentence showcasing the word in context
+  exampleSentence: text('example_sentence'), // "Obrigado pela ajuda."
+  exampleTranslation: text('example_translation'), // "Thank you for the help."
+
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
