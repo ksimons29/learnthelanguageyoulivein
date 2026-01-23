@@ -44,8 +44,14 @@ LLYLI is your **digital language notebook** that makes vocabulary stick:
 
 ## Key Features
 
-### Dynamic Sentence Generation
-Most apps show isolated word pairs. LLYLI combines 2-4 of your words in AI-generated sentences that **never repeat**. Each review is fresh, building real-world recall.
+### Adaptive Sentence Generation
+Most apps show isolated word pairs. LLYLI combines 2-4 of your words in AI-generated sentences that **never repeat** and **adapt to your context**.
+
+- **Work words** (reunião, cliente, prazo) → Professional tone
+- **Social words** (cerveja, amigos, sábado) → Casual tone
+- **Bureaucracy words** (NIF, finanças) → Neutral tone
+
+Sentences include local references you'll recognize—Continente and multibanco in Portugal, ICA and BankID in Sweden. Your vocabulary tells us what situations matter to you.
 
 ### FSRS-4.5 Spaced Repetition
 We use a 2023 machine learning-based algorithm - **36 years more advanced** than the algorithm in most apps. It adapts to your personal forgetting curve.

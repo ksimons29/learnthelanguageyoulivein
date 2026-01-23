@@ -48,7 +48,31 @@ LLYLI is built on peer-reviewed research in cognitive psychology and spaced repe
 
 **Evidence:** 4-6x faster vocabulary acquisition from varied context exposure.
 
-### 5. Encoding Specificity
+### 5. Adaptive Context Generation
+
+**Principle:** Learning is most effective when practice matches real-world usage. A sentence about business meetings won't help you at the pharmacy; a casual phrase won't prepare you for a formal presentation.
+
+**How LLYLI applies it:**
+Our sentence generator analyzes YOUR vocabulary to detect context:
+
+| Your Words | Detected Domain | Sentence Style |
+|------------|-----------------|----------------|
+| reunião, prazo, cliente | Work | Professional tone |
+| cerveja, amigos, sábado | Social | Casual tone |
+| médico, receita, farmácia | Health | Neutral tone |
+| escola, filhos, buscar | Family | Everyday tone |
+| NIF, finanças, documento | Bureaucracy | Formal tone |
+
+**The key insight:** Your vocabulary IS the context signal. We don't assume you're a "business professional" or a "student" - your captured words tell us what situations matter to YOU.
+
+**Local grounding:** Sentences reference real places and concepts from your target country:
+- **Portugal:** Continente, multibanco, finanças, pastelaria
+- **Sweden:** ICA, BankID, Skatteverket, fika
+- **International English:** GP, pub, meeting, deadline
+
+This creates sentences that feel like your actual life, not generic textbook examples.
+
+### 6. Encoding Specificity
 
 **Principle:** Memory retrieval improves when recall context matches learning context (Tulving & Thomson, 1973).
 
@@ -60,7 +84,7 @@ LLYLI is built on peer-reviewed research in cognitive psychology and spaced repe
 
 **Evidence:** r = 0.5 correlation between personal novelty and learning effectiveness.
 
-### 6. Three-Recall Mastery
+### 7. Three-Recall Mastery
 
 **Principle:** A word isn't truly learned until it can be recalled multiple times across spaced intervals.
 

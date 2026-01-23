@@ -4,6 +4,17 @@
  * Uses GPT-4o-mini to generate natural sentences containing
  * 2-4 target words for contextual language learning.
  *
+ * ADAPTIVE APPROACH:
+ * The prompt analyzes the user's vocabulary to detect domain (work, social,
+ * family, health, errands, bureaucracy) and adapts tone accordingly.
+ * This creates sentences that feel relevant to the user's actual life
+ * without assuming a specific persona.
+ *
+ * Philosophy: "The user's vocabulary IS the context signal."
+ * - Work words → professional tone
+ * - Social words → casual tone
+ * - Family words → everyday tone
+ *
  * Cost: ~$0.00006 per sentence (~6 cents per 1000 sentences)
  *
  * Reference: /docs/engineering/implementation_plan.md (Epic 2)
@@ -63,49 +74,109 @@ export async function generateSentence(
   const nativeLangName = getTranslationName(request.nativeLanguage);
   const wordList = request.words.map((w) => w.originalText).join(', ');
 
-  // Build language-specific instructions
+  // Build language-specific instructions with LOCAL grounding
+  // Each language gets context that anyone living there would recognize
   let languageInstructions = '';
+  let countryContext = '';
 
   if (request.targetLanguage === 'pt-PT') {
+    countryContext = 'Portugal';
     languageInstructions = `
-EUROPEAN PORTUGUESE RULES:
-- Use European Portuguese (Portugal) ONLY - never Brazilian Portuguese
-- Use "tu" forms instead of "você" where appropriate
-- Use European spelling and vocabulary (e.g., "autocarro" not "ônibus", "telemóvel" not "celular")`;
+PORTUGAL - LOCAL GROUNDING:
+Language rules:
+- European Portuguese ONLY - never Brazilian Portuguese
+- Use "tu" forms for informal, "você" only when formally appropriate
+- European vocabulary: autocarro, telemóvel, pequeno-almoço, casa de banho, talho
+
+Local references anyone living there would know:
+- Shopping: Continente, Pingo Doce, pastelaria, talho, mercado, farmácia
+- Bureaucracy: finanças, NIF, multibanco, junta de freguesia, SEF, AT
+- Transport: comboio, metro, autocarro, CP, Via Verde
+- Culture: café, pastel de nata, almoço, praia, fado
+- Work: reunião, colega, prazo, projeto, almoço de trabalho
+
+Match the formality to the vocabulary:
+- Work words (reunião, cliente, prazo) → professional tone
+- Social words (cerveja, amigos, jantar) → casual tone
+- Bureaucracy words (NIF, finanças) → neutral/formal tone`;
+
   } else if (request.targetLanguage === 'sv') {
+    countryContext = 'Sweden';
     languageInstructions = `
-SWEDISH RULES:
-- Use standard Swedish (rikssvenska)
-- Use natural Swedish word order and phrasing`;
+SWEDEN - LOCAL GROUNDING:
+Language rules:
+- Standard Swedish (rikssvenska)
+- Always use "du" - everyone does in Sweden
+- Natural word order, Swedish directness in communication
+
+Local references anyone living there would know:
+- Shopping: ICA, Coop, Systembolaget, apotek, Willys
+- Bureaucracy: Skatteverket, personnummer, Försäkringskassan, BankID, Swish
+- Transport: SL, pendeltåg, tunnelbana, SJ
+- Culture: fika, midsommar, semester, stuga, fredagsmys
+- Work: möte, kollega, deadline, AW (after work), lunch
+
+Match the formality to the vocabulary:
+- Work words (möte, projekt, deadline) → professional tone
+- Social words (fika, vänner, helg) → casual tone
+- Bureaucracy words (personnummer, Skatteverket) → neutral tone`;
+
   } else if (request.targetLanguage === 'en') {
+    countryContext = 'an English-speaking environment';
     languageInstructions = `
-ENGLISH RULES:
-- Use natural, conversational English
-- Use common expressions that native speakers would actually use`;
+ENGLISH - INTERNATIONAL CONTEXT:
+Language rules:
+- Natural, conversational English
+- Mix of British and international usage
+- Common expressions real people use, not textbook phrases
+
+Local references for international/professional context:
+- Daily life: GP, pharmacy, supermarket, post office, bank
+- Work: meeting, deadline, email, call, presentation, feedback
+- Social: pub, coffee, lunch, weekend plans, holiday
+- Professional: schedule, budget, client, update, stakeholder
+
+Match the formality to the vocabulary:
+- Work words (meeting, deadline, presentation) → professional tone
+- Social words (pub, weekend, friends) → casual tone
+- Daily words (appointment, pharmacy) → neutral tone`;
   }
 
-  const systemPrompt = `You are a language learning sentence generator. Create natural, conversational sentences in ${targetLangName}.
+  const systemPrompt = `Generate a practice sentence for someone living in ${countryContext || 'abroad'} who captured these words from daily life.
 
-PROFICIENCY LEVEL: B2 (Upper Intermediate)
-- Use vocabulary and grammar appropriate for B2 CEFR level
-- Sentences should be challenging but comprehensible for intermediate learners
-- Include some idiomatic expressions and natural phrasing
-- Avoid overly simple (A1-A2) or overly complex (C1-C2) constructions
+ADAPTIVE APPROACH:
+First, analyze the vocabulary provided: ${wordList}
+
+Based on these words, determine:
+1. DOMAIN: What area of life? (work, family, social, errands, bureaucracy, health, leisure)
+2. REGISTER: Should this be formal or casual? (formal words → formal sentence)
+3. SITUATION: What realistic scenario would naturally use ALL these words together?
+
+Then generate a sentence that:
+- Matches the domain and register you detected
+- Sounds like something a local would actually say
+- Feels like real life, not a textbook
+
+EXAMPLES OF ADAPTATION:
+- Words like "reunião, prazo, projeto" → Work context, professional tone
+- Words like "cerveja, amigos, sábado" → Social context, casual tone
+- Words like "médico, receita, farmácia" → Health context, neutral tone
+- Words like "escola, filhos, buscar" → Family context, everyday tone
+- Words like "NIF, finanças, documento" → Bureaucracy context, formal tone
 
 RULES:
-1. The sentence MUST contain ALL of these words exactly as written: ${wordList}
-2. Keep the sentence SHORT (maximum 10 words total)
-3. Use everyday, practical language a language learner would encounter
-4. The sentence should sound natural to a native speaker
-5. Preserve the exact form of each target word (do not conjugate differently unless grammatically required)
-6. Context should be realistic daily situations (work, shopping, home, social)
+1. MUST contain ALL words exactly as written: ${wordList}
+2. Maximum 10 words total
+3. Natural spoken language - how people actually talk
+4. Use local references when they fit naturally
+5. Preserve word forms unless grammar absolutely requires change
 ${languageInstructions}
 
-OUTPUT FORMAT (JSON only, no markdown code blocks):
+OUTPUT FORMAT (JSON only, no markdown):
 {
   "sentence": "The sentence in ${targetLangName}",
-  "translation": "Translation in ${nativeLangName}",
-  "wordsUsed": ["list", "of", "target", "words", "as", "used", "in", "sentence"]
+  "translation": "Natural translation in ${nativeLangName}",
+  "wordsUsed": ["words", "as", "they", "appear", "in", "sentence"]
 }`;
 
   const userPrompt = `Generate a natural sentence using these ${targetLangName} words: ${wordList}`;

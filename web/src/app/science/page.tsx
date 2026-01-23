@@ -216,10 +216,34 @@ export default function SciencePage() {
             </div>
 
             <p className="text-sm mb-3" style={{ color: "var(--text-body)" }}>
-              Most apps show one word at a time. We combine 2-4 of your words in fresh sentences.
+              Most apps show one word at a time. We combine 2-4 of your words in fresh sentences that match YOUR context.
             </p>
+
+            {/* Adaptive Context Examples */}
+            <div className="space-y-2 mb-4">
+              {[
+                { words: "reunião, cliente", context: "Work tone" },
+                { words: "cerveja, amigos", context: "Social tone" },
+                { words: "médico, receita", context: "Neutral tone" },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between text-xs p-2 rounded"
+                  style={{ backgroundColor: "var(--surface-page)" }}
+                >
+                  <span style={{ color: "var(--text-body)" }}>{item.words}</span>
+                  <span
+                    className="font-medium"
+                    style={{ color: "var(--accent-nav)" }}
+                  >
+                    → {item.context}
+                  </span>
+                </div>
+              ))}
+            </div>
+
             <p className="text-sm" style={{ color: "var(--text-body)" }}>
-              Each review = new context. The same sentence never repeats.
+              Your vocabulary tells us the situation. Work words get professional sentences. Social words get casual ones.
             </p>
 
             {/* Research Note */}
@@ -231,9 +255,8 @@ export default function SciencePage() {
               }}
             >
               <p style={{ color: "var(--text-body)" }}>
-                <strong style={{ color: "var(--text-heading)" }}>Interleaved Practice:</strong>{" "}
-                Mixing different words in varied contexts creates stronger neural connections
-                than studying each word in isolation.
+                <strong style={{ color: "var(--text-heading)" }}>Adaptive Context:</strong>{" "}
+                Sentences are locally grounded with references you&apos;ll actually recognize—Continente in Portugal, ICA in Sweden.
               </p>
             </div>
 
