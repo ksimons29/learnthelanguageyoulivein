@@ -29,27 +29,33 @@ export function Toast() {
     info: <Info className="h-5 w-5 text-blue-500" />,
   };
 
+  // Use explicit colors with high contrast backgrounds
   const bgColors = {
-    success: "bg-white dark:bg-zinc-900 border-green-500",
-    error: "bg-white dark:bg-zinc-900 border-red-500",
-    info: "bg-white dark:bg-zinc-900 border-blue-500",
+    success: "border-green-600",
+    error: "border-red-600",
+    info: "border-blue-600",
   };
 
   return (
     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-xl ${bgColors[toast.type]}`}
-        style={{ maxWidth: "calc(100vw - 2rem)", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 ${bgColors[toast.type]}`}
+        style={{
+          maxWidth: "calc(100vw - 2rem)",
+          // High contrast background that works on any page
+          backgroundColor: "#1a1a1a",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1)",
+        }}
       >
         {icons[toast.type]}
-        <p className="text-sm font-medium" style={{ color: "var(--text-body)" }}>
+        <p className="text-sm font-medium text-white">
           {toast.message}
         </p>
         <button
           onClick={hideToast}
-          className="ml-2 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          className="ml-2 p-1 rounded hover:bg-white/20 transition-colors"
         >
-          <X className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+          <X className="h-4 w-4 text-white/70" />
         </button>
       </div>
     </div>
