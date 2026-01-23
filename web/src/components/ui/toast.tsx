@@ -30,16 +30,16 @@ export function Toast() {
   };
 
   const bgColors = {
-    success: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
-    error: "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
-    info: "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800",
+    success: "bg-white dark:bg-zinc-900 border-green-500",
+    error: "bg-white dark:bg-zinc-900 border-red-500",
+    info: "bg-white dark:bg-zinc-900 border-blue-500",
   };
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
       <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${bgColors[toast.type]}`}
-        style={{ maxWidth: "calc(100vw - 2rem)" }}
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-xl ${bgColors[toast.type]}`}
+        style={{ maxWidth: "calc(100vw - 2rem)", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}
       >
         {icons[toast.type]}
         <p className="text-sm font-medium" style={{ color: "var(--text-body)" }}>
