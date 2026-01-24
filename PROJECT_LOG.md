@@ -41,7 +41,7 @@ npm run build             # Production build
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 
 ### In Progress
-- [ ] **Product Tours (Driver.js)** - 10/12 done (#102-#111). #112 E2E testing + #113 docs remain. Track via #114.
+- [ ] **Product Tours (Driver.js)** - 11/12 done (#102-#112). Only #113 docs remain. Track via #114.
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission

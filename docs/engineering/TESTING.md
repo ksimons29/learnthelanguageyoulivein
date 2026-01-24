@@ -416,6 +416,22 @@ Expected
 * words non zero for active test accounts
 * no sudden drop to zero unless you intentionally reset test users
 
+### 4.5 Feature-Specific E2E Tests
+
+Detailed E2E test documentation for specific features:
+
+| Feature | Test File | When to Run |
+|---------|-----------|-------------|
+| Product Tours | `docs/engineering/e2e-tests/product-tours.md` | Changes to tours, Driver.js config, or feedback widget |
+| Memory Context | `docs/engineering/e2e-tests/memory-context.md` | Changes to capture, notebook, or memory fields |
+
+Each document contains:
+- Step-by-step test scenarios
+- Expected results
+- Screenshots
+- Console log verification
+- Known issues
+
 ---
 
 ## 5. Smoke Test

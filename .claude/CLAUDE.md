@@ -459,6 +459,7 @@ Detailed E2E test cases for specific features:
 
 | Feature | Test File | When to Run |
 |---------|-----------|-------------|
+| Product Tours | `/docs/engineering/e2e-tests/product-tours.md` | Changes to tours, Driver.js, or feedback widget |
 | Memory Context | `/docs/engineering/e2e-tests/memory-context.md` | Changes to capture, notebook, or memory fields |
 | Full App | `/docs/engineering/TESTING.md` | Major features, releases |
 
