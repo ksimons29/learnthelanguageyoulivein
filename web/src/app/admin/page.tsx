@@ -17,6 +17,8 @@ import {
   Lock,
   FlaskConical,
   ShieldAlert,
+  Sparkles,
+  DollarSign,
 } from "lucide-react";
 
 interface AdminStats {
@@ -153,6 +155,63 @@ interface AdminStats {
     masteryValidation: string;
     sessionQuality: string;
     guardrails: string;
+  };
+  sentences?: {
+    total: number;
+    generatedToday: number;
+    generated7d: number;
+    generated30d: number;
+    used: number;
+    preGenerated: number;
+    usageRate: number;
+    wordDistribution: {
+      twoWords: number;
+      threeWords: number;
+      fourWords: number;
+    };
+    avgWordsPerSentence: number;
+    exerciseTypeDistribution: {
+      fillBlank: number;
+      multipleChoice: number;
+      typeTranslation: number;
+    };
+  };
+  apiUsage?: {
+    totalCalls: number;
+    callsToday: number;
+    calls7d: number;
+    calls30d: number;
+    callsByType: {
+      translation: number;
+      tts: number;
+      sentenceGeneration: number;
+      languageDetection: number;
+    };
+    callsByType7d: {
+      translation: number;
+      tts: number;
+      sentenceGeneration: number;
+    };
+    tokenUsage: {
+      total: number;
+      prompt: number;
+      completion: number;
+      last7d: number;
+    };
+    ttsCharacters: {
+      total: number;
+      last7d: number;
+    };
+    costs: {
+      totalUsd: number;
+      todayUsd: number;
+      last7dUsd: number;
+      last30dUsd: number;
+      avgPerActiveUser7d: number;
+    };
+    successRate: number;
+    successfulCalls: number;
+    failedCalls: number;
   };
 }
 
@@ -984,6 +1043,234 @@ export default function AdminDashboard() {
                 </div>
               )}
             </section>
+
+            {/* Sentence Generation - Core Differentiator */}
+            {stats.sentences && (
+              <section>
+                <SectionHeader title="Sentence Generation (Core Feature)" icon={Sparkles} />
+                <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
+                  LLYLI's key differentiator: AI combines 2-4 words in never-repeating sentences.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <StatCard
+                    title="Total Sentences"
+                    value={stats.sentences.total.toLocaleString()}
+                    subtitle="All time"
+                    icon={Sparkles}
+                  />
+                  <StatCard
+                    title="Generated (7d)"
+                    value={stats.sentences.generated7d}
+                    subtitle={`${stats.sentences.generatedToday} today`}
+                    icon={Clock}
+                  />
+                  <StatCard
+                    title="Usage Rate"
+                    value={`${stats.sentences.usageRate}%`}
+                    subtitle={`${stats.sentences.used.toLocaleString()} used / ${stats.sentences.preGenerated.toLocaleString()} pre-gen`}
+                    icon={TrendingUp}
+                    alert={stats.sentences.usageRate < 30}
+                  />
+                  <StatCard
+                    title="Avg Words/Sentence"
+                    value={stats.sentences.avgWordsPerSentence}
+                    subtitle="Target: 2-4 words"
+                    icon={Brain}
+                  />
+                </div>
+
+                {/* Word Distribution */}
+                <div
+                  className="rounded-lg border p-4 mb-4"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <h3 className="font-medium mb-3" style={{ color: "var(--text-primary)" }}>
+                    Word Count Distribution
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+                        {stats.sentences.wordDistribution.twoWords}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        2 words
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: "var(--accent-nav)" }}>
+                        {stats.sentences.wordDistribution.threeWords}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        3 words (ideal)
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+                        {stats.sentences.wordDistribution.fourWords}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        4 words
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Exercise Type Distribution */}
+                <div className="grid grid-cols-3 gap-4">
+                  <StatCard
+                    title="Fill-in-Blank"
+                    value={stats.sentences.exerciseTypeDistribution.fillBlank}
+                    icon={BookOpen}
+                  />
+                  <StatCard
+                    title="Multiple Choice"
+                    value={stats.sentences.exerciseTypeDistribution.multipleChoice}
+                    icon={CheckCircle2}
+                  />
+                  <StatCard
+                    title="Type Translation"
+                    value={stats.sentences.exerciseTypeDistribution.typeTranslation}
+                    icon={Brain}
+                  />
+                </div>
+              </section>
+            )}
+
+            {/* API Usage & Costs - Operational Metrics */}
+            {stats.apiUsage && (
+              <section>
+                <SectionHeader title="OpenAI API Usage & Costs" icon={DollarSign} />
+                <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
+                  Track OpenAI API consumption for cost monitoring and optimization.
+                </p>
+
+                {/* Cost Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                  <StatCard
+                    title="Total Cost"
+                    value={`$${stats.apiUsage.costs.totalUsd.toFixed(2)}`}
+                    subtitle="All time"
+                    icon={DollarSign}
+                  />
+                  <StatCard
+                    title="Cost Today"
+                    value={`$${stats.apiUsage.costs.todayUsd.toFixed(4)}`}
+                    icon={Clock}
+                  />
+                  <StatCard
+                    title="Cost (7d)"
+                    value={`$${stats.apiUsage.costs.last7dUsd.toFixed(2)}`}
+                    icon={TrendingUp}
+                  />
+                  <StatCard
+                    title="Cost (30d)"
+                    value={`$${stats.apiUsage.costs.last30dUsd.toFixed(2)}`}
+                    subtitle="Monthly burn rate"
+                    icon={TrendingUp}
+                    alert={stats.apiUsage.costs.last30dUsd > 100}
+                  />
+                  <StatCard
+                    title="Per Active User (7d)"
+                    value={`$${stats.apiUsage.costs.avgPerActiveUser7d.toFixed(4)}`}
+                    subtitle="Avg cost per user"
+                    icon={Users}
+                  />
+                </div>
+
+                {/* API Calls Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <StatCard
+                    title="Total API Calls"
+                    value={stats.apiUsage.totalCalls.toLocaleString()}
+                    subtitle="All time"
+                    icon={RefreshCw}
+                  />
+                  <StatCard
+                    title="Calls (7d)"
+                    value={stats.apiUsage.calls7d.toLocaleString()}
+                    subtitle={`${stats.apiUsage.callsToday} today`}
+                    icon={Clock}
+                  />
+                  <StatCard
+                    title="Success Rate"
+                    value={`${stats.apiUsage.successRate}%`}
+                    subtitle={`${stats.apiUsage.failedCalls} failed`}
+                    icon={CheckCircle2}
+                    alert={stats.apiUsage.successRate < 95}
+                  />
+                  <StatCard
+                    title="Tokens (7d)"
+                    value={(stats.apiUsage.tokenUsage.last7d / 1000).toFixed(1) + "K"}
+                    subtitle={`${(stats.apiUsage.tokenUsage.total / 1_000_000).toFixed(2)}M total`}
+                    icon={Brain}
+                  />
+                </div>
+
+                {/* API Usage by Type */}
+                <div
+                  className="rounded-lg border p-4 mb-4"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <h3 className="font-medium mb-3" style={{ color: "var(--text-primary)" }}>
+                    API Calls by Type (Last 7 Days)
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+                        {stats.apiUsage.callsByType7d.translation.toLocaleString()}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Translation (GPT-4o-mini)
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                        {stats.apiUsage.callsByType.translation.toLocaleString()} all-time
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold" style={{ color: "var(--accent-nav)" }}>
+                        {stats.apiUsage.callsByType7d.tts.toLocaleString()}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Text-to-Speech (TTS-1)
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                        {stats.apiUsage.callsByType.tts.toLocaleString()} all-time · {(stats.apiUsage.ttsCharacters.last7d / 1000).toFixed(1)}K chars (7d)
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold" style={{ color: "var(--state-easy)" }}>
+                        {stats.apiUsage.callsByType7d.sentenceGeneration.toLocaleString()}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        Sentence Generation (GPT-4o-mini)
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                        {stats.apiUsage.callsByType.sentenceGeneration.toLocaleString()} all-time
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pricing Reference */}
+                <div
+                  className="rounded-lg border p-3"
+                  style={{
+                    backgroundColor: "rgba(12, 107, 112, 0.03)",
+                    borderColor: "var(--accent-nav-light)",
+                  }}
+                >
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    <strong>Pricing (Jan 2025):</strong> GPT-4o-mini: $0.150/1M input tokens, $0.600/1M output tokens | TTS-1: $15.00/1M characters
+                  </p>
+                </div>
+              </section>
+            )}
 
             {/* Data Quality Notes - Help PMs understand the metrics */}
             {stats.dataQualityNotes && (

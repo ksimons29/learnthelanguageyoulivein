@@ -170,7 +170,15 @@ cd web && npm run test:run
 - If FAILS → Stop, fix, re-run. Do not proceed.
 - If PASSES → Continue to Step 3.
 
-**Step 3: Integration Tests (Conditional)**
+**Step 3: Project Log Size Check**
+```bash
+cd web && npm run log:check
+```
+- If FAILS (>900 lines) → Run `npm run log:archive` to archive old sessions
+- If PASSES → Continue to Step 4.
+- This check enforces the archiving rule: Keep only 10 most recent sessions in PROJECT_LOG.md
+
+**Step 4: Integration Tests (Conditional)**
 
 Run if you changed:
 - Schema → `npx tsx scripts/test-database.js`
@@ -179,7 +187,7 @@ Run if you changed:
 - Major features → `npx tsx scripts/test-comprehensive.ts`
 - Gamification → `npx tsx scripts/test-gamification-api.ts`
 
-**Step 4: E2E Verification (Conditional)**
+**Step 5: E2E Verification (Conditional)**
 
 REQUIRED if changed these paths:
 - `app/review/**` → Full review flow (5+ words)
@@ -197,7 +205,7 @@ Use Playwright MCP:
 4. Take browser_snapshot at each critical step
 5. Verify from USER PERSPECTIVE (not developer perspective)
 
-**Step 5: Multi-Language Verification (Conditional)**
+**Step 6: Multi-Language Verification (Conditional)**
 
 REQUIRED if changed:
 - Translation logic
@@ -232,6 +240,7 @@ Changed files:
 Tests run:
   ✅ Build: PASSED
   ✅ Unit tests: PASSED (X tests)
+  ✅ Log size: PASSED (X lines)
   [✅/⏭️] Integration: [result or N/A]
   [✅/⏭️] E2E: [result or N/A]
   [✅/⏭️] Multi-language: [result or N/A]
@@ -483,7 +492,8 @@ Before starting ANY work, read these files IN ORDER:
 1. **`findings.md`** - Active bugs that MUST be fixed first
 2. **`MVP_AUDIT.md`** - Feature checklist with pass/fail status
 3. **`PROJECT_LOG.md`** - Current status, recent changes
-4. **`~/.claude/skills/reflect/SKILL.md`** - Learned patterns
+4. **Check PROJECT_LOG.md size** - Run `cd web && npm run log:check`. If >900 lines, run `npm run log:archive`
+5. **`~/.claude/skills/reflect/SKILL.md`** - Learned patterns
 
 **Priority order:**
 1. Fix P0 BLOCKER bugs (app unusable)

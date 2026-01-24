@@ -616,22 +616,6 @@ export default function ReviewPage() {
               </p>
             )}
 
-            {/* Report Issue */}
-            <button
-              className="flex w-full items-center justify-center gap-2 rounded-lg border py-3 text-sm transition-colors"
-              style={{
-                borderColor: "var(--notebook-stitch)",
-                backgroundColor: "var(--surface-page)",
-                color: "var(--text-muted)",
-              }}
-            >
-              <AlertTriangle
-                className="h-4 w-4"
-                style={{ color: "var(--state-good)" }}
-              />
-              Report issue with this sentence
-            </button>
-
             {/* Info indicator */}
             <div
               className="flex items-center justify-center gap-2 text-xs"
@@ -846,22 +830,6 @@ export default function ReviewPage() {
               Reviewed: {wordsReviewed} of {dueWords.length}
             </p>
           )}
-
-          {/* Report Issue */}
-          <button
-            className="flex w-full items-center justify-center gap-2 rounded-lg border py-3 text-sm transition-colors"
-            style={{
-              borderColor: "var(--notebook-stitch)",
-              backgroundColor: "var(--surface-page)",
-              color: "var(--text-muted)",
-            }}
-          >
-            <AlertTriangle
-              className="h-4 w-4"
-              style={{ color: "var(--state-good)" }}
-            />
-            Report issue with this word
-          </button>
 
           {/* Info indicator */}
           <div

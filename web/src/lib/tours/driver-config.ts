@@ -109,8 +109,7 @@ export function createStep(options: TourStepOptions): DriveStep {
       description: options.description,
       side: options.side || "bottom",
       align: options.align || "center",
-      onNextClick: undefined, // Can be customized per step
-      onPrevClick: undefined,
+      // Note: Don't set onNextClick/onPrevClick to undefined - it overrides default behavior
     },
     onHighlightStarted: options.onHighlightStarted,
     onDeselected: options.onDeselected,

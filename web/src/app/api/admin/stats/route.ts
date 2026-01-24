@@ -4,6 +4,8 @@ import { words } from '@/lib/db/schema/words';
 import { reviewSessions } from '@/lib/db/schema/sessions';
 import { userFeedback } from '@/lib/db/schema/user-feedback';
 import { dailyProgress, streakState } from '@/lib/db/schema/gamification';
+import { generatedSentences } from '@/lib/db/schema/sentences';
+import { apiUsageLog } from '@/lib/db/schema/api-usage';
 import { sql, count, avg, sum, eq, gte, and, isNotNull, isNull } from 'drizzle-orm';
 
 /**
@@ -275,12 +277,14 @@ export async function GET(request: NextRequest) {
     // Validate that our research-backed approach is working
     // ============================================
 
-    // Third batch: Science verification metrics (parallel)
+    // Third batch: Science verification metrics + new metrics (parallel)
     const [
       fsrsHealth,
       masteryValidation,
       sessionQuality,
       dataGuardrails,
+      sentenceStats,
+      apiUsageStats,
     ] = await Promise.all([
       // FSRS Health: Interval distribution (should grow over time)
       db.execute(sql`
@@ -384,6 +388,69 @@ export async function GET(request: NextRequest) {
             GROUP BY user_id
             HAVING COUNT(*) > 50
           ) overloaded) as users_overloaded
+      `),
+      // Sentence generation statistics (excludes test users)
+      db.execute(sql`
+        SELECT
+          COUNT(*) as total_sentences,
+          COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as sentences_today,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as sentences_7d,
+          COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as sentences_30d,
+          COUNT(CASE WHEN used_at IS NOT NULL THEN 1 END) as sentences_used,
+          COUNT(CASE WHEN used_at IS NULL THEN 1 END) as sentences_pre_generated,
+          -- Word count distribution
+          COUNT(CASE WHEN array_length(word_ids, 1) = 2 THEN 1 END) as sentences_2words,
+          COUNT(CASE WHEN array_length(word_ids, 1) = 3 THEN 1 END) as sentences_3words,
+          COUNT(CASE WHEN array_length(word_ids, 1) = 4 THEN 1 END) as sentences_4words,
+          -- Average words per sentence
+          ROUND(AVG(array_length(word_ids, 1))::numeric, 1) as avg_words_per_sentence,
+          -- Exercise type distribution
+          COUNT(CASE WHEN exercise_type = 'fill_blank' THEN 1 END) as fill_blank_count,
+          COUNT(CASE WHEN exercise_type = 'multiple_choice' THEN 1 END) as multiple_choice_count,
+          COUNT(CASE WHEN exercise_type = 'type_translation' THEN 1 END) as type_translation_count
+        FROM generated_sentences
+        WHERE ${testUserFilter}
+      `),
+      // API usage and cost statistics (excludes test users)
+      db.execute(sql`
+        SELECT
+          -- Total API calls
+          COUNT(*) as total_api_calls,
+          COUNT(CASE WHEN created_at >= ${today} THEN 1 END) as calls_today,
+          COUNT(CASE WHEN created_at >= ${sevenDaysAgo} THEN 1 END) as calls_7d,
+          COUNT(CASE WHEN created_at >= ${thirtyDaysAgo} THEN 1 END) as calls_30d,
+          -- By API type (all time)
+          COUNT(CASE WHEN api_type = 'translation' THEN 1 END) as translation_calls,
+          COUNT(CASE WHEN api_type = 'tts' THEN 1 END) as tts_calls,
+          COUNT(CASE WHEN api_type = 'sentence_generation' THEN 1 END) as sentence_gen_calls,
+          COUNT(CASE WHEN api_type = 'language_detection' THEN 1 END) as lang_detect_calls,
+          -- By API type (7d)
+          COUNT(CASE WHEN api_type = 'translation' AND created_at >= ${sevenDaysAgo} THEN 1 END) as translation_calls_7d,
+          COUNT(CASE WHEN api_type = 'tts' AND created_at >= ${sevenDaysAgo} THEN 1 END) as tts_calls_7d,
+          COUNT(CASE WHEN api_type = 'sentence_generation' AND created_at >= ${sevenDaysAgo} THEN 1 END) as sentence_gen_calls_7d,
+          -- Token usage (all time)
+          COALESCE(SUM(total_tokens), 0) as total_tokens_used,
+          COALESCE(SUM(prompt_tokens), 0) as total_prompt_tokens,
+          COALESCE(SUM(completion_tokens), 0) as total_completion_tokens,
+          -- Token usage (7d)
+          COALESCE(SUM(CASE WHEN created_at >= ${sevenDaysAgo} THEN total_tokens ELSE 0 END), 0) as tokens_7d,
+          -- Character usage for TTS (all time)
+          COALESCE(SUM(character_count), 0) as total_tts_characters,
+          COALESCE(SUM(CASE WHEN created_at >= ${sevenDaysAgo} THEN character_count ELSE 0 END), 0) as tts_chars_7d,
+          -- Cost (all time)
+          COALESCE(SUM(estimated_cost), 0) as total_cost_usd,
+          -- Cost (today)
+          COALESCE(SUM(CASE WHEN created_at >= ${today} THEN estimated_cost ELSE 0 END), 0) as cost_today,
+          -- Cost (7d)
+          COALESCE(SUM(CASE WHEN created_at >= ${sevenDaysAgo} THEN estimated_cost ELSE 0 END), 0) as cost_7d,
+          -- Cost (30d)
+          COALESCE(SUM(CASE WHEN created_at >= ${thirtyDaysAgo} THEN estimated_cost ELSE 0 END), 0) as cost_30d,
+          -- Success/failure rates
+          COUNT(CASE WHEN status = 'success' THEN 1 END) as successful_calls,
+          COUNT(CASE WHEN status = 'failure' THEN 1 END) as failed_calls,
+          ROUND(100.0 * COUNT(CASE WHEN status = 'success' THEN 1 END) / NULLIF(COUNT(*), 0), 1) as success_rate
+        FROM api_usage_log
+        WHERE (user_id IS NULL OR ${testUserFilter})
       `),
     ]);
 
@@ -550,6 +617,82 @@ export async function GET(request: NextRequest) {
         masteryValidation: 'Words should reach mastery in ~3-6 reviews. "Stuck in learning" (>5 reviews, >30 days) indicates difficulty. "Mastered under 3" is a bug.',
         sessionQuality: '5-15 minute sessions are optimal per cognitive science. Sessions >25 words risk overload.',
         guardrails: 'Alerts: intervals >365d (suspicious), 0% accuracy (bot/bug), never reviewed (abandoned), >50 due (overload).',
+      },
+      // ============================================
+      // SENTENCE GENERATION METRICS
+      // Validates core differentiator: "AI combines words in never-repeating sentences"
+      // ============================================
+      sentences: {
+        total: Number(getRow(sentenceStats).total_sentences || 0),
+        generatedToday: Number(getRow(sentenceStats).sentences_today || 0),
+        generated7d: Number(getRow(sentenceStats).sentences_7d || 0),
+        generated30d: Number(getRow(sentenceStats).sentences_30d || 0),
+        used: Number(getRow(sentenceStats).sentences_used || 0),
+        preGenerated: Number(getRow(sentenceStats).sentences_pre_generated || 0),
+        usageRate: Number(getRow(sentenceStats).total_sentences || 0) > 0
+          ? Math.round(100 * Number(getRow(sentenceStats).sentences_used || 0) / Number(getRow(sentenceStats).total_sentences || 0))
+          : 0,
+        wordDistribution: {
+          twoWords: Number(getRow(sentenceStats).sentences_2words || 0),
+          threeWords: Number(getRow(sentenceStats).sentences_3words || 0),
+          fourWords: Number(getRow(sentenceStats).sentences_4words || 0),
+        },
+        avgWordsPerSentence: Number(getRow(sentenceStats).avg_words_per_sentence || 0),
+        exerciseTypeDistribution: {
+          fillBlank: Number(getRow(sentenceStats).fill_blank_count || 0),
+          multipleChoice: Number(getRow(sentenceStats).multiple_choice_count || 0),
+          typeTranslation: Number(getRow(sentenceStats).type_translation_count || 0),
+        },
+      },
+      // ============================================
+      // API USAGE & COST METRICS
+      // Track OpenAI API usage for cost monitoring
+      // ============================================
+      apiUsage: {
+        totalCalls: Number(getRow(apiUsageStats).total_api_calls || 0),
+        callsToday: Number(getRow(apiUsageStats).calls_today || 0),
+        calls7d: Number(getRow(apiUsageStats).calls_7d || 0),
+        calls30d: Number(getRow(apiUsageStats).calls_30d || 0),
+        // By type (all time)
+        callsByType: {
+          translation: Number(getRow(apiUsageStats).translation_calls || 0),
+          tts: Number(getRow(apiUsageStats).tts_calls || 0),
+          sentenceGeneration: Number(getRow(apiUsageStats).sentence_gen_calls || 0),
+          languageDetection: Number(getRow(apiUsageStats).lang_detect_calls || 0),
+        },
+        // By type (7d)
+        callsByType7d: {
+          translation: Number(getRow(apiUsageStats).translation_calls_7d || 0),
+          tts: Number(getRow(apiUsageStats).tts_calls_7d || 0),
+          sentenceGeneration: Number(getRow(apiUsageStats).sentence_gen_calls_7d || 0),
+        },
+        // Token usage
+        tokenUsage: {
+          total: Number(getRow(apiUsageStats).total_tokens_used || 0),
+          prompt: Number(getRow(apiUsageStats).total_prompt_tokens || 0),
+          completion: Number(getRow(apiUsageStats).total_completion_tokens || 0),
+          last7d: Number(getRow(apiUsageStats).tokens_7d || 0),
+        },
+        // TTS character usage
+        ttsCharacters: {
+          total: Number(getRow(apiUsageStats).total_tts_characters || 0),
+          last7d: Number(getRow(apiUsageStats).tts_chars_7d || 0),
+        },
+        // Cost (USD)
+        costs: {
+          totalUsd: Number(getRow(apiUsageStats).total_cost_usd || 0),
+          todayUsd: Number(getRow(apiUsageStats).cost_today || 0),
+          last7dUsd: Number(getRow(apiUsageStats).cost_7d || 0),
+          last30dUsd: Number(getRow(apiUsageStats).cost_30d || 0),
+          // Per-user average (7d)
+          avgPerActiveUser7d: Number(getRow(activeUsersResult).active_users_7d || 0) > 0
+            ? (Number(getRow(apiUsageStats).cost_7d || 0) / Number(getRow(activeUsersResult).active_users_7d || 0))
+            : 0,
+        },
+        // Success/failure
+        successRate: Number(getRow(apiUsageStats).success_rate || 0),
+        successfulCalls: Number(getRow(apiUsageStats).successful_calls || 0),
+        failedCalls: Number(getRow(apiUsageStats).failed_calls || 0),
       },
     });
   } catch (error) {

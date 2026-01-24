@@ -1,6 +1,134 @@
 # LLYLI Project Log - Archive
 
-> Archived sessions 1-41. For current sessions, see [PROJECT_LOG.md](./PROJECT_LOG.md)
+> Archived sessions 1-67. For current sessions, see [PROJECT_LOG.md](./PROJECT_LOG.md)
+
+---
+
+## Sessions 42-67 (2026-01-20 to 2026-01-22)
+
+### Session 67 - Progress Page 500 Error Fix (#77)
+Fixed PostgreSQL `date()` function incompatibility in `/api/progress` by using `sql.raw()` for column names instead of Drizzle bindings. Applied to streak calculation, forecast data, and activity heatmap queries. Verified across all 3 test users (EN→PT, EN→SV, NL→EN).
+**Files**: `api/progress/route.ts`
+
+### Session 66 - Bingo Bug Fix: Exercise Type Format Mismatch (#78)
+Fixed bingo squares not tracking despite completed reviews. Root cause: client sent `fill_blank` (underscore) but API expected `fill-blank` (hyphen). Added exercise type normalization. User went from 0/9 to 2/9 squares after fix. Added 3 unit tests.
+**Files**: `api/gamification/event/route.ts`, `__tests__/lib/gamification.test.ts`
+
+### Session 65 - Infrastructure Fix: Database Connection & Env Vars
+Fixed critical production 500 errors caused by wrong DATABASE_URL pooler endpoint (aws-0:6543 → aws-1:5432) and outdated Supabase JWT keys. Updated all 7 Vercel env vars, deleted duplicate "web" project. E2E verified sign-in, onboarding, word capture, and today dashboard.
+**Files**: `web/.env.local`, Vercel env vars, deleted `web/.vercel/`
+
+### Session 64 - Sentence Pre-Generation & Vercel Fix (#13, #14)
+Fixed Work category starter words (Reunião, Prazo) injection and added sentence pre-generation after starter word injection. Fixed corrupted Vercel env vars (`y\n` prefix) by using `printf` instead of `echo`. Created reusable `triggerSentencePreGeneration()` utility.
+**Files**: `lib/sentences/pre-generation.ts`, `api/onboarding/starter-words/route.ts`, `scripts/create-test-users.ts`
+
+### Session 63 - Onboarding Capture UX Improvement (#74)
+Improved onboarding capture step: replaced 4 fixed dots with dynamic counter ("0 of 3 minimum" → "5 words added ✓"), added dual buttons after minimum ("Add more" + "I'm done"), added encouragement message. E2E tested all 3 language pairs. Created example sentence feature spec.
+**Files**: `app/onboarding/capture/page.tsx`, `docs/product/features/EXAMPLE_SENTENCE_AT_CAPTURE.md`
+
+### Session 62 - Project Status Audit & Documentation Update
+Updated MVP_AUDIT.md with 10 fixed bugs from Sessions 54-61, added Flow 11: Gamification (10 steps). Closed #71, verified #44. Current state: 0 open bugs, 228 unit tests passing, 10/70 MVP steps passing, 59 untested.
+**Files**: `MVP_AUDIT.md`, `PROJECT_LOG.md`
+
+### Session 61 - Memory Context E2E & Sentence Display Feature (#70, #71)
+Ran Memory Context E2E tests (5 test cases, all pass). Implemented Sentence Display feature in Word Detail: created SentenceHistory component, `/api/words/[id]/sentences` endpoint, integrated into word-detail-sheet. Created comprehensive Memory Context documentation and E2E test spec.
+**Files**: `sentence-history.tsx`, `api/words/[id]/sentences/route.ts`, `word-detail-sheet.tsx`, `docs/product/features/MEMORY_CONTEXT.md`, `docs/engineering/e2e-tests/memory-context.md`
+
+### Session 60 - Inbox Fix & Bug Verification (#65, #66)
+Fixed Notebook Inbox showing 0 results by adding special handling for `category=inbox` (filters by reviewCount=0 AND createdAt >= 24h). Verified #65 (Captured Today) actually working correctly. E2E verified inbox shows 6 phrases with "New" badges.
+**Files**: `api/words/route.ts`, `notebook/[category]/page.tsx`
+
+### Session 59 - Review Queue Shuffle Fix (#64)
+Added "priority band shuffling" to prevent predictable word order while maintaining FSRS priority. Words grouped into overdue/due/new bands, each shuffled with Fisher-Yates algorithm. Created shuffle utilities with 19 unit tests.
+**Files**: `lib/review/shuffle.ts`, `api/reviews/route.ts`, `__tests__/lib/shuffle.test.ts`
+
+### Session 58 - Crash on Close Review Fix (#69)
+Fixed P0 crash when clicking "Close review" by adding null guards to `getNativeLanguageText()`/`getTargetLanguageText()` and `isClosing` state flag to prevent race condition. E2E verified all 3 test users, added 6 null safety tests.
+**Files**: `lib/review/distractors.ts`, `app/review/page.tsx`, `__tests__/lib/distractors.test.ts`
+
+### Session 57 - Due Count Mismatch Fix (#63)
+Fixed P0 bug where Today showed 0 due but Notebook showed 49 due. Root cause: Today used client-side filter, Notebook used FSRS formula. Changed Today page to fetch from `/api/words/stats` (same source as Notebook). Added 8 unit tests for FSRS due count formula.
+**Files**: `app/page.tsx`, `__tests__/lib/due-count.test.ts`
+
+### Session 56 - Word Review Same-Word Bug Fix (#68)
+Fixed P0 BLOCKER where word review showed same word as expected answer for native→target captures. Changed display from `originalText` to `getTargetLanguageText()` ensuring target language always shown. Added 3 invariant tests. E2E verified EN→PT user.
+**Files**: `app/review/page.tsx`, `__tests__/lib/distractors.test.ts`
+
+### Session 55 - Focus Word Selection Fix (#61, #62)
+Fixed P0 BLOCKER where sentence exercises showed wrong highlighted word and missing correct answer. Created `focusWord` as single source of truth for which word is being tested. Changed highlighting from ALL target words to ONLY focus word. Added 3 focus word invariant tests.
+**Files**: `app/review/page.tsx`, `__tests__/lib/distractors.test.ts`
+
+### Session 54 - MVP Bug Audit and Language Direction Fix
+Created `findings.md` (15 bugs documented), `MVP_AUDIT.md` (60 feature steps), updated `CLAUDE.md` with stricter testing. Fixed #60 language direction bug via TDD: wrote failing tests, fixed review/page.tsx to use `getTargetLanguageText()`/`getNativeLanguageText()`. Fixed language mixing bug by filtering BOTH sourceLang AND targetLang (was using OR). Updated 12 files.
+**Files**: `app/review/page.tsx`, `__tests__/lib/distractors.test.ts`, `findings.md`, `MVP_AUDIT.md`, `.claude/CLAUDE.md`, 12 API/query files
+
+### Session 53 - Vercel React Best Practices Implementation
+Applied 45 Vercel React/Next.js performance rules. Eliminated async waterfalls: parallelized sentence generation (5x faster), starter word TTS (10x faster), batched bingo updates (6→2 DB queries). Added `next/dynamic` for gamification components. Converted barrel imports to direct imports. Added performance guidelines to CLAUDE.md.
+**Files**: `api/sentences/generate/route.ts`, `api/onboarding/starter-words/route.ts`, `api/gamification/event/route.ts`, `app/page.tsx`, `.claude/CLAUDE.md`
+
+### Session 52 - Comprehensive Audit Implementation (P0-P2 Fixes)
+Independent codebase audit fixed 9 critical issues: (1) database indexes for query optimization, (2) session race condition with db.transaction(), (3) rate limiting (50 words/day, 10 reviews/day), (4) language validation, (5) network timeout (10s), (6) 401 auth handling, (7) N+1 query fix with batch loading, (8) admin query parallelization, (9) polling memory leak fix with AbortController.
+**Files**: `schema/*.ts` (indexes), `api/reviews/route.ts`, `lib/rate-limit.ts`, `api/words/route.ts`, `words-store.ts`, `api/sentences/next/route.ts`, `api/admin/stats/route.ts`
+
+### Session 51 - Audio Reliability Fix (#57)
+Fixed ~15% audio generation failures: (1) critical language bug in regenerate-audio endpoint, (2) added retry logic (3 retries) and storage upload retries (2), (3) increased client timeout to 60s with exponential backoff polling, (4) added `audioGenerationFailed` column and retry button. E2E tested all 3 language pairs.
+**Files**: `schema/words.ts`, `api/words/[id]/regenerate-audio/route.ts`, `api/words/route.ts`, `audio/tts.ts`, `words-store.ts`, `audio-retry-button.tsx`
+
+### Session 51b - Admin Dashboard & Vercel Cleanup
+Built admin dashboard at `/admin` with secret-based auth (ADMIN_SECRET). Aggregates users, words, audio health, reviews, gamification. Shows DAU/WAU/MAU, retention (D1/D7/D30), session completion, mastery funnel, language pair distribution. Deleted duplicate Vercel project, fixed root `.vercel/` directory issue. Fixed timestamp binding with `sql.raw()`.
+**Files**: `api/admin/stats/route.ts`, `app/admin/page.tsx`, Vercel env vars
+
+### Session 51c - Admin Dashboard Data Quality Fixes
+Fixed misleading dashboard data: (1) session duration capped at 30 min (was 467+ from open tabs), (2) added median session duration, (3) audio success rate based on last 7 days only, (4) filtered invalid language pairs (sv→sv), (5) added "Understanding These Metrics" section explaining methodology.
+**Files**: `api/admin/stats/route.ts`, `app/admin/page.tsx`
+
+### Session 51d - Exclude Test Users from Analytics
+Filtered all dashboard queries to exclude test accounts by email pattern (`@llyli.test`, `@apple-review.test`). Updated 11 queries: userStats, wordStats, audioStats, reviewStats, gamificationStats, feedbackStats, languagePairStats, recentFeedback, productKpis, retentionStats, activeUsersResult.
+**Files**: `api/admin/stats/route.ts`, `app/admin/page.tsx`
+
+### Session 51e - Science Verification Metrics
+Added science verification metrics to admin dashboard: FSRS health (interval distribution, avg stability), mastery validation (avg reviews to mastery, stuck words, lapse rate), session quality (5-15 min optimal %), data quality guardrails (suspicious patterns). Created `docs/product/science.md` with research references. Fixed column name bug `next_review_at` → `next_review_date`.
+**Files**: `api/admin/stats/route.ts`, `app/admin/page.tsx`, `docs/product/science.md`, `README.md`
+
+### Session 50 - Gamification Automated Testing & Starter Data
+Created 120+ unit tests for gamification logic (bingo, streaks, Boss Round, user personas) and 79 tests for starter vocabulary gamification readiness. Added work category words (Meeting/Deadline) to all 6 languages. Added `initialLapseCount` to starter words for immediate Boss Round availability. Created test data seeding and API integration test scripts. Created CHANGELOG.md.
+**Files**: `__tests__/lib/gamification.test.ts`, `__tests__/lib/starter-vocabulary.test.ts`, `scripts/seed-gamification-test-data.ts`, `scripts/test-gamification-api.ts`, `lib/data/starter-vocabulary.ts`, `api/onboarding/starter-words/route.ts`, `CHANGELOG.md`
+
+### Session 49 - API 500 Error Fixes (#58)
+Fixed 5 API vulnerabilities: (1) safe destructuring in GET /api/words (`countResult[0]?.count ?? 0`), (2) empty array guard before `inArray()` in sentences/next, (3) OpenAI retry helper with exponential backoff, (4) TOCTOU race conditions in gamification/state with insert-first pattern.
+**Files**: `api/words/route.ts`, `api/sentences/next/route.ts`, `api/gamification/state/route.ts`
+
+### Session 48 - UX Review Bug Fixes & PROJECT_LOG Archiving
+Fixed 3 critical bugs: (1) duplicate multiple choice options via text deduplication with `seenTexts` Set, (2) missing translation options (same fix), (3) untranslatable words (added "(Dutch expression)" fallback if GPT returns original unchanged). Created issue #57 for audio timeout. Reduced PROJECT_LOG from 1,561 → 408 lines by archiving sessions 15-41.
+**Files**: `lib/review/distractors.ts`, `api/words/route.ts`, `PROJECT_LOG.md`, `PROJECT_LOG_ARCHIVE.md`
+
+### Session 47 - Dark Mode Fixes & Full E2E Testing
+Fixed 13 hardcoded colors breaking dark mode across 3 files (`bg-white` → `var(--surface-page)`, `text-gray-*` → CSS variables). E2E tested all 3 test users: auth, capture, notebook, review, progress, dark mode all passing. Verified gamification system (daily goal ring, streak, bingo board, celebration modal). Fixed untranslatable words GPT instruction.
+**Files**: `words-overview-card.tsx`, `boss-round.tsx`, `app/page.tsx`, `api/words/route.ts`
+
+### Session 46 - Bug Fixes & Self-Healing Guardrails
+Added self-healing guardrail for orphaned sentences: auto-detect and delete when encountered in sentences/next. Added mastery progress explanation: made "1/3 correct sessions" indicator tappable (links to /science#mastery), added Mastery Progress section to Science page with help icon for discoverability.
+**Files**: `api/sentences/next/route.ts`, `app/science/page.tsx`, `app/review/page.tsx`
+
+### Session 45b - Sentence Generation Language Filter Fix
+Fixed sentence generation picking words without language filter causing orphaned sentences. Root cause: `getDueWordsGroupedByCategory()` didn't filter by language but sentences/next API did. Added `targetLanguage` parameter to word matcher.
+**Files**: `lib/sentences/word-matcher.ts`, `api/sentences/generate/route.ts`, `api/words/route.ts`, `api/dev/test-sentences/route.ts`
+
+### Session 45 - Critical Review System Bug Fixes
+Fixed 6 critical review system bugs with TDD approach: (1) due count unrealistic (700+) → capped new cards at 15/day with FSRS formula, (2) sentence mode never triggers → removed `allWordsDue` blocking check, (3) mixed languages in MC → added `getNativeLanguageText()` helper, (4) recall mode missing active input → added FillBlankInput for word mode, (5) session never completes → added MAX_SESSION_WORDS=25, (6) iOS safe-area padding. Added TESTING.md sections 6E-2 and 6E-3.
+**Files**: `api/words/stats/route.ts`, `api/progress/route.ts`, `api/reviews/route.ts`, `api/sentences/next/route.ts`, `lib/review/distractors.ts`, `review-store.ts`, `app/review/page.tsx`, `app/notebook/page.tsx`, `TESTING.md`
+
+### Session 44 - Translation & Audio Fixes
+Fixed 3 issues: (1) login error message clarity, (2) translation fallback (retry with swapped languages if translation equals original), (3) audio always in target language (if user enters native → audio is translation, if user enters target → audio is original).
+**Files**: `auth/sign-in/page.tsx`, `api/words/route.ts`
+
+### Session 43 - Language Auto-Detection + Translation Quality
+Added smart language detection using GPT-4o-mini to detect if input is native or target language, automatically adjusting translation direction. Improved translation prompts with idiom handling, language-specific rules (PT-PT European, SV rikssvenska, EN conversational, NL standard). Added B2 level targeting for sentence generation with idiomatic expressions and natural phrasing.
+**Files**: `api/words/route.ts`, `lib/sentences/generator.ts`
+
+### Session 42 - E2E Bug Fixes: Auth Protection + Sentence Generation
+Fixed 2 bugs from E2E testing: (1) sentence generation language bug (used DEFAULT_LANGUAGE_PREFERENCE instead of user's actual settings), (2) capture route accessible while signed out (added auth check with redirect). E2E verified capture, notebook search, Science page.
+**Files**: `api/words/route.ts`, `app/capture/page.tsx`
 
 ---
 

@@ -13,7 +13,7 @@ export const userFeedback = pgTable('user_feedback', {
 
   // Feedback type
   type: text('type', {
-    enum: ['bug_report', 'feature_request', 'general_feedback'],
+    enum: ['bug_report', 'feature_request', 'general_feedback', 'word_issue'],
   }).notNull(),
 
   // Content
@@ -44,6 +44,11 @@ export const FEEDBACK_TYPES = [
     id: 'general_feedback',
     label: 'General Feedback',
     description: 'Share your thoughts',
+  },
+  {
+    id: 'word_issue',
+    label: 'Word Issue',
+    description: 'Problem with a word or translation',
   },
 ] as const;
 
