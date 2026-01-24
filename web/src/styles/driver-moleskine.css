@@ -37,9 +37,14 @@
   z-index: 10001 !important;
   /* Give highlighted elements the notebook background since they're
      positioned above the overlay and lose their visual context */
-  background-color: var(--surface-page, #f5efe0) !important;
+  background-color: #f5efe0 !important;
   /* Subtle rounded corners for highlighted area */
   border-radius: 8px !important;
+}
+
+.dark .driver-active-element {
+  /* Dark mode: Use the dark page background */
+  background-color: #1a1d20 !important;
 }
 
 /* ======================
