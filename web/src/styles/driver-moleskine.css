@@ -132,6 +132,21 @@ nav.driver-active-element,
   position: fixed !important;
 }
 
+/* Enhanced highlighting for nav elements - make them stand out more */
+[id="nav-capture"].driver-active-element,
+[id="tour-bottom-nav"].driver-active-element {
+  /* Stronger coral glow for small nav items */
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.95),
+    0 0 0 6px rgba(232, 92, 74, 0.8),
+    0 0 20px 6px rgba(232, 92, 74, 0.4),
+    0 0 40px 12px rgba(232, 92, 74, 0.25) !important;
+  /* More noticeable scale */
+  transform: scale(1.08);
+  /* Ensure it's above other nav items */
+  z-index: 10002 !important;
+}
+
 .dark .driver-active-element {
   box-shadow:
     /* Inner glow - soft edge for dark mode */
