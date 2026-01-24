@@ -30,3 +30,10 @@ export {
 
 // React hooks
 export { useTour } from "./hooks/use-tour";
+
+// Tour definitions
+export {
+  registerTodayTour,
+  todayTourDefinition,
+  todayTourSteps,
+} from "./tours/today-tour";

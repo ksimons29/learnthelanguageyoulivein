@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Loader2, PartyPopper, X } from "lucide-react";
@@ -15,6 +15,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
 import { useOnboardingStatus } from "@/lib/hooks";
+import { useTour, registerTodayTour } from "@/lib/tours";
 import type { Word } from "@/lib/db/schema";
 
 // Dynamic imports for gamification components (code splitting)
@@ -69,6 +70,44 @@ export default function HomePage() {
     newCardsAvailable: number;
     reviewDue: number;
   } | null>(null);
+
+  // Tour state
+  const {
+    isCompleted: tourCompleted,
+    isLoading: tourLoading,
+    startTour,
+    markTourComplete,
+  } = useTour("today");
+  const tourStartedRef = useRef(false);
+
+  // Register tour with completion callback
+  useEffect(() => {
+    registerTodayTour(markTourComplete);
+  }, [markTourComplete]);
+
+  // Auto-start tour for new users (after onboarding, before first interaction)
+  useEffect(() => {
+    // Only start once, when tour status is loaded and tour hasn't been completed
+    if (
+      !tourLoading &&
+      !tourCompleted &&
+      !tourStartedRef.current &&
+      !needsOnboarding &&
+      !onboardingLoading &&
+      user
+    ) {
+      tourStartedRef.current = true;
+      // Small delay to ensure DOM elements are rendered
+      const timer = setTimeout(() => {
+        const started = startTour();
+        if (started) {
+          // Mark complete when tour finishes (via tourManager callbacks)
+          // The tour's onComplete callback will handle this
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [tourLoading, tourCompleted, needsOnboarding, onboardingLoading, user, startTour]);
 
   // Boss round state
   const [bossRoundState, setBossRoundState] = useState<'hidden' | 'prompt' | 'playing' | 'results'>('hidden');
@@ -306,7 +345,7 @@ export default function HomePage() {
 
       <div className="mx-auto max-w-md px-5 py-6">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div id="tour-welcome" className="mb-8 flex items-center justify-between">
           <div>
             <h1
               className="text-4xl heading-serif ink-text tracking-tight"
@@ -326,10 +365,10 @@ export default function HomePage() {
 
         {/* Primary Actions - styled as notebook pages */}
         <div className="space-y-4 mb-10">
-          <div className="page-stack-3d">
+          <div id="tour-capture-fab" className="page-stack-3d">
             <CaptureButton />
           </div>
-          <div className="page-stack-3d">
+          <div id="tour-due-today" className="page-stack-3d">
             <ReviewDueButton dueCount={stats.dueCount} />
           </div>
         </div>
@@ -360,7 +399,7 @@ export default function HomePage() {
         </section>
 
         {/* Today's Progress */}
-        <section className="mb-10">
+        <section id="tour-daily-goal" className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <div
               className="w-1 h-6 rounded-full"

@@ -40,6 +40,7 @@ export function BottomNav() {
 
   return (
     <nav
+      id="tour-bottom-nav"
       className="fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-xl"
       style={{
         backgroundColor: "var(--surface-page)",
