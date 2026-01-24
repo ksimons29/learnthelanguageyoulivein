@@ -35,6 +35,11 @@
 .driver-active-element {
   /* Ensure highlighted element is above overlay */
   z-index: 10001 !important;
+  /* Give highlighted elements the notebook background since they're
+     positioned above the overlay and lose their visual context */
+  background-color: var(--surface-page, #f5efe0) !important;
+  /* Subtle rounded corners for highlighted area */
+  border-radius: 8px !important;
 }
 
 /* ======================

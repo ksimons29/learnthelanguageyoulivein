@@ -42,8 +42,7 @@ export const DRIVER_CONFIG: Partial<Config> = {
   // Keyboard navigation
   allowKeyboardControl: true,
 
-  // Overlay opacity handled via CSS for dark mode support
-  // Uses teal-tinted overlay instead of black
+  // Stage settings (the cutout window around highlighted element)
   stagePadding: 8,
   stageRadius: 8,
 
