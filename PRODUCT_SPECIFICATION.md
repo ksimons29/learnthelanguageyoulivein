@@ -254,6 +254,27 @@ New users receive 12 starter words per language:
 - 10 common everyday words
 - Include some with `initialLapseCount` for gamification testing
 
+#### Product Tours
+Contextual onboarding tours using Driver.js:
+
+| Tour | Trigger | Steps |
+|------|---------|-------|
+| Today | First visit to / | 5 steps: Welcome, Review Due, Daily Goal, Capture, Navigation |
+| Capture | First visit to /capture | 4 steps: Input, Memory Context, Save, Completion |
+| Review | First visit to /review | 6 steps: Sentence, Audio, Answer, Rating, Progress, Feedback |
+| Notebook | First visit to /notebook | 4 steps: Categories, Inbox, Search, Journal Header |
+| Progress | First visit to /progress | 3 steps: Stats, Forecast, Streak |
+
+**Design:**
+- Styled with Moleskine design system (cream cards, coral/teal accents)
+- Semi-transparent teal overlay highlights target element
+- Mobile-optimized positioning
+
+**Tour Replay:**
+- Users can replay any tour via Feedback widget
+- "Replay App Tours" expandable menu in feedback sheet
+- Cross-page navigation with `?startTour=tourId` query param
+
 ---
 
 ### 8. Authentication & User Management

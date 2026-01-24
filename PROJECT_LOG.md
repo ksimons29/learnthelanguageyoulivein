@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Product Tours Complete** - Moleskine-styled onboarding with Driver.js. 5 contextual tours (Today, Capture, Review, Notebook, Progress). Tour replay via Feedback widget. E2E tested. (#101-#113, Session 82)
 - [x] **findings.md Archived** - All 18 bug findings resolved. Moved to `docs/archive/findings-2026-01-21-CLOSED.md`. Only #99 (distractor quality) remains open as post-MVP enhancement (Session 82)
 - [x] **NL→EN Starter Vocabulary** - Dutch speakers learning English now receive 12 starter words during onboarding (Session 80, Issue #97)
 - [x] **API Usage Analytics Dashboard** - Full OpenAI cost tracking for translation, TTS, language detection, and sentence generation. Table + indexes created, all API calls instrumented (Session 78)
@@ -41,7 +42,6 @@ npm run build             # Production build
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 
 ### In Progress
-- [ ] **Product Tours (Driver.js)** - 11/12 done (#102-#112). Only #113 docs remain. Track via #114.
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission

@@ -31,6 +31,34 @@ Add at least 3 words to get started. Try words you've encountered today!
 
 ---
 
+## Product Tours
+
+### First-Time Tours
+
+When you first use LLYLI, you'll see guided tours that explain each section:
+
+| Tour | What You'll Learn |
+|------|-------------------|
+| **Today Dashboard** | Overview of your learning, due words, daily progress |
+| **Capture** | How to save words with translation and audio |
+| **Review** | How practice sessions work |
+| **Notebook** | Browsing your vocabulary by category |
+| **Progress** | Tracking your stats and streak |
+
+Tours appear automatically as you explore each section for the first time.
+
+### Replaying Tours
+
+Want to see a tour again? Here's how:
+
+1. Tap the **Feedback** button (coral button on left side of screen)
+2. Scroll down and tap **"Replay App Tours"**
+3. Choose which tour to replay
+
+The tour will navigate you to the correct page and start automatically.
+
+---
+
 ## How to Capture Words
 
 ### Quick Capture

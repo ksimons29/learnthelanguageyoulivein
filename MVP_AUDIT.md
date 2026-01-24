@@ -22,6 +22,8 @@ This document defines EVERY feature that must work for MVP launch. Each feature 
 | 1.3 | Select native language | Language saved to profile | ⬜ Untested |
 | 1.4 | Select target language | Language pair configured | ⬜ Untested |
 | 1.5 | Complete onboarding | Redirected to Today page | ⬜ Untested |
+| 1.6 | First visit to Today | Today tour auto-starts | ✅ **PASS** - Session 82, E2E verified |
+| 1.7 | First visit to each page | Contextual tour auto-starts | ✅ **PASS** - Session 82, E2E verified |
 
 ### Flow 2: Phrase Capture
 | Step | Action | Expected Result | Status |
