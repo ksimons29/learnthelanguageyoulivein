@@ -1049,7 +1049,7 @@ export default function AdminDashboard() {
               <section>
                 <SectionHeader title="Sentence Generation (Core Feature)" icon={Sparkles} />
                 <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-                  LLYLI's key differentiator: AI combines 2-4 words in never-repeating sentences.
+                  LLYLI&apos;s key differentiator: AI combines 2-4 words in never-repeating sentences.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <StatCard
