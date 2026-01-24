@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Driver.js product tour infrastructure** (#102) - Core setup with Moleskine-themed styling
 - **Tour completion tracking schema** (#103) - 5 boolean columns in `user_profiles` to persist which tours users have seen (today, capture, review, notebook, progress)
+- **Tour progress API** (#104) - GET/POST endpoints at `/api/tours/progress` for checking and updating tour completion status
 - **Sentence pre-generation for starter words** - New utility (`lib/sentences/pre-generation.ts`) triggers background sentence generation after onboarding, ensuring users have practice sentences ready immediately
 - **Gamification automated tests** - 120+ new unit tests covering:
   - Bingo board winning conditions (rows, columns, diagonals)
