@@ -90,6 +90,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #117 | Tour dialog doesn't close after clicking "Got it!" | Session 83 |
 | #116 | Bottom nav highlights need better visibility | Session 83 |
 | #115 | Tour overlay highlights wrong elements, button text unclear | Session 83 |
 | #91 | Report issue button for words in review | Session 81 |
@@ -179,9 +180,9 @@ npm run build             # Production build
 
 ## Session Log
 
-### Session 83 - 2026-01-24 - Tour Overlay Visual Fixes (#115, #116)
+### Session 83 - 2026-01-24 - Tour Overlay Visual Fixes (#115, #116, #117)
 
-**Focus:** Fix tour overlay visibility issues - button text unclear, Daily Goal highlighting entire card instead of stat, bottom nav highlights not visible enough.
+**Focus:** Fix tour overlay visibility issues - button text unclear, Daily Goal highlighting entire card instead of stat, bottom nav highlights not visible enough, tour dialog not closing after completion.
 
 **Root Cause Analysis:**
 - Session 82 noted "E2E: Deferred until deployment" - violated testing protocol
@@ -207,6 +208,12 @@ npm run build             # Production build
      - Higher z-index (10002)
    - **Consistent highlight appearance** across all tour steps
 
+3. **Issue #117 - Tour Dialog Not Closing:**
+   - **Root cause:** `onDestroyStarted` callback was setting `activeTour = null` without calling `destroy()`
+   - **Fix:** Call `this.activeTour?.destroy()` in `onDestroyStarted` to trigger DOM cleanup
+   - **State cleanup:** Moved `activeTour = null` to `onDestroyed` callback (fires after DOM removal)
+   - **Result:** Dialog now properly closes when clicking "Got it!" or X button
+
 **Verification:**
 - ✅ Build: PASSED
 - ✅ Unit tests: 317 passed
@@ -221,12 +228,14 @@ npm run build             # Production build
 - `9d95577` style(tours): premium coral spotlight highlight
 - `443d077` fix(tours): correct element targeting for tour highlights
 - `c37183e` fix(tours): improve nav highlight visibility with stronger glow
+- `7b18ba7` fix(tours): ensure tour dialog closes after completion
 
 **Files Modified:**
-- `web/src/styles/driver-moleskine.css` (coral spotlight CSS)
+- `web/src/styles/driver-moleskine.css` (coral spotlight CSS, nav glow)
 - `web/src/components/home/todays-progress.tsx` (added #daily-goal-stat ID)
 - `web/src/components/navigation/bottom-nav.tsx` (added #nav-capture ID)
-- `web/src/lib/tours/tours/today-tour.ts` (updated element selectors)
+- `web/src/lib/tours/tours/today-tour.ts` (updated element selectors, side: top)
+- `web/src/lib/tours/tour-manager.ts` (fixed destroy() call for dialog cleanup)
 
 **Lessons Learned:**
 - NEVER defer E2E testing - it catches critical visual issues
