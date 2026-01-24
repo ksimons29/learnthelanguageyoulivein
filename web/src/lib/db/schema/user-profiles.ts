@@ -50,6 +50,13 @@ export const userProfiles = pgTable('user_profiles', {
   // Onboarding state
   onboardingCompleted: boolean('onboarding_completed').notNull().default(false),
 
+  // Tour completion tracking (Driver.js product tours)
+  tourTodayCompleted: boolean('tour_today_completed').default(false),
+  tourCaptureCompleted: boolean('tour_capture_completed').default(false),
+  tourReviewCompleted: boolean('tour_review_completed').default(false),
+  tourNotebookCompleted: boolean('tour_notebook_completed').default(false),
+  tourProgressCompleted: boolean('tour_progress_completed').default(false),
+
   // Metadata
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
