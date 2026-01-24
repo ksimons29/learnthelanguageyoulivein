@@ -146,7 +146,8 @@ npm run build             # Production build
 | #103 | Tours-2: DB columns for completion | P2-normal | ✅ Done |
 | #104 | Tours-3: API routes for progress | P2-normal | ✅ Done |
 | #105 | Tours-4: useTour React hook | P2-normal | ✅ Done (Session 81) |
-| #106-#113 | Tours-5 to Tours-12 (page tours) | P2-normal | ⬜ Ready |
+| #106 | Tours-5: Today Dashboard tour | P2-normal | ✅ Done (Session 81) |
+| #107-#113 | Tours-6 to Tours-12 (page tours) | P2-normal | ⬜ Ready |
 
 ### Other Features
 | Issue | Feature | Priority |
@@ -170,24 +171,52 @@ npm run build             # Production build
 
 ## Session Log
 
-### Session 81 - 2026-01-24 - Create useTour Hook (Issue #105)
+### Session 81 - 2026-01-24 - useTour Hook + Today Dashboard Tour (#105, #106)
 
-**Focus:** Implement React hook for tour state management as part of Driver.js product tours infrastructure.
+**Focus:** Complete React hook for tour state and implement Today Dashboard tour with 5 steps.
 
 **Tasks Completed:**
+
+**Issue #105 - useTour Hook:**
 1. ✅ Created `useTour` hook at `web/src/lib/tours/hooks/use-tour.ts`
 2. ✅ Hook fetches tour completion status from `/api/tours/progress` on mount
 3. ✅ Provides `startTour()` to trigger tour via `tourManager`
 4. ✅ Provides `markTourComplete()` to persist completion to database
 5. ✅ Loading/error state handling following `useOnboardingStatus` pattern
-6. ✅ Updated `web/src/lib/tours/index.ts` to export hook
-7. ✅ Build passes, 317 unit tests pass
+
+**Issue #106 - Today Dashboard Tour:**
+1. ✅ Created `web/src/lib/tours/tours/today-tour.ts` with 5 steps:
+   - Welcome to LLYLI (header with info button)
+   - Words to Review (due card)
+   - Daily Goal (progress section)
+   - Capture Words Anytime (capture card)
+   - Navigate Your Notebook (bottom nav)
+2. ✅ Added element IDs to `page.tsx`: `#tour-welcome`, `#tour-due-today`, `#tour-daily-goal`, `#tour-capture-fab`
+3. ✅ Added `#tour-bottom-nav` ID to `bottom-nav.tsx`
+4. ✅ Integrated `useTour` hook with auto-trigger for new users
+
+**Bug Fixes During Testing:**
+1. ✅ **Teal overlay too jarring** - Changed from teal `rgba(12, 107, 112, 0.75)` to neutral charcoal `rgba(29, 38, 42, 0.65)`
+2. ✅ **Highlighted elements had gray background** - Added explicit `background-color: #f5efe0` to `.driver-active-element` (cream paper color)
+3. ✅ **Tour Next button didn't advance** - Removed `onNextClick: undefined` from `createStep()` which was overriding default Driver.js navigation
+
+**E2E Verified:**
+- ✅ EN→PT user (test-en-pt@llyli.test) - Tour auto-starts, all 5 steps work
+- ✅ EN→SV user (test-en-sv@llyli.test) - Tour auto-starts, completion persists
+- ✅ NL→EN user (test-nl-en@llyli.test) - Tour completes successfully, doesn't restart
 
 **Files Changed:**
 - `web/src/lib/tours/hooks/use-tour.ts` (NEW)
-- `web/src/lib/tours/index.ts` (updated exports)
+- `web/src/lib/tours/tours/today-tour.ts` (NEW)
+- `web/src/lib/tours/index.ts` (exports)
+- `web/src/lib/tours/driver-config.ts` (fixed onNextClick bug)
+- `web/src/styles/driver-moleskine.css` (overlay + highlight styling)
+- `web/src/app/page.tsx` (element IDs + useTour integration)
+- `web/src/components/navigation/bottom-nav.tsx` (element ID)
 
-**Unblocks:** Issues #106-#113 (page-specific tour implementations)
+**Commits:** `ef96ef0`
+
+**Unblocks:** Issues #107-#113 (remaining page tours)
 
 ---
 
