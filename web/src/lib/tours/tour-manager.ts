@@ -126,7 +126,12 @@ class TourManager {
           definition.onClose?.();
         }
 
-        // Clean up
+        // Explicitly destroy the tour to ensure DOM cleanup
+        // This is required for Driver.js to properly remove the popover
+        this.activeTour?.destroy();
+      },
+      onDestroyed: () => {
+        // Clean up our references after Driver.js has finished
         this.activeTour = null;
         this.activeTourId = null;
       },
