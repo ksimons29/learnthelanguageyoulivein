@@ -87,20 +87,61 @@
 }
 
 /* ======================
-   HIGHLIGHT STAGE
+   STAGE - The cutout window
+   ====================== */
+
+/* The stage SVG creates the cutout effect - matches coral spotlight */
+.driver-overlay svg {
+  filter: drop-shadow(0 0 12px rgba(232, 92, 74, 0.4));
+}
+
+.dark .driver-overlay svg {
+  filter: drop-shadow(0 0 12px rgba(240, 107, 91, 0.5));
+}
+
+/* ======================
+   HIGHLIGHT STAGE - Premium Spotlight Effect
    ====================== */
 
 .driver-active-element {
   z-index: 10001 !important;
-  background-color: #f5efe0 !important;
-  border-radius: 8px !important;
-  /* Subtle glow to make highlighted element feel special */
-  box-shadow: 0 0 0 4px rgba(248, 243, 231, 0.3) !important;
+  position: relative !important;
+
+  /* Don't force background - let element keep its natural appearance */
+  /* Use warm coral glow for premium "spotlight" feel */
+  box-shadow:
+    /* Inner glow - soft white edge */
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    /* Coral accent ring */
+    0 0 0 4px rgba(232, 92, 74, 0.6),
+    /* Soft outer glow */
+    0 0 16px 4px rgba(232, 92, 74, 0.25),
+    /* Ambient light spread */
+    0 0 32px 8px rgba(232, 92, 74, 0.15) !important;
+
+  /* Subtle lift effect */
+  transform: scale(1.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* For fixed position elements (like bottom nav), preserve their positioning */
+.driver-active-element[style*="position: fixed"],
+nav.driver-active-element,
+[id="tour-bottom-nav"].driver-active-element,
+[id="nav-capture"].driver-active-element {
+  position: fixed !important;
 }
 
 .dark .driver-active-element {
-  background-color: #1a1d20 !important;
-  box-shadow: 0 0 0 4px rgba(26, 29, 32, 0.4) !important;
+  box-shadow:
+    /* Inner glow - soft edge for dark mode */
+    0 0 0 2px rgba(248, 243, 231, 0.8),
+    /* Coral accent ring - brighter in dark mode */
+    0 0 0 4px rgba(240, 107, 91, 0.7),
+    /* Soft outer glow */
+    0 0 16px 4px rgba(240, 107, 91, 0.3),
+    /* Ambient light spread */
+    0 0 32px 8px rgba(240, 107, 91, 0.2) !important;
 }
 
 /* ======================
@@ -254,7 +295,8 @@
 .driver-popover.moleskine-tour-popover .driver-popover-description {
   font-size: 0.9375rem;
   line-height: 1.6;
-  color: var(--mlsk-ink-soft);
+  /* Use true ink color for better contrast */
+  color: var(--mlsk-ink);
 
   /* Optimal line length */
   max-width: 42ch;
@@ -313,10 +355,10 @@
 /* Base button styles */
 .driver-popover.moleskine-tour-popover .driver-popover-prev-btn,
 .driver-popover.moleskine-tour-popover .driver-popover-next-btn {
-  padding: 10px 18px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  padding: 10px 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   border-radius: 8px;
   transition: all 180ms ease;
   cursor: pointer;
@@ -355,6 +397,8 @@
   box-shadow:
     0 2px 4px rgba(232, 92, 74, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  /* Text shadow for legibility on coral background */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
 }
 
 .driver-popover.moleskine-tour-popover .driver-popover-next-btn:hover {
