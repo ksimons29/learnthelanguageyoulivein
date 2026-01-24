@@ -1,10 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Bug, Lightbulb, MessageCircle, Send, Check, BookOpen } from "lucide-react";
+import { Bug, Lightbulb, MessageCircle, Send, Check, BookOpen, HelpCircle, ChevronRight, Home, PenLine, Target, BookMarked, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { FEEDBACK_TYPES, type FeedbackType } from "@/lib/db/schema";
+import { tourManager, type TourId } from "@/lib/tours/tour-manager";
+import { registerTodayTour } from "@/lib/tours/tours/today-tour";
+import { registerCaptureTour } from "@/lib/tours/tours/capture-tour";
+import { registerReviewTour } from "@/lib/tours/tours/review-tour";
+import { registerNotebookTour } from "@/lib/tours/tours/notebook-tour";
+import { registerProgressTour } from "@/lib/tours/tours/progress-tour";
 
 interface FeedbackSheetProps {
   open: boolean;
@@ -19,6 +25,47 @@ const typeIcons = {
 } as const;
 
 /**
+ * Tour menu items for replay functionality
+ */
+const TOUR_ITEMS = [
+  {
+    id: "today" as TourId,
+    label: "Today Dashboard",
+    icon: Home,
+    register: registerTodayTour,
+    path: "/",
+  },
+  {
+    id: "capture" as TourId,
+    label: "Capture Words",
+    icon: PenLine,
+    register: registerCaptureTour,
+    path: "/capture",
+  },
+  {
+    id: "review" as TourId,
+    label: "Review Session",
+    icon: Target,
+    register: registerReviewTour,
+    path: "/review",
+  },
+  {
+    id: "notebook" as TourId,
+    label: "Notebook Browser",
+    icon: BookMarked,
+    register: registerNotebookTour,
+    path: "/notebook",
+  },
+  {
+    id: "progress" as TourId,
+    label: "Progress Tracking",
+    icon: TrendingUp,
+    register: registerProgressTour,
+    path: "/progress",
+  },
+] as const;
+
+/**
  * Feedback Sheet Component
  *
  * A bottom sheet for submitting user feedback with Moleskine styling.
@@ -30,6 +77,36 @@ function FeedbackSheet({ open, onOpenChange }: FeedbackSheetProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [showTourMenu, setShowTourMenu] = React.useState(false);
+
+  /**
+   * Start a tour and close the feedback sheet
+   * Navigates to the correct page if needed
+   */
+  const handleStartTour = (tourItem: typeof TOUR_ITEMS[number]) => {
+    // Register the tour first
+    tourItem.register();
+
+    // Close the sheet
+    onOpenChange(false);
+
+    // Navigate to the correct page if not already there
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+    if (currentPath !== tourItem.path) {
+      // Navigate and start tour after page loads
+      window.location.href = tourItem.path + "?startTour=" + tourItem.id;
+    } else {
+      // Start tour immediately with a small delay for sheet close animation
+      setTimeout(() => {
+        tourManager.startTour(tourItem.id);
+      }, 300);
+    }
+
+    // Reset menu state after close
+    setTimeout(() => {
+      setShowTourMenu(false);
+    }, 300);
+  };
 
   const handleSubmit = async () => {
     if (!message.trim()) {
@@ -229,6 +306,85 @@ function FeedbackSheet({ open, onOpenChange }: FeedbackSheetProps) {
                 </>
               )}
             </button>
+
+            {/* Divider */}
+            <div
+              className="my-6 h-px"
+              style={{ backgroundColor: "var(--notebook-stitch)" }}
+            />
+
+            {/* Help Section - Tour Replay */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowTourMenu(!showTourMenu)}
+                className="w-full flex items-center justify-between py-3 px-4 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: "var(--surface-page-aged)",
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <HelpCircle
+                    className="w-5 h-5"
+                    style={{ color: "var(--accent-nav)" }}
+                  />
+                  <span
+                    className="font-medium"
+                    style={{ color: "var(--text-heading)" }}
+                  >
+                    Replay App Tours
+                  </span>
+                </div>
+                <ChevronRight
+                  className={cn(
+                    "w-5 h-5 transition-transform",
+                    showTourMenu && "rotate-90"
+                  )}
+                  style={{ color: "var(--text-muted)" }}
+                />
+              </button>
+
+              {/* Tour Menu - Expandable */}
+              {showTourMenu && (
+                <div
+                  className="mt-2 rounded-lg overflow-hidden"
+                  style={{
+                    backgroundColor: "var(--surface-page)",
+                    border: "1px solid var(--notebook-stitch)",
+                  }}
+                >
+                  {TOUR_ITEMS.map((tour, index) => {
+                    const Icon = tour.icon;
+                    return (
+                      <button
+                        key={tour.id}
+                        type="button"
+                        onClick={() => handleStartTour(tour)}
+                        className={cn(
+                          "w-full flex items-center gap-3 py-3 px-4 transition-colors",
+                          "hover:bg-black/5",
+                          index !== TOUR_ITEMS.length - 1 && "border-b"
+                        )}
+                        style={{
+                          borderColor: "var(--notebook-stitch)",
+                        }}
+                      >
+                        <Icon
+                          className="w-4 h-4"
+                          style={{ color: "var(--accent-nav)" }}
+                        />
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--text-body)" }}
+                        >
+                          {tour.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </>
         )}
       </SheetContent>

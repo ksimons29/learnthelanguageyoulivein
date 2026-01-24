@@ -13,6 +13,8 @@ import { InfoButton } from "@/components/brand";
 import { useWordsStore } from "@/lib/store/words-store";
 import { getCategoryConfig } from "@/lib/config/categories";
 import { BookOpen, Search, Loader2 } from "lucide-react";
+import { useTour } from "@/lib/tours/hooks/use-tour";
+import { registerNotebookTour } from "@/lib/tours/tours/notebook-tour";
 
 // Type for word search results
 interface SearchResultWord {
@@ -43,10 +45,32 @@ export default function NotebookPage() {
   const { categories, categoriesLoading, inboxCount, fetchCategories, error } =
     useWordsStore();
 
+  // Tour state
+  const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("notebook");
+
   // Fetch categories on mount
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
+
+  // Register notebook tour and auto-trigger for first-time visitors
+  useEffect(() => {
+    if (tourLoading || categoriesLoading) return;
+
+    // Register the tour with completion callback
+    registerNotebookTour(() => {
+      markTourComplete();
+    });
+
+    // Auto-start tour if user hasn't completed it and we have content
+    if (!tourCompleted && categories.length > 0) {
+      // Small delay to ensure DOM elements are rendered
+      const timer = setTimeout(() => {
+        startTour();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [tourLoading, tourCompleted, categoriesLoading, categories.length, startTour, markTourComplete]);
 
   // Debounced word search
   useEffect(() => {
@@ -112,12 +136,12 @@ export default function NotebookPage() {
         </div>
 
         {/* Journal Header - Personal stats */}
-        <div className="mb-6">
+        <div id="journal-header" className="mb-6">
           <JournalHeader />
         </div>
 
         {/* Search */}
-        <div className="mb-6">
+        <div id="search-bar" className="mb-6">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -188,7 +212,7 @@ export default function NotebookPage() {
 
             {/* Inbox - Hide when searching */}
             {!showWordResults && inboxCount > 0 && (
-              <div className="mb-6 page-stack-3d">
+              <div id="inbox-category" className="mb-6 page-stack-3d">
                 <InboxCard count={inboxCount} />
               </div>
             )}
@@ -310,7 +334,7 @@ export default function NotebookPage() {
 
             {/* Categories - Hide when showing search results */}
             {!showWordResults && (
-              <section className="pb-8">
+              <section id="category-grid" className="pb-8">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div

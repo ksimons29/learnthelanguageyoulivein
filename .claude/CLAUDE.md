@@ -245,10 +245,9 @@ Tests run:
   [✅/⏭️] E2E: [result or N/A]
   [✅/⏭️] Multi-language: [result or N/A]
 
-Bugs fixed: [bug ID from findings.md or N/A]
+Bugs fixed: [GitHub issue # or N/A]
 
 Documentation updated:
-  [ ] findings.md [if bug fixed]
   [ ] PROJECT_LOG.md [if significant change]
   [ ] MVP_AUDIT.md [if feature completed]
 
@@ -301,8 +300,8 @@ If any test fails:
 
 | Document | Purpose |
 |----------|---------|
-| `findings.md` | **★★ CRITICAL - Active bugs** - Fix before anything else |
-| `MVP_AUDIT.md` | **★★ CRITICAL - Feature checklist** - 60 steps to verify |
+| `MVP_AUDIT.md` | **★★ CRITICAL - Feature checklist** - 70 steps to verify |
+| `PROJECT_LOG.md` | **★★ Project status** - Current progress and session history |
 | `/docs/design/design-system.md` | **★ Moleskine design tokens** - Always for UI |
 | `/docs/engineering/TESTING.md` | **★ Testing guide** - Run after every feature |
 | `~/.claude/skills/vercel-react-best-practices/` | **★ React/Next.js performance** - 45 rules |
@@ -314,36 +313,33 @@ If any test fails:
 
 ## Implementation Status
 
-**⚠️ WARNING: Status below needs verification. See `MVP_AUDIT.md` for actual test results.**
+**See `MVP_AUDIT.md` for detailed test results.**
 
-### Needs Re-Verification 🔄
-- Authentication (Supabase) - untested this session
-- Phrase capture with auto-translation - partial fail (Finding #8)
-- TTS audio generation & storage - untested
-- FSRS spaced repetition engine - untested
-- Review sessions with mastery tracking - untested
-- Notebook browser with categories - partial fail (Finding #9, #10)
-- User onboarding flow - untested
-- Progress dashboard - untested
-- Production deployment (Vercel) - deployed but buggy
-
-### Broken ❌ (See findings.md)
-- Sentence review - 7 P0 bugs, completely non-functional
-- Today dashboard - due count mismatch, captured today resets
-- Notebook inbox - count doesn't match content
+### Core Features ✅
+- Authentication (Supabase) - verified working
+- Phrase capture with auto-translation - working
+- TTS audio generation & storage - working (retry on timeout)
+- FSRS spaced repetition engine - working
+- Review sessions (word + sentence) - working
+- Notebook browser with categories - working
+- Today dashboard - working
+- Progress dashboard - working
+- Gamification (streaks, bingo, boss round) - working
+- Product tours (Today page) - working
 
 ### In Progress ⚠️
-- PWA offline caching
-- iOS App Store submission (Capacitor setup complete)
+- Product Tours (#107-#113) - remaining page tours
+- PWA offline caching - basic setup done
+- iOS App Store submission - Capacitor setup complete
 
 ### Not Started ❌
 - Stripe payments
 
 ### MVP Readiness
-- **60 feature steps defined** in MVP_AUDIT.md
-- **0 passing, 12 failing, 48 untested**
-- **15 bugs documented** in findings.md
-- **NOT ready for MVP launch**
+- **70 feature steps defined** in MVP_AUDIT.md
+- **48 passing (69%), 0 failing, 20 untested**
+- **0 open bugs** - all resolved
+- **MVP ready** - minor items remaining
 
 ## Code Patterns
 
@@ -479,9 +475,9 @@ npx tsx scripts/test-comprehensive.ts # Major features
 
 ## Session Workflow
 
-**Start:** `/clear` → read findings.md → read MVP_AUDIT.md → check PROJECT_LOG.md → fix bugs FIRST
+**Start:** `/clear` → read PROJECT_LOG.md → check MVP_AUDIT.md if needed
 
-**End:** Update findings.md status → Update MVP_AUDIT.md → Update PROJECT_LOG.md → **Run FULL tests**
+**End:** Update PROJECT_LOG.md → Update MVP_AUDIT.md (if features tested) → **Run FULL tests**
 
 **Debug:** Copy server logs → paste to Claude with page context
 
@@ -489,17 +485,15 @@ npx tsx scripts/test-comprehensive.ts # Major features
 
 Before starting ANY work, read these files IN ORDER:
 
-1. **`findings.md`** - Active bugs that MUST be fixed first
-2. **`MVP_AUDIT.md`** - Feature checklist with pass/fail status
-3. **`PROJECT_LOG.md`** - Current status, recent changes
-4. **Check PROJECT_LOG.md size** - Run `cd web && npm run log:check`. If >900 lines, run `npm run log:archive`
-5. **`~/.claude/skills/reflect/SKILL.md`** - Learned patterns
+1. **`PROJECT_LOG.md`** - Current status, open bugs, recent changes
+2. **`MVP_AUDIT.md`** - Feature checklist with pass/fail status (if testing)
+3. **Check PROJECT_LOG.md size** - Run `cd web && npm run log:check`. If >900 lines, run `npm run log:archive`
+4. **`~/.claude/skills/reflect/SKILL.md`** - Learned patterns
 
 **Priority order:**
-1. Fix P0 BLOCKER bugs (app unusable)
-2. Fix P0 Critical bugs (major features broken)
-3. Fix P1 High bugs (significant UX issues)
-4. New features (ONLY after bugs fixed)
+1. Fix any open bugs (check PROJECT_LOG.md Open Bugs section)
+2. Continue in-progress features
+3. New features
 
 ### Key Learnings (ENFORCED)
 

@@ -39,6 +39,8 @@ import {
   type SituationTagId,
   type MemoryContext,
 } from "@/lib/config/memory-context";
+import { useTour } from "@/lib/tours/hooks/use-tour";
+import { registerCaptureTour } from "@/lib/tours/tours/capture-tour";
 
 export default function CapturePage() {
   const router = useRouter();
@@ -51,6 +53,28 @@ export default function CapturePage() {
   const { captureWord, isLoading } = useWordsStore();
   const { showToast } = useUIStore();
   const { emitWordCapturedWithContext } = useGamificationStore();
+
+  // Tour state
+  const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("capture");
+
+  // Register capture tour and auto-trigger for first-time visitors
+  useEffect(() => {
+    if (tourLoading || !user) return;
+
+    // Register the tour with completion callback
+    registerCaptureTour(() => {
+      markTourComplete();
+    });
+
+    // Auto-start tour if user hasn't completed it
+    if (!tourCompleted) {
+      // Small delay to ensure DOM elements are rendered
+      const timer = setTimeout(() => {
+        startTour();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [tourLoading, user, tourCompleted, startTour, markTourComplete]);
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -149,6 +173,7 @@ export default function CapturePage() {
 
       {/* Bottom sheet modal - styled like a notebook page */}
       <div
+        id="capture-sheet"
         className="rounded-t-3xl relative"
         style={{
           backgroundColor: "var(--surface-page)",
@@ -199,6 +224,7 @@ export default function CapturePage() {
 
           {/* Input with ruled lines */}
           <div
+            id="capture-input"
             className="mb-4 relative rounded-xl p-4"
             style={{
               backgroundColor: "var(--surface-page-aged)",
@@ -222,7 +248,7 @@ export default function CapturePage() {
           </div>
 
           {/* Memory Context Accordion */}
-          <div className="mb-6">
+          <div id="memory-context-section" className="mb-6">
             <button
               type="button"
               onClick={() => setShowContextFields(!showContextFields)}
@@ -341,6 +367,7 @@ export default function CapturePage() {
 
           {/* Save button - styled as ribbon tab */}
           <button
+            id="save-button"
             onClick={handleSave}
             disabled={!phrase.trim() || isLoading}
             className="group relative w-full py-5 text-lg font-semibold rounded-r-xl rounded-l-none text-white transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"

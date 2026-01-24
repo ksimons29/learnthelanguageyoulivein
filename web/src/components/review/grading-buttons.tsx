@@ -38,7 +38,7 @@ export function GradingButtons({
   suggestedGrade,
 }: GradingButtonsProps) {
   return (
-    <div className="space-y-3">
+    <div id="rating-buttons" className="space-y-3">
       <p className="text-center text-sm" style={{ color: "var(--text-muted)" }}>
         How well did you recall?
       </p>

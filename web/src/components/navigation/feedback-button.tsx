@@ -32,6 +32,7 @@ export function FeedbackButton() {
   return (
     <>
       <button
+        id="feedback-button"
         onClick={() => setIsOpen(true)}
         className={cn(
           "fixed left-0 bottom-24 z-40",

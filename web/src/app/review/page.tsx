@@ -38,6 +38,8 @@ import {
   getSituationTag,
 } from "@/lib/config/memory-context";
 import { MapPin } from "lucide-react";
+import { useTour } from "@/lib/tours/hooks/use-tour";
+import { registerReviewTour } from "@/lib/tours/tours/review-tour";
 
 type Rating = "hard" | "good" | "easy";
 
@@ -94,6 +96,28 @@ export default function ReviewPage() {
   // Audio player for current word/sentence
   const currentWord = dueWords[currentIndex];
   const { isPlaying, isLoading: audioLoading, play, stop } = useAudioPlayer();
+
+  // Tour state
+  const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("review");
+
+  // Register review tour and auto-trigger for first-time visitors
+  useEffect(() => {
+    if (tourLoading || !user || !sessionId || dueWords.length === 0) return;
+
+    // Register the tour with completion callback
+    registerReviewTour(() => {
+      markTourComplete();
+    });
+
+    // Auto-start tour if user hasn't completed it and we have content to show
+    if (!tourCompleted && reviewState === "recall") {
+      // Small delay to ensure DOM elements are rendered
+      const timer = setTimeout(() => {
+        startTour();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [tourLoading, user, sessionId, dueWords.length, tourCompleted, reviewState, startTour, markTourComplete]);
 
   // Determine exercise type and focus word for sentence mode
   // IMPORTANT: focusWord is the single word being tested in this exercise
@@ -444,24 +468,27 @@ export default function ReviewPage() {
         <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
         <div className="mx-auto max-w-md px-5 py-4">
-          <ReviewHeader
-            current={currentPosition}
-            total={totalItems}
-            onClose={handleClose}
-          />
-
-          {/* Progress bar */}
-          <div
-            className="mt-4 h-1 w-full rounded-full"
-            style={{ backgroundColor: "var(--accent-nav-light)" }}
-          >
-            <div
-              className="h-1 rounded-full transition-all duration-300"
-              style={{
-                backgroundColor: "var(--accent-nav)",
-                width: `${(currentPosition / totalItems) * 100}%`,
-              }}
+          {/* Progress indicator for tour */}
+          <div id="progress-indicator">
+            <ReviewHeader
+              current={currentPosition}
+              total={totalItems}
+              onClose={handleClose}
             />
+
+            {/* Progress bar */}
+            <div
+              className="mt-4 h-1 w-full rounded-full"
+              style={{ backgroundColor: "var(--accent-nav-light)" }}
+            >
+              <div
+                className="h-1 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor: "var(--accent-nav)",
+                  width: `${(currentPosition / totalItems) * 100}%`,
+                }}
+              />
+            </div>
           </div>
 
           {/* Sentence Review Badge */}
@@ -488,68 +515,73 @@ export default function ReviewPage() {
             {/* Sentence Card */}
             {/* FIX for Issue #61 & #62: Only highlight the focus word, not all target words */}
             {/* This makes it clear which word the user is being tested on */}
-            <SentenceCard
-              sentence={currentSentence.text}
-              highlightedWords={focusWord
-                ? [getTargetLanguageText(focusWord, targetLanguage)]
-                : []
-              }
-              translation={
-                currentSentence.translation ||
-                sentenceTargetWords
-                  .map((w) => {
-                    const targetText = getTargetLanguageText(w, targetLanguage);
-                    const nativeText = getNativeLanguageText(w, nativeLanguage);
-                    return `${targetText}: ${nativeText}`;
-                  })
-                  .join(" | ")
-              }
-              showTranslation={
-                reviewState !== "recall" || isAnswerCorrect !== null
-              }
-              onPlayAudio={currentSentence.audioUrl ? handlePlayAudio : undefined}
-              isPlayingAudio={isPlaying}
-              isLoadingAudio={audioLoading}
-              exerciseType={exerciseType}
-              blankedWord={blankedWord ? getTargetLanguageText(blankedWord, targetLanguage) : undefined}
-            >
-              {/* Fill-in-the-blank input */}
-              {exerciseType === "fill_blank" &&
-                reviewState === "recall" &&
-                blankedWord &&
-                isAnswerCorrect === null && (
-                  <FillBlankInput
-                    correctAnswer={getTargetLanguageText(blankedWord, targetLanguage)}
-                    onSubmit={handleFillBlankSubmit}
-                  />
-                )}
+            <div id="sentence-display">
+              <SentenceCard
+                sentence={currentSentence.text}
+                highlightedWords={focusWord
+                  ? [getTargetLanguageText(focusWord, targetLanguage)]
+                  : []
+                }
+                translation={
+                  currentSentence.translation ||
+                  sentenceTargetWords
+                    .map((w) => {
+                      const targetText = getTargetLanguageText(w, targetLanguage);
+                      const nativeText = getNativeLanguageText(w, nativeLanguage);
+                      return `${targetText}: ${nativeText}`;
+                    })
+                    .join(" | ")
+                }
+                showTranslation={
+                  reviewState !== "recall" || isAnswerCorrect !== null
+                }
+                onPlayAudio={currentSentence.audioUrl ? handlePlayAudio : undefined}
+                isPlayingAudio={isPlaying}
+                isLoadingAudio={audioLoading}
+                exerciseType={exerciseType}
+                blankedWord={blankedWord ? getTargetLanguageText(blankedWord, targetLanguage) : undefined}
+              >
+                {/* Answer section for tour */}
+                <div id="answer-section">
+                  {/* Fill-in-the-blank input */}
+                  {exerciseType === "fill_blank" &&
+                    reviewState === "recall" &&
+                    blankedWord &&
+                    isAnswerCorrect === null && (
+                      <FillBlankInput
+                        correctAnswer={getTargetLanguageText(blankedWord, targetLanguage)}
+                        onSubmit={handleFillBlankSubmit}
+                      />
+                    )}
 
-              {/* Multiple choice options */}
-              {exerciseType === "multiple_choice" &&
-                reviewState === "recall" &&
-                !isLoadingDistractors &&
-                multipleChoiceOptions.length > 0 && (
-                  <MultipleChoiceOptions
-                    options={multipleChoiceOptions}
-                    correctOptionId={correctOptionId}
-                    onSelect={handleMultipleChoiceSelect}
-                    disabled={selectedOptionId !== null}
-                    selectedId={selectedOptionId}
-                  />
-                )}
+                  {/* Multiple choice options */}
+                  {exerciseType === "multiple_choice" &&
+                    reviewState === "recall" &&
+                    !isLoadingDistractors &&
+                    multipleChoiceOptions.length > 0 && (
+                      <MultipleChoiceOptions
+                        options={multipleChoiceOptions}
+                        correctOptionId={correctOptionId}
+                        onSelect={handleMultipleChoiceSelect}
+                        disabled={selectedOptionId !== null}
+                        selectedId={selectedOptionId}
+                      />
+                    )}
 
-              {/* Loading distractors */}
-              {exerciseType === "multiple_choice" &&
-                reviewState === "recall" &&
-                isLoadingDistractors && (
-                  <div className="mt-4 flex justify-center">
-                    <Loader2
-                      className="h-6 w-6 animate-spin"
-                      style={{ color: "var(--accent-nav)" }}
-                    />
-                  </div>
-                )}
-            </SentenceCard>
+                  {/* Loading distractors */}
+                  {exerciseType === "multiple_choice" &&
+                    reviewState === "recall" &&
+                    isLoadingDistractors && (
+                      <div className="mt-4 flex justify-center">
+                        <Loader2
+                          className="h-6 w-6 animate-spin"
+                          style={{ color: "var(--accent-nav)" }}
+                        />
+                      </div>
+                    )}
+                </div>
+              </SentenceCard>
+            </div>
 
             {/* Answer Feedback (shown after answering, before grading) */}
             {/* FIX for Issue #61 & #62: Use focusWord for correct answer display */}
@@ -645,24 +677,27 @@ export default function ReviewPage() {
       <div className="elastic-band fixed top-0 bottom-0 right-0 w-8 pointer-events-none z-30" />
 
       <div className="mx-auto max-w-md px-5 py-4">
-        <ReviewHeader
-          current={currentIndex + 1}
-          total={dueWords.length}
-          onClose={handleClose}
-        />
-
-        {/* Progress bar */}
-        <div
-          className="mt-4 h-1 w-full rounded-full"
-          style={{ backgroundColor: "var(--accent-nav-light)" }}
-        >
-          <div
-            className="h-1 rounded-full transition-all duration-300"
-            style={{
-              backgroundColor: "var(--accent-nav)",
-              width: `${((currentIndex + 1) / dueWords.length) * 100}%`,
-            }}
+        {/* Progress indicator for tour */}
+        <div id="progress-indicator">
+          <ReviewHeader
+            current={currentIndex + 1}
+            total={dueWords.length}
+            onClose={handleClose}
           />
+
+          {/* Progress bar */}
+          <div
+            className="mt-4 h-1 w-full rounded-full"
+            style={{ backgroundColor: "var(--accent-nav-light)" }}
+          >
+            <div
+              className="h-1 rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: "var(--accent-nav)",
+                width: `${((currentIndex + 1) / dueWords.length) * 100}%`,
+              }}
+            />
+          </div>
         </div>
 
         {/* Review Badge */}
@@ -690,15 +725,17 @@ export default function ReviewPage() {
           {/* FIX for Issue #68: Display TARGET language (what user is learning), expect NATIVE language answer */}
           {/* This ensures consistent behavior regardless of capture direction (target→native or native→target) */}
           {currentWord && (
-            <SentenceCard
-              sentence={getTargetLanguageText(currentWord, targetLanguage)}
-              highlightedWords={[]}
-              translation={getNativeLanguageText(currentWord, nativeLanguage)}
-              showTranslation={reviewState !== "recall"}
-              onPlayAudio={handlePlayAudio}
-              isPlayingAudio={isPlaying}
-              isLoadingAudio={audioLoading}
-            />
+            <div id="sentence-display">
+              <SentenceCard
+                sentence={getTargetLanguageText(currentWord, targetLanguage)}
+                highlightedWords={[]}
+                translation={getNativeLanguageText(currentWord, nativeLanguage)}
+                showTranslation={reviewState !== "recall"}
+                onPlayAudio={handlePlayAudio}
+                isPlayingAudio={isPlaying}
+                isLoadingAudio={audioLoading}
+              />
+            </div>
           )}
 
           {/* Context Hint - shown after reveal if word has context */}

@@ -136,6 +136,7 @@ export function SentenceCard({
 
         {onPlayAudio && (
           <button
+            id="audio-button"
             onClick={onPlayAudio}
             disabled={isLoadingAudio}
             className="mt-4 flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"

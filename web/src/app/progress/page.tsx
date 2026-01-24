@@ -5,6 +5,8 @@ import { Loader2 } from "lucide-react";
 import { CompactProgressCard, ForecastChart } from "@/components/progress";
 import { InfoButton } from "@/components/brand";
 import type { Word } from "@/lib/db/schema";
+import { useTour } from "@/lib/tours/hooks/use-tour";
+import { registerProgressTour } from "@/lib/tours/tours/progress-tour";
 
 /**
  * Progress Data from /api/progress
@@ -33,6 +35,9 @@ export default function ProgressPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Tour state
+  const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("progress");
+
   useEffect(() => {
     async function fetchProgress() {
       try {
@@ -56,6 +61,25 @@ export default function ProgressPage() {
 
     fetchProgress();
   }, []);
+
+  // Register progress tour and auto-trigger for first-time visitors
+  useEffect(() => {
+    if (tourLoading || isLoading || !data) return;
+
+    // Register the tour with completion callback
+    registerProgressTour(() => {
+      markTourComplete();
+    });
+
+    // Auto-start tour if user hasn't completed it
+    if (!tourCompleted) {
+      // Small delay to ensure DOM elements are rendered
+      const timer = setTimeout(() => {
+        startTour();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [tourLoading, isLoading, data, tourCompleted, startTour, markTourComplete]);
 
   // Loading state
   if (isLoading) {
@@ -137,23 +161,25 @@ export default function ProgressPage() {
           <InfoButton />
         </div>
 
-        {/* Compact Progress Card */}
-        <section className="mb-4">
-          <CompactProgressCard
-            totalWords={data.totalWords}
-            wordsThisWeek={data.wordsThisWeek}
-            retentionRate={data.retentionRate}
-            currentStreak={data.currentStreak}
-            dueToday={data.dueToday}
-            needPractice={data.needPractice}
-            strugglingWordsList={data.strugglingWordsList}
-            newCardsCount={data.newCardsCount}
-            masteredWords={data.masteredWords}
-          />
+        {/* Compact Progress Card - contains stats and streak */}
+        <section id="stats-overview" className="mb-4">
+          <div id="streak-section">
+            <CompactProgressCard
+              totalWords={data.totalWords}
+              wordsThisWeek={data.wordsThisWeek}
+              retentionRate={data.retentionRate}
+              currentStreak={data.currentStreak}
+              dueToday={data.dueToday}
+              needPractice={data.needPractice}
+              strugglingWordsList={data.strugglingWordsList}
+              newCardsCount={data.newCardsCount}
+              masteredWords={data.masteredWords}
+            />
+          </div>
         </section>
 
         {/* Forecast Chart */}
-        <section className="mb-4">
+        <section id="forecast-chart" className="mb-4">
           <ForecastChart forecast={data.forecast} />
         </section>
       </div>

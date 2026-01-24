@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **findings.md Archived** - All 18 bug findings resolved. Moved to `docs/archive/findings-2026-01-21-CLOSED.md`. Only #99 (distractor quality) remains open as post-MVP enhancement (Session 82)
 - [x] **NL→EN Starter Vocabulary** - Dutch speakers learning English now receive 12 starter words during onboarding (Session 80, Issue #97)
 - [x] **API Usage Analytics Dashboard** - Full OpenAI cost tracking for translation, TTS, language detection, and sentence generation. Table + indexes created, all API calls instrumented (Session 78)
 - [x] **Duplicate Word Capture Prevention** - API returns 409 Conflict if word already in notebook, case-insensitive check (Session 77)
@@ -40,7 +41,7 @@ npm run build             # Production build
 - [x] **Project Documentation + Onboarding Flow** - README.md, GitHub issue prioritization, restored capture step (Session 29)
 
 ### In Progress
-- [ ] **Product Tours (Driver.js)** - Planned and broken into 12 issues (#102-#113). Blocked by #91. Start with infrastructure (#102) after bug fix. Track via #114.
+- [ ] **Product Tours (Driver.js)** - 10/12 done (#102-#111). #112 E2E testing + #113 docs remain. Track via #114.
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission
@@ -79,16 +80,17 @@ npm run build             # Production build
 ### Priority: Next Session
 | Issue | Description | Priority | Notes |
 |-------|-------------|----------|-------|
-| #91 | Report issue button for words in review | P1-High | **BLOCKING** product tours implementation |
+| - | - | - | **No open bugs!** All bugs resolved as of Session 82 |
 
 ### Under Investigation
 | Issue | Description | Status | Notes |
 |-------|-------------|--------|-------|
-| - | - | - | No other bugs under investigation |
+| - | - | - | No bugs under investigation |
 
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #91 | Report issue button for words in review | Session 81 |
 | #97 | NL→EN has no starter vocabulary | Session 80, `2076213` |
 | #95 | Gamification data not reset with test users | Session 75 |
 | #77 | Progress 500 error | Session 67, `86523a0` |
@@ -104,7 +106,7 @@ npm run build             # Production build
 ### Open Enhancements (Not Bugs)
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| #67 | P2 | Word selection capped at 2 - enhancement |
+| #99 | P1-high | Distractor quality (post-MVP) |
 | #23 | P1-high | iOS App Store submission |
 | #20 | P2 | Default categories |
 
@@ -141,13 +143,17 @@ npm run build             # Production build
 ### Product Tours (In Progress)
 | Issue | Feature | Priority | Status |
 |-------|---------|----------|--------|
-| #114 | **Master tracker** for product tours | P2-normal | ⬜ Blocked by #91 |
+| #114 | **Master tracker** for product tours | P2-normal | 🔄 In Progress (9/12 done) |
 | #102 | Tours-1: Core infrastructure (Driver.js) | P2-normal | ✅ Done |
 | #103 | Tours-2: DB columns for completion | P2-normal | ✅ Done |
 | #104 | Tours-3: API routes for progress | P2-normal | ✅ Done |
 | #105 | Tours-4: useTour React hook | P2-normal | ✅ Done (Session 81) |
 | #106 | Tours-5: Today Dashboard tour | P2-normal | ✅ Done (Session 81) |
-| #107-#113 | Tours-6 to Tours-12 (page tours) | P2-normal | ⬜ Ready |
+| #107 | Tours-6: Capture tour | P2-normal | ✅ Done (Session 82) |
+| #108 | Tours-7: Review tour | P2-normal | ✅ Done (Session 82) |
+| #109 | Tours-8: Notebook tour | P2-normal | ✅ Done (Session 82) |
+| #110 | Tours-9: Progress tour | P2-normal | ✅ Done (Session 82) |
+| #111-#113 | Tours-10 to Tours-12 (remaining) | P2-normal | ⬜ Ready |
 
 ### Other Features
 | Issue | Feature | Priority |
@@ -170,6 +176,68 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 82 - 2026-01-24 - Product Tours: All Page Tours + Replay Widget (#107-#111)
+
+**Focus:** Implement 5 product tours (4 page tours + replay widget), archive findings.md, update documentation.
+
+**Tasks Completed:**
+
+1. **findings.md Archived**
+   - All 18 bug findings resolved or deferred to post-MVP
+   - Moved to `docs/archive/findings-2026-01-21-CLOSED.md`
+   - Updated CLAUDE.md to remove findings.md references
+   - Updated Implementation Status to reflect MVP-ready state
+
+2. **Issue #107 - Capture Tour (4 steps):**
+   - Created `web/src/lib/tours/tours/capture-tour.ts`
+   - Added element IDs: `#capture-input`, `#memory-context-section`, `#save-button`, `#capture-sheet`
+   - Tour auto-triggers for first-time visitors
+
+3. **Issue #108 - Review Tour (6 steps):**
+   - Created `web/src/lib/tours/tours/review-tour.ts`
+   - Added element IDs: `#sentence-display`, `#audio-button`, `#answer-section`, `#rating-buttons`, `#progress-indicator`, `#feedback-button`
+   - Updated SentenceCard, GradingButtons, FeedbackButton components
+
+4. **Issue #109 - Notebook Tour (4 steps):**
+   - Created `web/src/lib/tours/tours/notebook-tour.ts`
+   - Added element IDs: `#journal-header`, `#search-bar`, `#inbox-category`, `#category-grid`
+
+5. **Issue #110 - Progress Tour (3 steps):**
+   - Created `web/src/lib/tours/tours/progress-tour.ts`
+   - Added element IDs: `#stats-overview`, `#forecast-chart`, `#streak-section`
+
+6. **Issue #111 - Tour Replay Widget:**
+   - Added "Replay App Tours" section to feedback sheet
+   - Expandable menu with all 5 tours (Today, Capture, Review, Notebook, Progress)
+   - Clicking a tour navigates to correct page and starts tour
+   - Uses Moleskine design tokens
+
+**Verification:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 317 passed
+- ✅ GitHub issues #107-#111: CLOSED
+- ⏭️ E2E: Deferred until deployment (code not yet on production)
+
+**Files Created:**
+- `web/src/lib/tours/tours/capture-tour.ts`
+- `web/src/lib/tours/tours/review-tour.ts`
+- `web/src/lib/tours/tours/notebook-tour.ts`
+- `web/src/lib/tours/tours/progress-tour.ts`
+
+**Files Modified:**
+- `web/src/app/capture/page.tsx`
+- `web/src/app/review/page.tsx`
+- `web/src/app/notebook/page.tsx`
+- `web/src/app/progress/page.tsx`
+- `web/src/components/review/sentence-card.tsx`
+- `web/src/components/review/grading-buttons.tsx`
+- `web/src/components/navigation/feedback-button.tsx`
+- `web/src/components/feedback/feedback-sheet.tsx` (tour replay UI)
+- `.claude/CLAUDE.md`
+- `PROJECT_LOG.md`
+
+---
 
 ### Session 81 - 2026-01-24 - useTour Hook + Today Dashboard Tour (#105, #106)
 
