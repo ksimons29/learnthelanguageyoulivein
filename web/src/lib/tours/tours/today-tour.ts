@@ -31,7 +31,7 @@ const todayTourSteps = [
     align: "center",
   }),
   createStep({
-    element: "#tour-daily-goal",
+    element: "#daily-goal-stat",
     title: "Daily Goal",
     description:
       "Review 10 words per day. That's it. Clear 'done for today' so you never over-study.",
@@ -39,20 +39,20 @@ const todayTourSteps = [
     align: "center",
   }),
   createStep({
-    element: "#tour-capture-fab",
+    element: "#nav-capture",
     title: "Capture Words Anytime",
     description:
-      "Tap this coral button to save words you hear or see. 2 seconds to capture, auto-translation included.",
-    side: "bottom",
-    align: "center",
+      "Tap Capture to save words you hear or see. 2 seconds to capture, auto-translation included.",
+    side: "left",
+    align: "end",
   }),
   createStep({
     element: "#tour-bottom-nav",
     title: "Navigate Your Notebook",
     description:
       "Review • Capture • Notebook • Progress. Everything you need is one tap away.",
-    side: "top",
-    align: "center",
+    side: "left",
+    align: "end",
   }),
 ];
 

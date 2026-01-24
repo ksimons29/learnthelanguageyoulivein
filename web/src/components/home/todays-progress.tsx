@@ -129,7 +129,7 @@ export function TodaysProgress({
         />
 
         {/* Daily Goal Progress Ring */}
-        <div className="text-center">
+        <div id="daily-goal-stat" className="text-center">
           <div className="mx-auto mb-2 relative flex items-center justify-center">
             <ProgressRing
               progress={progress}
