@@ -72,6 +72,7 @@ npm run build             # Production build
 | `web/src/components/gamification/` | Bingo board, boss round UI |
 | `web/src/app/review/page.tsx` | Review session (needs sentence integration) |
 | `web/src/lib/sentences/generator.ts` | Sentence generation with Unicode validation |
+| `web/src/lib/tours/hooks/use-tour.ts` | React hook for tour state management |
 
 ## Open Bugs
 
@@ -137,11 +138,15 @@ npm run build             # Production build
 
 ## Open Feature Issues
 
-### Product Tours (Planned)
+### Product Tours (In Progress)
 | Issue | Feature | Priority | Status |
 |-------|---------|----------|--------|
 | #114 | **Master tracker** for product tours | P2-normal | ⬜ Blocked by #91 |
-| #102-#113 | Driver.js tours (12 issues) | P2-normal | ⬜ Ready after #91 |
+| #102 | Tours-1: Core infrastructure (Driver.js) | P2-normal | ✅ Done |
+| #103 | Tours-2: DB columns for completion | P2-normal | ✅ Done |
+| #104 | Tours-3: API routes for progress | P2-normal | ✅ Done |
+| #105 | Tours-4: useTour React hook | P2-normal | ✅ Done (Session 81) |
+| #106-#113 | Tours-5 to Tours-12 (page tours) | P2-normal | ⬜ Ready |
 
 ### Other Features
 | Issue | Feature | Priority |
@@ -164,6 +169,27 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 81 - 2026-01-24 - Create useTour Hook (Issue #105)
+
+**Focus:** Implement React hook for tour state management as part of Driver.js product tours infrastructure.
+
+**Tasks Completed:**
+1. ✅ Created `useTour` hook at `web/src/lib/tours/hooks/use-tour.ts`
+2. ✅ Hook fetches tour completion status from `/api/tours/progress` on mount
+3. ✅ Provides `startTour()` to trigger tour via `tourManager`
+4. ✅ Provides `markTourComplete()` to persist completion to database
+5. ✅ Loading/error state handling following `useOnboardingStatus` pattern
+6. ✅ Updated `web/src/lib/tours/index.ts` to export hook
+7. ✅ Build passes, 317 unit tests pass
+
+**Files Changed:**
+- `web/src/lib/tours/hooks/use-tour.ts` (NEW)
+- `web/src/lib/tours/index.ts` (updated exports)
+
+**Unblocks:** Issues #106-#113 (page-specific tour implementations)
+
+---
 
 ### Session 80 - 2026-01-23 - Fix NL→EN Starter Vocabulary (Issue #97)
 

@@ -5,9 +5,10 @@
  *
  * @example
  * ```ts
- * import { tourManager, createStep, type TourId } from '@/lib/tours';
+ * import { tourManager, useTour, createStep, type TourId } from '@/lib/tours';
  *
- * tourManager.startTour('capture');
+ * // In a component
+ * const { isCompleted, startTour } = useTour('capture');
  * ```
  */
 
@@ -26,3 +27,6 @@ export {
   isDarkMode,
   type TourStepOptions,
 } from "./driver-config";
+
+// React hooks
+export { useTour } from "./hooks/use-tour";
