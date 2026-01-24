@@ -13,7 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
-- [x] **Product Tours Complete** - Moleskine-styled onboarding with Driver.js. 5 contextual tours (Today, Capture, Review, Notebook, Progress). Tour replay via Feedback widget. E2E tested. (#101-#113, Session 82)
+- [x] **Product Tours Complete** - Moleskine-styled onboarding with Driver.js. 5 contextual tours (Today, Capture, Review, Notebook, Progress). Tour replay via Feedback widget. Visual polish: coral spotlight highlights, proper element targeting, nav glow effects. E2E tested all 5 steps. (#101-#116, Sessions 81-83)
 - [x] **findings.md Archived** - All 18 bug findings resolved. Moved to `docs/archive/findings-2026-01-21-CLOSED.md`. Only #99 (distractor quality) remains open as post-MVP enhancement (Session 82)
 - [x] **NL→EN Starter Vocabulary** - Dutch speakers learning English now receive 12 starter words during onboarding (Session 80, Issue #97)
 - [x] **API Usage Analytics Dashboard** - Full OpenAI cost tracking for translation, TTS, language detection, and sentence generation. Table + indexes created, all API calls instrumented (Session 78)
@@ -90,6 +90,8 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #116 | Bottom nav highlights need better visibility | Session 83 |
+| #115 | Tour overlay highlights wrong elements, button text unclear | Session 83 |
 | #91 | Report issue button for words in review | Session 81 |
 | #97 | NL→EN has no starter vocabulary | Session 80, `2076213` |
 | #95 | Gamification data not reset with test users | Session 75 |
@@ -176,6 +178,62 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 83 - 2026-01-24 - Tour Overlay Visual Fixes (#115, #116)
+
+**Focus:** Fix tour overlay visibility issues - button text unclear, Daily Goal highlighting entire card instead of stat, bottom nav highlights not visible enough.
+
+**Root Cause Analysis:**
+- Session 82 noted "E2E: Deferred until deployment" - violated testing protocol
+- CSS changes were committed but component ID changes were NOT committed
+- The `#daily-goal-stat` and `#nav-capture` IDs existed locally but never pushed to production
+
+**Tasks Completed:**
+
+1. **Issue #115 - Tour Overlay Fixes:**
+   - **Button legibility** - Added font-weight 600 and text-shadow to coral Next button
+   - **Premium coral spotlight** - Replaced ugly gray box with warm coral glow effect:
+     - Inner white edge, coral accent ring, soft outer glow, ambient spread
+     - Subtle scale(1.02) transform for "lifted" effect
+   - **Granular element targeting** - Added `#daily-goal-stat` ID to specific stat (not whole card)
+   - **Nav button targeting** - Added `#nav-capture` ID to Capture nav button
+   - **Tour step updates** - Changed element selectors and popover positioning
+
+2. **Issue #116 - Bottom Nav Highlight Improvements:**
+   - **Popover positioning** - Changed from `side: "left"` to `side: "top"` for nav steps
+   - **Enhanced coral glow for nav elements** - Added specific CSS rule for `#nav-capture` and `#tour-bottom-nav`:
+     - Stronger glow (6px coral border, 40px radius)
+     - Larger scale transform (1.08 instead of 1.02)
+     - Higher z-index (10002)
+   - **Consistent highlight appearance** across all tour steps
+
+**Verification:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 317 passed
+- ✅ E2E: Verified all 5 steps on production
+  - Step 1 (Welcome): Popover looks great
+  - Step 2 (Words to Review): Working
+  - Step 3 (Daily Goal): **Highlights ONLY the Daily Goal stat**, not whole card
+  - Step 4 (Capture nav): Coral glow visible, popover above nav
+  - Step 5 (Bottom nav): Enhanced coral glow, popover above, "Got it!" clear
+
+**Commits:**
+- `9d95577` style(tours): premium coral spotlight highlight
+- `443d077` fix(tours): correct element targeting for tour highlights
+- `c37183e` fix(tours): improve nav highlight visibility with stronger glow
+
+**Files Modified:**
+- `web/src/styles/driver-moleskine.css` (coral spotlight CSS)
+- `web/src/components/home/todays-progress.tsx` (added #daily-goal-stat ID)
+- `web/src/components/navigation/bottom-nav.tsx` (added #nav-capture ID)
+- `web/src/lib/tours/tours/today-tour.ts` (updated element selectors)
+
+**Lessons Learned:**
+- NEVER defer E2E testing - it catches critical visual issues
+- ALWAYS verify uncommitted changes before closing issues
+- CSS styling alone is not enough - component changes must also be deployed
+
+---
 
 ### Session 82 - 2026-01-24 - Product Tours: All Page Tours + Replay Widget (#107-#111)
 
