@@ -15,17 +15,17 @@
  */
 
 /* ======================
-   OVERLAY - Teal Focus
+   OVERLAY - Subtle Dark Focus
    ====================== */
 
 .driver-overlay {
-  /* Light mode: Teal with transparency */
-  background: rgba(12, 107, 112, 0.75) !important;
+  /* Light mode: Neutral dark with subtle warmth */
+  background: rgba(29, 38, 42, 0.65) !important;
 }
 
 .dark .driver-overlay {
-  /* Dark mode: Darker teal, slightly more opaque */
-  background: rgba(15, 70, 75, 0.85) !important;
+  /* Dark mode: Slightly darker */
+  background: rgba(10, 12, 15, 0.75) !important;
 }
 
 /* ======================
