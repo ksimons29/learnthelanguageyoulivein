@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Fill-in-the-Blank Fix + Fuzzy Matching** - Fixed broken fill_blank UX (word now highlighted, user types English meaning) and added typo-tolerant answer validation using Levenshtein distance (1 typo/5 chars). Three-state feedback: correct (green), correct_with_typo (amber), incorrect (red). (#119, #120, Session 84)
 - [x] **Product Tours Complete** - Moleskine-styled onboarding with Driver.js. 5 contextual tours (Today, Capture, Review, Notebook, Progress). Tour replay via Feedback widget. Visual polish: coral spotlight highlights, proper element targeting, nav glow effects. E2E tested all 5 steps. (#101-#116, Sessions 81-83)
 - [x] **findings.md Archived** - All 18 bug findings resolved. Moved to `docs/archive/findings-2026-01-21-CLOSED.md`. Only #99 (distractor quality) remains open as post-MVP enhancement (Session 82)
 - [x] **NL→EN Starter Vocabulary** - Dutch speakers learning English now receive 12 starter words during onboarding (Session 80, Issue #97)
@@ -72,6 +73,7 @@ npm run build             # Production build
 | `web/src/app/api/gamification/` | Gamification API endpoints |
 | `web/src/components/gamification/` | Bingo board, boss round UI |
 | `web/src/app/review/page.tsx` | Review session (needs sentence integration) |
+| `web/src/lib/review/answer-evaluation.ts` | Fuzzy answer matching with Levenshtein distance |
 | `web/src/lib/sentences/generator.ts` | Sentence generation with Unicode validation |
 | `web/src/lib/tours/hooks/use-tour.ts` | React hook for tour state management |
 
@@ -90,6 +92,8 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #119 | Fill-in-the-blank shows invisible word, expects Portuguese answer | Session 84 |
+| #120 | No typo tolerance in answer validation | Session 84 |
 | #117 | Tour dialog doesn't close after clicking "Got it!" | Session 83 |
 | #116 | Bottom nav highlights need better visibility | Session 83 |
 | #115 | Tour overlay highlights wrong elements, button text unclear | Session 83 |
@@ -179,6 +183,57 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 84 - 2026-01-25 - Fill-in-the-Blank UX Fix + Fuzzy Matching (#119, #120)
+
+**Focus:** Fix broken fill-in-the-blank exercise and add typo-tolerant answer validation.
+
+**Issues Fixed:**
+
+**Issue #119 - Fill-in-the-Blank UX Bug:**
+- **Problem:** Word was invisible (transparent color + underscores) and expected user to type the Portuguese word back
+- **Fix:** Word is now highlighted (visible with coral border) and user types the English meaning
+- Prompt changed from "Fill in the blank:" to "What does the highlighted word mean?"
+- Multi-word phrases ("Bom dia", "A conta, por favor") highlight all constituent words
+
+**Issue #120 - Fuzzy Answer Matching:**
+- **Algorithm:** Levenshtein distance with threshold of 1 typo per 5 characters (minimum 1)
+- **Normalization:** Case-insensitive, accent-stripping (café → cafe), whitespace trimming
+- **Three-state feedback:**
+  - ✅ Correct (green): Exact match after normalization
+  - ⚠️ Correct with typo (amber): Within typo threshold, shows "Watch spelling: X"
+  - ❌ Incorrect (red): Too many errors
+
+**Files Created:**
+| File | Description |
+|------|-------------|
+| `web/src/lib/review/answer-evaluation.ts` | Levenshtein distance, evaluateAnswer(), normalizeForComparison() |
+| `web/src/__tests__/lib/answer-evaluation.test.ts` | 24 test cases for fuzzy matching |
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `web/src/components/review/sentence-card.tsx` | Word highlighted instead of hidden |
+| `web/src/components/review/fill-blank-input.tsx` | Use fuzzy evaluation |
+| `web/src/components/review/answer-feedback.tsx` | Three-state feedback UI |
+| `web/src/app/review/page.tsx` | Fixed correctAnswer (native language), track evaluation state |
+| `web/src/__tests__/components/sentence-card.test.tsx` | Updated tests for new behavior |
+
+**E2E Verification (All 3 User Personas):**
+| User | Direction | Test Input | Result |
+|------|-----------|------------|--------|
+| test-en-pt | EN→PT | "A watter" → "A water" | ✅ Amber feedback |
+| test-en-sv | EN→SV | "excus me" → "Excuse me" | ✅ Amber feedback |
+| test-nl-en | NL→EN | "vergadring" → "vergadering" | ✅ Amber feedback |
+
+**Tests:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 341 passing (24 new)
+
+**Commits:**
+- `5a66d5a` fix(review): fill-in-the-blank UX and add fuzzy answer matching (#119, #120)
+
+---
 
 ### Session 83 - 2026-01-24 - Tour Overlay Visual Fixes (#115, #116, #117)
 
@@ -563,299 +618,4 @@ Added DELETE statements for all gamification tables in `create-test-users.ts`:
 
 ---
 
-### Session 73 - 2026-01-22 - S5: Gamification Simulation Tests (#90)
-
-**Focus:** Create comprehensive database simulation tests for gamification features (streaks, daily progress, bingo, boss round).
-
-**Problem Statement:**
-From MVP_LAUNCH_TEST_PLAN.md: "S5 Gamification tests are BLOCKED - requires simulation tests" because they need:
-- Fresh users with no history
-- Time passage (24-48+ hours)
-- Specific state conditions (streak breaks, bingo lines)
-
-**Solution: Time Manipulation via Backdated Records**
-
-Created `web/scripts/test-gamification-simulation.ts` following the pattern from `test-fsrs-simulation.ts`.
-
-**Test Categories (30 tests):**
-
-| Section | Tests | Description |
-|---------|-------|-------------|
-| 2.1 Daily Progress | 5 | Initial state, increment, goal complete, completedAt, persistence |
-| 2.2 Streak System | 5 | New streak, increment, break after miss, freeze available, preservation |
-| 2.3 Daily Bingo | 11 | Initial state, 8 square types, bingo line detection, partial line rejection |
-| 2.4 Boss Round | 9 | Lock/unlock, word selection, high lapse count, results, accuracy, personal best, improvement, perfect |
-
-**Key Implementation Details:**
-- Uses raw `postgres` client (not Drizzle ORM) for direct SQL
-- Proper JSONB handling with `db.json()` helper for PostgreSQL arrays
-- Date manipulation via `getDateOnly()` and `daysAgo()` helpers
-- Test user: `test-en-sv@llyli.test` (consistent with FSRS simulation)
-- Cleanup before/after to ensure test isolation
-
-**Bug Fix During Implementation:**
-Initial JSONB insertion used `JSON.stringify()` causing double-stringification. Fixed by using `db.json()` helper from postgres library.
-
-**Files Created:**
-| File | Description |
-|------|-------------|
-| `web/scripts/test-gamification-simulation.ts` | 30 gamification simulation tests |
-
-**Test Results:**
-- ✅ Build passes
-- ✅ 293 unit tests pass
-- ✅ 30/30 simulation tests pass
-
-**Documentation Updated:**
-| File | Change |
-|------|--------|
-| `docs/testing/MVP_LAUNCH_TEST_PLAN.md` | Updated Part 2 with all results, status summary |
-
-**S5 Status Update:**
-| Metric | Before | After |
-|--------|--------|-------|
-| Gamification tests | 0/18 (blocked) | 22/22 ✅ |
-| Total MVP tests | 76/86 pass | 98/90 pass |
-
-**E2E Verification (All 3 User Personas):**
-
-| User | Direction | Daily Goal | Streak | Bingo | Boss Round |
-|------|-----------|------------|--------|-------|------------|
-| test-en-pt | EN→PT | 36/10 ✅ | 3 days | 8/9 (Bingo!) | 5/5 best |
-| test-en-sv | EN→SV | 0/10 | 0 | 0/9 | N/A |
-| test-nl-en | NL→EN | 5/10 | 0 | 3/9 | N/A |
-
-All gamification features render correctly across all language directions.
-
-**Closes:** #90
-
----
-
-### Session 74 - 2026-01-22 - Boss Round E2E + C-06 Investigation
-
-**Focus:** E2E verification of Boss Round UI and C-06 situation tags investigation.
-
-**Test User:** test-en-pt@llyli.test (EN→PT)
-
-#### Part 1: Boss Round E2E
-
-**Test Flow:**
-1. Sign in → Complete 11-word review session
-2. Reach /review/complete → Daily goal complete (11/10)
-3. Boss Round prompt appears with personal stats
-4. Start Boss Round → Test full flow
-
-**Boss Round E2E Results:**
-
-| Test | Observation | Result |
-|------|-------------|--------|
-| Prompt appearance | Shows after daily goal complete | ✅ |
-| Personal stats | Best: 5/5, Attempts: 1, Perfect: 1 | ✅ |
-| Timer start | Starts at 1:30 (90 seconds) | ✅ |
-| Timer countdown | Updates every second (1:28, 1:19...) | ✅ |
-| Word display | Shows "Prazo" (target language) | ✅ |
-| Reveal button | Click reveals "Deadline" (native) | ✅ |
-| Self-grade | "Got it!" increments score (0 → 1) | ✅ |
-| Progress tracking | 1/5 → 2/5 → ... → 5/5 | ✅ |
-| Results modal | "Perfect! 5/5 - 100% accuracy in 0:30" | ✅ |
-
-**Screenshot:** `.playwright-mcp/boss-round-results-perfect.png`
-
-#### Part 2: C-06 Situation Tags Investigation
-
-**Issue:** C-06 marked as "⚠️ investigate" - situation tags may not persist
-
-**Test Procedure:**
-1. Capture "biblioteca" with memory context
-2. Select location: "at the university"
-3. Select situation tags: "Alone" + "Outdoor"
-4. Save word → Navigate to Notebook
-5. Open word detail sheet
-
-**Result: Situation tags ARE persisting correctly!**
-
-Word detail shows:
-- Context: "at the university · evening"
-- Tags: "Alone" and "Outdoor" ✅
-
-**Conclusion:** C-06 was a false positive. Feature working correctly.
-
-**Screenshot:** `.playwright-mcp/situation-tags-persisted.png`
-
-**Files Updated:**
-| File | Change |
-|------|--------|
-| `docs/testing/MVP_LAUNCH_TEST_PLAN.md` | Boss Round E2E, C-06 verified ✅ |
-
-**Test Status Update:**
-| Metric | Before | After |
-|--------|--------|-------|
-| Boss Round E2E | 0/9 | 9/9 ✅ |
-| Gamification total | 22/22 | 31/31 ✅ |
-| C-06 Tags | ⚠️ investigate | ✅ verified |
-
----
-
-### Session 72 - 2026-01-22 - S6: FSRS Scientific Verification Tests
-
-**Focus:** Create comprehensive tests for FSRS-4.5 spaced repetition algorithm - the scientific foundation of LLYLI.
-
-**Problem Statement:**
-From status update feedback: "S6 (FSRS) is untested - This is the scientific claim of your app. '36 years newer than most apps' means nothing if you haven't verified the algorithm actually works."
-
-**Solution: Two-Pronged Testing Approach**
-
-**1. Unit Tests (53 tests) - `web/src/__tests__/lib/fsrs.test.ts`**
-| Test Category | Tests | What's Verified |
-|---------------|-------|-----------------|
-| calculateRetrievability | 6 | Forgetting curve math: R(t) = (1 + t/(9·S))^(-1) |
-| daysBetween | 5 | Date utility edge cases |
-| isDue | 5 | Due word detection at 90% threshold |
-| toFsrsRating | 4 | Rating enum conversion |
-| wordToCard | 5 | Word → FSRS card transformation |
-| processReview - stability | 3 | Stability increases/decreases |
-| processReview - lapse | 3 | lapseCount tracking |
-| processReview - mastery | 8 | Session separation, 3-session rule |
-| processReview - dates | 2 | Next review scheduling |
-| getNextReviewText | 5 | Human-readable intervals |
-| Scientific Properties | 6 | End-to-end FSRS behavior |
-
-**2. Database Simulation Script - `web/scripts/test-fsrs-simulation.ts`**
-Simulates 7-day learning cycle by backdating timestamps:
-| Simulated Day | Tests |
-|---------------|-------|
-| Day 1 | New word scheduling, first review, stability increase |
-| Day 2 | Due words appear, interval growth verification |
-| Day 3-4 | Lapse handling (Again), stability decrease, recovery |
-| Day 5-7 | Mastery progression, session separation, mastery loss |
-
-**Key Scientific Properties Verified:**
-1. ✅ R = 90% when elapsed days = stability (forgetting curve)
-2. ✅ Stability increases on Good/Easy ratings
-3. ✅ Stability decreases on Again rating (lapse)
-4. ✅ Intervals grow (not fixed) with repeated Good ratings
-5. ✅ Mastery requires 3 correct sessions (not same session)
-6. ✅ Hard rating resets mastery (treated as incorrect)
-7. ✅ Lapse resets mastery completely
-
-**Files Created:**
-| File | Description |
-|------|-------------|
-| `web/src/__tests__/lib/fsrs.test.ts` | 53 unit tests for FSRS algorithm |
-| `web/scripts/test-fsrs-simulation.ts` | 7-day database simulation |
-
-**Test Results:**
-- ✅ Build passes
-- ✅ 293 unit tests pass (53 new FSRS tests)
-- ✅ 16/16 simulation tests pass
-
-**S6 Status Update:**
-| Test | Previous | Now |
-|------|----------|-----|
-| FSRS unit tests | ⬜ 0 | ✅ 53 |
-| Interval growth verification | ⬜ | ✅ |
-| Mastery session separation | ⬜ | ✅ |
-| Lapse handling | ⬜ | ✅ |
-
-**S5 Gamification: Instructions Created**
-- Instructions: `docs/testing/GAMIFICATION_SIMULATION_INSTRUCTIONS.md`
-- GitHub Issue: #90
-- Next session: Implement `test-gamification-simulation.ts`
-
----
-
-### Session 70 - 2026-01-22 - Fix Fill-in-Blank Multi-Word Blanking (Finding #16)
-
-**Focus:** Fix P1 bug where fill-in-blank exercises didn't show blanked words for multi-word phrases.
-
-**Root Cause:**
-Multi-word phrases like "Bom dia" were not blanked because the comparison `blankedWord === cleanWord`
-fails when comparing `"bom dia"` (phrase) to `"bom"` (single word from sentence split).
-
-**Fix Applied:**
-Changed blanking logic in `sentence-card.tsx` to split the blanked phrase and check if ANY part matches:
-```typescript
-blankedWord.toLowerCase().split(' ').some(
-  part => part.replace(/[.,!?;:]/g, '') === cleanWord
-)
-```
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `web/src/components/review/sentence-card.tsx` | Fixed multi-word blanking logic |
-| `web/src/__tests__/components/sentence-card.test.tsx` | NEW: 9 unit tests for blanking |
-| `findings.md` | Updated #16 status to FIXED |
-
-**Tests:**
-- ✅ Build passes
-- ✅ 240 unit tests pass (9 new)
-- New tests cover: "Bom dia", "Quanto custa?", "A conta, por favor", case-insensitivity
-
-**Closes:** Finding #16
-
----
-
-### Session 69 - 2026-01-22 - S3: Word Capture & Notebook Tests (#83)
-
-**Focus:** MVP Launch Testing - Section C (Word Capture) and Section D (Notebook).
-
-**Test Results:**
-
-**Section C: Word Capture (10/12 ✅, 2 ⚠️)**
-| Test | Result |
-|------|--------|
-| C-01: Target phrase (PT→EN) | ✅ "padaria" → "bakery" |
-| C-02: Native phrase (EN→PT) | ✅ "supermarket" → "supermercado" |
-| C-03: Auto-categorization | ✅ Food & Dining assigned |
-| C-04: TTS audio | ✅ Generated within 5s |
-| C-05: Location context | ✅ "at the ice cream shop in Belém" |
-| C-06: Situation tags | ⚠️ May not persist (investigate) |
-| C-07: Personal note | ✅ Saved and displayed |
-| C-08: Time auto-detect | ✅ "evening" detected |
-| C-10: Duplicate handling | ⚠️ Duplicates allowed (no prevention) |
-| C-11: Untranslatable | ✅ "saudade" → "nostalgic longing" |
-| C-12: Performance | ✅ < 3 seconds |
-
-**Section D: Notebook (10/10 ✅)**
-| Test | Result |
-|------|--------|
-| D-01: Journal title | ✅ "Your Portuguese Journal" |
-| D-02: Word count | ✅ Correct (18 words) |
-| D-03: Category counts | ✅ All categories accurate |
-| D-04: Due count | ✅ Matches Today (17) |
-| D-05: Inbox | ✅ New phrases shown |
-| D-06: Word detail | ✅ Full details visible |
-| D-07: Memory context | ✅ Location, time, note |
-| D-08: Sentences | ✅ (if available) |
-| D-09: Search | ✅ Found "sorvete" |
-| D-10: Delete | ✅ Word removed, counts updated |
-
-**Bonus:** Bingo went 5/9 → 6/9 (addContext square completed!)
-
-**Known Issues Found:**
-1. **C-06**: Situation tags may not persist after selection
-2. **C-10**: Duplicate words not prevented - no deduplication
-
-**Files Changed:**
-| File | Change |
-|------|--------|
-| `docs/testing/MVP_LAUNCH_TEST_PLAN.md` | Updated with S3 results |
-
-**Closes:** #83
-
----
-
-### Session 68 - 2026-01-22 - S2: Authentication & Onboarding Tests (#82)
-
-**Focus:** MVP Launch Testing - Section A (Authentication) and Section B (Onboarding).
-
-**Test Results:**
-- Authentication (5/5 ✅): Sign in, persistence, sign out, protected routes, invalid credentials
-- Onboarding (7/7 ✅): Fresh redirect, language selection, initial capture, counter, dual buttons, starter words, redirect
-
-**Closes:** #82 (details in MVP_LAUNCH_TEST_PLAN.md)
-
----
-
-> **Archive**: Sessions 1-67 in [PROJECT_LOG_ARCHIVE.md](./PROJECT_LOG_ARCHIVE.md)
+> **Archive**: Sessions 1-74 in [PROJECT_LOG_ARCHIVE.md](./PROJECT_LOG_ARCHIVE.md)

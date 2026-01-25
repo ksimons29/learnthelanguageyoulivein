@@ -1,6 +1,34 @@
 # LLYLI Project Log - Archive
 
-> Archived sessions 1-67. For current sessions, see [PROJECT_LOG.md](./PROJECT_LOG.md)
+> Archived sessions 1-74. For current sessions, see [PROJECT_LOG.md](./PROJECT_LOG.md)
+
+---
+
+## Sessions 68-74 (2026-01-22)
+
+### Session 74 - Boss Round E2E + C-06 Investigation
+E2E verification of Boss Round UI (9/9 tests pass) and C-06 situation tags investigation. Boss Round shows correct stats, timer countdown, self-grading, and results modal. C-06 (situation tags) was a false positive - tags ARE persisting correctly.
+**Files**: `docs/testing/MVP_LAUNCH_TEST_PLAN.md`
+
+### Session 73 - S5: Gamification Simulation Tests (#90)
+Created `test-gamification-simulation.ts` with 30 database simulation tests for gamification (streaks, daily progress, bingo, boss round) using backdated records for time manipulation. Fixed JSONB double-stringification bug with `db.json()` helper. E2E verified all 3 user personas. Unblocked S5 gamification testing (0/18 → 22/22 pass).
+**Files**: `scripts/test-gamification-simulation.ts`, `docs/testing/MVP_LAUNCH_TEST_PLAN.md`
+
+### Session 72 - S6: FSRS Scientific Verification Tests
+Created 53 unit tests and 7-day simulation script to verify FSRS-4.5 algorithm. Tested forgetting curve math (R(t) = (1 + t/(9·S))^(-1)), stability increase/decrease, mastery session separation, lapse handling. FSRS tests went from 0 → 53 passing.
+**Files**: `__tests__/lib/fsrs.test.ts`, `scripts/test-fsrs-simulation.ts`
+
+### Session 70 - Fix Fill-in-Blank Multi-Word Blanking (Finding #16)
+Fixed P1 bug where multi-word phrases ("Bom dia", "A conta, por favor") weren't blanked in fill-in-blank exercises. Changed blanking logic to split phrase and match ANY part. Added 9 unit tests. Closed Finding #16.
+**Files**: `components/review/sentence-card.tsx`, `__tests__/components/sentence-card.test.tsx`
+
+### Session 69 - S3: Word Capture & Notebook Tests (#83)
+MVP Launch Testing: Section C (Word Capture: 10/12 pass) and Section D (Notebook: 10/10 pass). Found 2 issues: C-06 situation tags may not persist, C-10 duplicate words not prevented. Bonus: Bingo went 5/9 → 6/9 (addContext square completed).
+**Files**: `docs/testing/MVP_LAUNCH_TEST_PLAN.md`
+
+### Session 68 - S2: Authentication & Onboarding Tests (#82)
+MVP Launch Testing: Section A (Authentication: 5/5 pass) and Section B (Onboarding: 7/7 pass). All critical auth flows verified including sign in, persistence, sign out, protected routes.
+**Files**: `docs/testing/MVP_LAUNCH_TEST_PLAN.md`
 
 ---
 
