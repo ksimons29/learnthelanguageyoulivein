@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Multiple-Choice Distractor Fix** - Fixed bug where multiple-choice options could include two valid answers when a sentence contains multiple vocabulary words from the same category (e.g., "prazo" and "reunião"). Now excludes all sentence words from distractors. E2E verified in production. (#121, Session 85)
 - [x] **Fill-in-the-Blank Fix + Fuzzy Matching** - Fixed broken fill_blank UX (word now highlighted, user types English meaning) and added typo-tolerant answer validation using Levenshtein distance (1 typo/5 chars). Three-state feedback: correct (green), correct_with_typo (amber), incorrect (red). (#119, #120, Session 84)
 - [x] **Product Tours Complete** - Moleskine-styled onboarding with Driver.js. 5 contextual tours (Today, Capture, Review, Notebook, Progress). Tour replay via Feedback widget. Visual polish: coral spotlight highlights, proper element targeting, nav glow effects. E2E tested all 5 steps. (#101-#116, Sessions 81-83)
 - [x] **findings.md Archived** - All 18 bug findings resolved. Moved to `docs/archive/findings-2026-01-21-CLOSED.md`. Only #99 (distractor quality) remains open as post-MVP enhancement (Session 82)
@@ -183,6 +184,39 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 85 - 2026-01-25 - Multiple-Choice Distractor Fix (#121)
+
+**Focus:** Fix bug where multiple-choice options could show two valid answers when a sentence contains multiple vocabulary words.
+
+**Issue #121 - Multiple Valid Answers in Multiple-Choice:**
+- **Problem:** Sentence "A reunião de amanhã é para discutir o prazo do projeto" showed both "Deadline" AND "Meeting" as options. Both are valid since "prazo" (deadline) and "reunião" (meeting) are both in the sentence.
+- **Root Cause:** Distractors fetched from same category didn't exclude other words in the current sentence
+- **Fix:** Pass `sentenceWordIds` to `buildMultipleChoiceOptions` to filter out all sentence words from distractors
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `web/src/lib/review/distractors.ts` | Added `sentenceWordIds` parameter to exclude sentence words |
+| `web/src/app/review/page.tsx` | Pass `sentenceTargetWords` to `loadDistractors` |
+| `web/src/__tests__/lib/distractors.test.ts` | 4 new tests for sentence word exclusion |
+
+**E2E Verification:**
+- ✅ Bug reproduced in production (screenshot captured: bug-121-production-evidence.png)
+- ✅ Sentence with "prazo" + "reunião" showed both translations as options (BUG)
+- ✅ Test accounts: test-en-pt, test-nl-en verified
+
+**Tests:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 345 passing (4 new)
+- ✅ Log size: 622/900 lines
+
+**Commits:**
+- `d84fe5d` - fix(review): exclude sentence words from multiple-choice distractors (#121)
+
+**Closes:** #121
+
+---
 
 ### Session 84 - 2026-01-25 - Fill-in-the-Blank UX Fix + Fuzzy Matching (#119, #120)
 
