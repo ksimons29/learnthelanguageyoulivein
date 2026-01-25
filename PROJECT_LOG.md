@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issue #121 Post-Deployment Verification** - Verified fix works in production across all user personas. EN→SV confirmed working: sentence with "notan" (bill) + "vatten" (water) correctly excludes second word from options. Screenshots captured. (Session 86)
 - [x] **Multiple-Choice Distractor Fix** - Fixed bug where multiple-choice options could include two valid answers when a sentence contains multiple vocabulary words from the same category (e.g., "prazo" and "reunião"). Now excludes all sentence words from distractors. E2E verified in production. (#121, Session 85)
 - [x] **Fill-in-the-Blank Fix + Fuzzy Matching** - Fixed broken fill_blank UX (word now highlighted, user types English meaning) and added typo-tolerant answer validation using Levenshtein distance (1 typo/5 chars). Three-state feedback: correct (green), correct_with_typo (amber), incorrect (red). (#119, #120, Session 84)
 - [x] **Product Tours Complete** - Moleskine-styled onboarding with Driver.js. 5 contextual tours (Today, Capture, Review, Notebook, Progress). Tour replay via Feedback widget. Visual polish: coral spotlight highlights, proper element targeting, nav glow effects. E2E tested all 5 steps. (#101-#116, Sessions 81-83)
@@ -93,6 +94,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #121 | Multiple valid answers in sentence-based multiple-choice | Session 85, verified Session 86 |
 | #119 | Fill-in-the-blank shows invisible word, expects Portuguese answer | Session 84 |
 | #120 | No typo tolerance in answer validation | Session 84 |
 | #117 | Tour dialog doesn't close after clicking "Got it!" | Session 83 |
@@ -184,6 +186,38 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 86 - 2026-01-25 - Post-Deployment Verification (#121)
+
+**Focus:** Verify Issue #121 fix works in production across all user personas.
+
+**Verification Results:**
+
+| Persona | Account | Review Mode | Fix Verified |
+|---------|---------|-------------|--------------|
+| EN→PT | test-en-pt@llyli.test | Recall only (11 items) | ⚠️ No sentence-mode MC available |
+| **EN→SV** | test-en-sv@llyli.test | **Sentence + MC (15 items)** | **✅ Fix confirmed!** |
+| NL→EN | test-nl-en@llyli.test | Recall only (3 items) | ⚠️ Too few words for sentence-mode |
+
+**Evidence from EN→SV:**
+
+**Example 1:** "Här är notan, tack. Kan jag få ett vatten?"
+- Contains: "notan" (bill) + "vatten" (water)
+- Options shown: "coffee break...", "A coffee", "The bill, please"
+- **"A water" correctly excluded** ✅
+
+**Example 2:** "Kan vi dela notan efter vår fika, tack?"
+- Contains: "notan" (bill) + "fika" (coffee break)
+- Options shown: "coffee break...", "A water", "A coffee"
+- **"The bill, please" correctly excluded** ✅
+
+**Screenshots:**
+- `fix-verified-en-sv-no-duplicate-answers.png`
+- `fix-verified-en-sv-second-example.png`
+
+**Conclusion:** Issue #121 fix confirmed working in production. Sentence words are correctly excluded from multiple-choice distractors.
+
+---
 
 ### Session 85 - 2026-01-25 - Multiple-Choice Distractor Fix (#121)
 
