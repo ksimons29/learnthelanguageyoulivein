@@ -147,11 +147,14 @@ export default function ReviewPage() {
 
   // Load distractors for multiple choice
   // IMPORTANT: nativeLanguage ensures all options are in the user's native language
-  const loadDistractors = useCallback(async (targetWord: Word) => {
+  // FIX for Issue #121: Pass all sentence word IDs to exclude them from distractors
+  const loadDistractors = useCallback(async (targetWord: Word, sentenceWords: Word[]) => {
     setIsLoadingDistractors(true);
     try {
+      // Extract IDs of all words in the sentence to exclude from distractors
+      const sentenceWordIds = sentenceWords.map(w => w.id);
       const { options, correctOptionId: correctId } =
-        await prepareMultipleChoiceOptions(targetWord, nativeLanguage);
+        await prepareMultipleChoiceOptions(targetWord, nativeLanguage, sentenceWordIds);
       setMultipleChoiceOptions(options);
       setCorrectOptionId(correctId);
     } catch (err) {
@@ -207,15 +210,17 @@ export default function ReviewPage() {
   // Load distractors when we have a multiple choice sentence
   // FIX for Issue #61 & #62: Use focusWord instead of sentenceTargetWords[0]
   // This ensures options are generated for the word that is actually highlighted
+  // FIX for Issue #121: Pass all sentenceTargetWords to exclude them from distractors
   useEffect(() => {
     if (
       reviewMode === "sentence" &&
       focusWord &&
-      exerciseType === "multiple_choice"
+      exerciseType === "multiple_choice" &&
+      sentenceTargetWords.length > 0
     ) {
-      loadDistractors(focusWord);
+      loadDistractors(focusWord, sentenceTargetWords);
     }
-  }, [reviewMode, focusWord, exerciseType, loadDistractors]);
+  }, [reviewMode, focusWord, exerciseType, sentenceTargetWords, loadDistractors]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -615,3 +615,168 @@ describe('Null safety for text helpers - Issue #69', () => {
     expect(getTargetLanguageText(currentWord, 'pt-PT')).toBe('')
   })
 })
+
+/**
+ * Sentence Word Exclusion Tests - Issue #121
+ *
+ * BUG FOUND: Multiple-choice review shows two valid answers when a sentence
+ * contains multiple vocabulary words from the same category.
+ *
+ * Example: Sentence "Quero pedir um café e uma água, por favor" tests both
+ * "café" (coffee) and "água" (water). If focusWord is "café", "água" can
+ * appear as a distractor - but "água" is also a correct answer since it's
+ * in the sentence!
+ *
+ * ROOT CAUSE: Distractors are fetched from the same category as the correct
+ * word, but the system didn't exclude OTHER words that appear in the current
+ * sentence.
+ *
+ * THE FIX: Pass all sentence word IDs to buildMultipleChoiceOptions and
+ * filter them out from distractors.
+ */
+describe('Sentence word exclusion from distractors - Issue #121', () => {
+  const nativeLanguage = 'en'
+
+  it('excludes other sentence words from distractors', () => {
+    // Sentence: "Quero pedir um café e uma água, por favor"
+    // focusWord is "café", but "água" is also in the sentence
+
+    const cafeWord = createMockWord({
+      id: 'cafe-id',
+      originalText: 'café',
+      translation: 'coffee',
+      category: 'food_dining',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const aguaWord = createMockWord({
+      id: 'agua-id',
+      originalText: 'água',
+      translation: 'water',
+      category: 'food_dining',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const sentenceWords = [cafeWord, aguaWord]
+    const sentenceWordIds = sentenceWords.map(w => w.id)
+
+    // Distractors include "água" because it's in the same category
+    const distractors = [
+      aguaWord, // Should be EXCLUDED - it's in the sentence!
+      createMockWord({ id: 'orange-id', translation: 'orange', category: 'food_dining', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ id: 'bread-id', translation: 'bread', category: 'food_dining', sourceLang: 'pt-PT', targetLang: 'en' }),
+    ]
+
+    // Build options WITH sentence word exclusion
+    const options = buildMultipleChoiceOptions(cafeWord, distractors, nativeLanguage, sentenceWordIds)
+
+    // "coffee" should be in options (correct answer)
+    expect(options.some(o => o.text === 'coffee')).toBe(true)
+
+    // "water" should NOT be in options (it's another word in the same sentence)
+    expect(options.some(o => o.text === 'water')).toBe(false)
+
+    // Other distractors should be present
+    expect(options.some(o => o.text === 'orange')).toBe(true)
+    expect(options.some(o => o.text === 'bread')).toBe(true)
+  })
+
+  it('works when no sentence words need exclusion', () => {
+    const correctWord = createMockWord({
+      id: 'apple-id',
+      originalText: 'maçã',
+      translation: 'apple',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const distractors = [
+      createMockWord({ id: 'orange-id', translation: 'orange', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ id: 'banana-id', translation: 'banana', sourceLang: 'pt-PT', targetLang: 'en' }),
+    ]
+
+    // Single-word sentence, only exclude the correct word
+    const sentenceWordIds = [correctWord.id]
+
+    const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage, sentenceWordIds)
+
+    // All distractors should be included (they're not in the sentence)
+    expect(options).toHaveLength(3) // 1 correct + 2 distractors
+    expect(options.some(o => o.text === 'apple')).toBe(true)
+    expect(options.some(o => o.text === 'orange')).toBe(true)
+    expect(options.some(o => o.text === 'banana')).toBe(true)
+  })
+
+  it('backwards compatible - works without sentenceWordIds param', () => {
+    const correctWord = createMockWord({
+      id: 'test-id',
+      translation: 'test',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const distractors = [
+      createMockWord({ translation: 'other', sourceLang: 'pt-PT', targetLang: 'en' }),
+    ]
+
+    // Call WITHOUT sentenceWordIds (backwards compatibility)
+    const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage)
+
+    expect(options).toHaveLength(2)
+    expect(options.some(o => o.text === 'test')).toBe(true)
+    expect(options.some(o => o.text === 'other')).toBe(true)
+  })
+
+  it('excludes multiple sentence words when sentence has 3+ vocabulary words', () => {
+    // Sentence with 3 food words
+    const cafeWord = createMockWord({
+      id: 'cafe-id',
+      translation: 'coffee',
+      category: 'food_dining',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const aguaWord = createMockWord({
+      id: 'agua-id',
+      translation: 'water',
+      category: 'food_dining',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const paoWord = createMockWord({
+      id: 'pao-id',
+      translation: 'bread',
+      category: 'food_dining',
+      sourceLang: 'pt-PT',
+      targetLang: 'en',
+    })
+
+    const sentenceWords = [cafeWord, aguaWord, paoWord]
+    const sentenceWordIds = sentenceWords.map(w => w.id)
+
+    // Distractors include other sentence words
+    const distractors = [
+      aguaWord,
+      paoWord,
+      createMockWord({ id: 'orange-id', translation: 'orange', category: 'food_dining', sourceLang: 'pt-PT', targetLang: 'en' }),
+      createMockWord({ id: 'milk-id', translation: 'milk', category: 'food_dining', sourceLang: 'pt-PT', targetLang: 'en' }),
+    ]
+
+    const options = buildMultipleChoiceOptions(cafeWord, distractors, nativeLanguage, sentenceWordIds)
+
+    // Correct answer should be present
+    expect(options.some(o => o.text === 'coffee')).toBe(true)
+
+    // Other sentence words should be EXCLUDED
+    expect(options.some(o => o.text === 'water')).toBe(false)
+    expect(options.some(o => o.text === 'bread')).toBe(false)
+
+    // Non-sentence distractors should be present
+    expect(options.some(o => o.text === 'orange')).toBe(true)
+    expect(options.some(o => o.text === 'milk')).toBe(true)
+  })
+})

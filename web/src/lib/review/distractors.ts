@@ -125,15 +125,20 @@ export async function fetchDistractors(
  * Options are shuffled so correct answer isn't always in same position.
  * Duplicates are filtered out to prevent showing the same text twice.
  *
+ * FIX for Issue #121: Excludes all words that appear in the current sentence
+ * to prevent multiple valid answers (e.g., "café" and "água" in same sentence).
+ *
  * @param correctWord - The word that is the correct answer
  * @param distractors - Array of distractor words
  * @param nativeLanguage - User's native language code (e.g., 'en')
+ * @param sentenceWordIds - IDs of all words in the current sentence (to exclude from distractors)
  * @returns Shuffled array of options, all in native language
  */
 export function buildMultipleChoiceOptions(
   correctWord: Word,
   distractors: Word[],
-  nativeLanguage: string
+  nativeLanguage: string,
+  sentenceWordIds: string[] = []
 ): MultipleChoiceOption[] {
   const correctText = getNativeLanguageText(correctWord, nativeLanguage);
   const correctTextNormalized = correctText.toLowerCase().trim();
@@ -141,13 +146,22 @@ export function buildMultipleChoiceOptions(
   // Track seen texts to prevent duplicates (case-insensitive)
   const seenTexts = new Set<string>([correctTextNormalized]);
 
+  // FIX for Issue #121: Create set of sentence word IDs to exclude
+  // This prevents other words from the same sentence appearing as "wrong" answers
+  const sentenceWordIdSet = new Set(sentenceWordIds);
+
   // Start with the correct answer
   const options: MultipleChoiceOption[] = [
     { id: correctWord.id, text: correctText },
   ];
 
-  // Add distractors, filtering out duplicates by text
+  // Add distractors, filtering out duplicates by text and sentence words
   for (const d of distractors) {
+    // FIX for Issue #121: Skip words that appear in the current sentence
+    if (sentenceWordIdSet.has(d.id)) {
+      continue;
+    }
+
     const text = getNativeLanguageText(d, nativeLanguage);
     const textNormalized = text.toLowerCase().trim();
 
@@ -167,19 +181,24 @@ export function buildMultipleChoiceOptions(
  * Get distractors and build options in one call.
  * Convenience function for the review page.
  *
+ * FIX for Issue #121: Now accepts sentenceWordIds to exclude all words
+ * from the current sentence from appearing as distractors.
+ *
  * @param correctWord - The word that is the correct answer
  * @param nativeLanguage - User's native language code (e.g., 'en')
+ * @param sentenceWordIds - IDs of all words in the current sentence (to exclude from distractors)
  * @returns Object with options array and correct option ID
  */
 export async function prepareMultipleChoiceOptions(
   correctWord: Word,
-  nativeLanguage: string
+  nativeLanguage: string,
+  sentenceWordIds: string[] = []
 ): Promise<{
   options: MultipleChoiceOption[];
   correctOptionId: string;
 }> {
   const distractors = await fetchDistractors(correctWord, 3);
-  const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage);
+  const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage, sentenceWordIds);
 
   return {
     options,
