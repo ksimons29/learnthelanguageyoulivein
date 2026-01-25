@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Check, X } from "lucide-react";
+import { Check, X, AlertTriangle } from "lucide-react";
+import { evaluateAnswer, type AnswerEvaluation } from "@/lib/review/answer-evaluation";
 
 interface FillBlankInputProps {
-  /** The correct answer (the blanked word) */
+  /** The correct answer (the blanked word's meaning) */
   correctAnswer: string;
   /** Called when user submits (Enter key or button) */
-  onSubmit: (userAnswer: string, isCorrect: boolean) => void;
+  onSubmit: (userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => void;
   /** Disable input after submission */
   disabled?: boolean;
   /** Auto-focus on mount */
@@ -18,7 +19,8 @@ interface FillBlankInputProps {
  * FillBlankInput Component
  *
  * Text input for fill-in-the-blank exercises.
- * Validates answer case-insensitively and shows visual feedback.
+ * Uses fuzzy matching to allow for minor typos.
+ * Shows visual feedback with three states: correct, typo, incorrect.
  *
  * Moleskine aesthetic: ruled-line style input with paper texture.
  */
@@ -30,7 +32,7 @@ export function FillBlankInput({
 }: FillBlankInputProps) {
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,18 +41,15 @@ export function FillBlankInput({
     }
   }, [autoFocus]);
 
-  const normalizeAnswer = (text: string): string => {
-    return text.toLowerCase().trim();
-  };
-
   const handleSubmit = () => {
     if (disabled || submitted || !value.trim()) return;
 
-    const correct =
-      normalizeAnswer(value) === normalizeAnswer(correctAnswer);
-    setIsCorrect(correct);
+    const result = evaluateAnswer(value, correctAnswer);
+    const isCorrect = result.status !== 'incorrect';
+
+    setEvaluation(result);
     setSubmitted(true);
-    onSubmit(value, correct);
+    onSubmit(value, isCorrect, result);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -62,13 +61,28 @@ export function FillBlankInput({
 
   // Determine border color based on state
   const getBorderColor = () => {
-    if (!submitted) return "var(--border)";
-    return isCorrect ? "var(--state-easy)" : "var(--state-hard)";
+    if (!submitted || !evaluation) return "var(--border)";
+    if (evaluation.status === 'correct') return "var(--state-easy)";
+    if (evaluation.status === 'correct_with_typo') return "var(--state-medium, #f59e0b)";
+    return "var(--state-hard)";
   };
 
   const getBackgroundColor = () => {
-    if (!submitted) return "var(--surface-page)";
-    return isCorrect ? "var(--state-easy-bg)" : "var(--state-hard-bg)";
+    if (!submitted || !evaluation) return "var(--surface-page)";
+    if (evaluation.status === 'correct') return "var(--state-easy-bg)";
+    if (evaluation.status === 'correct_with_typo') return "var(--state-medium-bg, #fef3c7)";
+    return "var(--state-hard-bg)";
+  };
+
+  const getIcon = () => {
+    if (!evaluation) return null;
+    if (evaluation.status === 'correct') {
+      return <Check className="h-5 w-5" style={{ color: "var(--state-easy)" }} />;
+    }
+    if (evaluation.status === 'correct_with_typo') {
+      return <AlertTriangle className="h-5 w-5" style={{ color: "var(--state-medium, #f59e0b)" }} />;
+    }
+    return <X className="h-5 w-5" style={{ color: "var(--state-hard)" }} />;
   };
 
   return (
@@ -96,17 +110,7 @@ export function FillBlankInput({
               className="absolute right-3 top-1/2 -translate-y-1/2"
               aria-hidden="true"
             >
-              {isCorrect ? (
-                <Check
-                  className="h-5 w-5"
-                  style={{ color: "var(--state-easy)" }}
-                />
-              ) : (
-                <X
-                  className="h-5 w-5"
-                  style={{ color: "var(--state-hard)" }}
-                />
-              )}
+              {getIcon()}
             </div>
           )}
         </div>

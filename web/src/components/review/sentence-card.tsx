@@ -54,18 +54,17 @@ export function SentenceCard({
       return (
         <span key={index}>
           {isBlanked ? (
-            // Blanked word for fill_blank exercises
+            // FIX for Issue #119: Show the word highlighted (visible) for fill_blank exercises
+            // User sees the Portuguese word and must type its English meaning
             <span
-              className="inline-block rounded px-2 py-0.5 font-medium border-b-2 border-dashed"
+              className="inline-block rounded px-2 py-0.5 font-bold border-b-2"
               style={{
                 borderColor: "var(--accent-nav)",
-                minWidth: "4rem",
-                color: "transparent",
                 backgroundColor: "var(--accent-nav-light)",
+                color: "var(--accent-nav)",
               }}
             >
-              {/* Show underscores as placeholder */}
-              {"_".repeat(Math.max(wordWithoutPunct.length, 5))}
+              {wordWithoutPunct}
             </span>
           ) : isHighlighted ? (
             // Highlighted target word
@@ -108,7 +107,7 @@ export function SentenceCard({
       <div className="relative z-10">
         <p className="mb-2 text-sm" style={{ color: "var(--text-muted)" }}>
           {exerciseType === "fill_blank"
-            ? "Fill in the blank:"
+            ? "What does the highlighted word mean?"
             : exerciseType === "multiple_choice"
             ? "Choose the correct meaning:"
             : "Recall the meaning:"}

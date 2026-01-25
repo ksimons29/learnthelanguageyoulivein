@@ -3,9 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { SentenceCard } from '@/components/review/sentence-card';
 
 describe('SentenceCard', () => {
-  describe('fill_blank exercise - multi-word phrase blanking (Finding #16)', () => {
-    it('blanks a single word correctly', () => {
-      render(
+  describe('fill_blank exercise - word highlighting (Issue #119)', () => {
+    // FIX for Issue #119: fill_blank now shows the word highlighted (visible)
+    // instead of hidden with underscores. User sees Portuguese word and types English meaning.
+
+    it('shows a single word highlighted (not hidden)', () => {
+      const { container } = render(
         <SentenceCard
           sentence="Obrigado pela ajuda"
           highlightedWords={[]}
@@ -15,15 +18,21 @@ describe('SentenceCard', () => {
         />
       );
 
-      // The blanked word should show underscores, not the actual word
-      expect(screen.queryByText('Obrigado')).not.toBeInTheDocument();
-      // Check that the sentence still contains the other words
+      // The word should be visible and highlighted (bold with border)
+      expect(screen.getByText('Obrigado')).toBeInTheDocument();
+
+      // Check that it has the special fill_blank styling (bold, with border-b-2)
+      const highlightedWord = container.querySelector('.font-bold.border-b-2');
+      expect(highlightedWord).toBeInTheDocument();
+      expect(highlightedWord?.textContent).toBe('Obrigado');
+
+      // Other words should still be visible normally
       expect(screen.getByText(/pela/)).toBeInTheDocument();
       expect(screen.getByText(/ajuda/)).toBeInTheDocument();
     });
 
-    it('blanks ALL words in a multi-word phrase like "Bom dia"', () => {
-      render(
+    it('shows ALL words highlighted in a multi-word phrase like "Bom dia"', () => {
+      const { container } = render(
         <SentenceCard
           sentence="Bom dia, como está?"
           highlightedWords={[]}
@@ -33,17 +42,20 @@ describe('SentenceCard', () => {
         />
       );
 
-      // Both "Bom" and "dia" should be blanked (not visible as text)
-      // This is the fix for Finding #16
-      expect(screen.queryByText('Bom')).not.toBeInTheDocument();
-      expect(screen.queryByText('dia,')).not.toBeInTheDocument();
-      // The other words should still be visible
+      // Both "Bom" and "dia" should be visible and highlighted
+      expect(screen.getByText('Bom')).toBeInTheDocument();
+
+      // Find all highlighted words (bold with border)
+      const highlightedWords = container.querySelectorAll('.font-bold.border-b-2');
+      expect(highlightedWords).toHaveLength(2);
+
+      // The other words should still be visible normally
       expect(screen.getByText(/como/)).toBeInTheDocument();
       expect(screen.getByText(/está/)).toBeInTheDocument();
     });
 
-    it('blanks ALL words in "Quanto custa?" multi-word phrase', () => {
-      render(
+    it('shows ALL words highlighted in "Quanto custa?" multi-word phrase', () => {
+      const { container } = render(
         <SentenceCard
           sentence="Quanto custa este livro?"
           highlightedWords={[]}
@@ -53,16 +65,17 @@ describe('SentenceCard', () => {
         />
       );
 
-      // Both words in the phrase should be blanked
-      expect(screen.queryByText('Quanto')).not.toBeInTheDocument();
-      expect(screen.queryByText('custa')).not.toBeInTheDocument();
-      // Other words visible
+      // Both words in the phrase should be visible and highlighted
+      const highlightedWords = container.querySelectorAll('.font-bold.border-b-2');
+      expect(highlightedWords).toHaveLength(2);
+
+      // Other words visible normally
       expect(screen.getByText(/este/)).toBeInTheDocument();
       expect(screen.getByText(/livro/)).toBeInTheDocument();
     });
 
-    it('blanks ALL words in "A conta, por favor" multi-word phrase', () => {
-      render(
+    it('shows ALL words highlighted in "A conta, por favor" multi-word phrase', () => {
+      const { container } = render(
         <SentenceCard
           sentence="A conta, por favor, está aqui."
           highlightedWords={[]}
@@ -72,18 +85,17 @@ describe('SentenceCard', () => {
         />
       );
 
-      // All four words should be blanked
-      expect(screen.queryByText('A')).not.toBeInTheDocument();
-      expect(screen.queryByText('conta,')).not.toBeInTheDocument();
-      expect(screen.queryByText('por')).not.toBeInTheDocument();
-      expect(screen.queryByText('favor,')).not.toBeInTheDocument();
-      // Other words visible
+      // All four words should be highlighted
+      const highlightedWords = container.querySelectorAll('.font-bold.border-b-2');
+      expect(highlightedWords).toHaveLength(4);
+
+      // Other words visible normally
       expect(screen.getByText(/está/)).toBeInTheDocument();
       expect(screen.getByText(/aqui/)).toBeInTheDocument();
     });
 
-    it('handles case-insensitive matching', () => {
-      render(
+    it('handles case-insensitive matching for highlighting', () => {
+      const { container } = render(
         <SentenceCard
           sentence="BOM DIA, como vai?"
           highlightedWords={[]}
@@ -93,13 +105,14 @@ describe('SentenceCard', () => {
         />
       );
 
-      // Should still blank despite case difference
-      expect(screen.queryByText('BOM')).not.toBeInTheDocument();
-      expect(screen.queryByText('DIA,')).not.toBeInTheDocument();
+      // Should still highlight despite case difference
+      const highlightedWords = container.querySelectorAll('.font-bold.border-b-2');
+      expect(highlightedWords).toHaveLength(2);
+      expect(highlightedWords[0]?.textContent).toBe('BOM');
     });
 
-    it('does not blank words when exerciseType is not fill_blank', () => {
-      render(
+    it('does not highlight words when exerciseType is not fill_blank', () => {
+      const { container } = render(
         <SentenceCard
           sentence="Bom dia, como está?"
           highlightedWords={[]}
@@ -109,8 +122,12 @@ describe('SentenceCard', () => {
         />
       );
 
-      // Words should be visible in multiple_choice mode
+      // Words should be visible but not with fill_blank styling
       expect(screen.getByText(/Bom/)).toBeInTheDocument();
+
+      // Should not have the fill_blank bold styling
+      const boldWords = container.querySelectorAll('.font-bold.border-b-2');
+      expect(boldWords).toHaveLength(0);
     });
 
     it('shows correct prompt for fill_blank exercise', () => {
@@ -124,7 +141,8 @@ describe('SentenceCard', () => {
         />
       );
 
-      expect(screen.getByText('Fill in the blank:')).toBeInTheDocument();
+      // Updated prompt for new behavior
+      expect(screen.getByText('What does the highlighted word mean?')).toBeInTheDocument();
     });
 
     it('shows correct prompt for multiple_choice exercise', () => {

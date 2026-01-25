@@ -31,6 +31,7 @@ import {
   getTargetLanguageText,
   type MultipleChoiceOption,
 } from "@/lib/review/distractors";
+import type { AnswerEvaluation } from "@/lib/review/answer-evaluation";
 import type { Word } from "@/lib/db/schema";
 import {
   hasMemoryContext,
@@ -84,9 +85,11 @@ export default function ReviewPage() {
   // Sentence exercise state
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [answerEvaluation, setAnswerEvaluation] = useState<AnswerEvaluation | null>(null);
 
   // Word mode active recall state
   const [wordModeAnswerCorrect, setWordModeAnswerCorrect] = useState<boolean | null>(null);
+  const [wordModeEvaluation, setWordModeEvaluation] = useState<AnswerEvaluation | null>(null);
   const [multipleChoiceOptions, setMultipleChoiceOptions] = useState<
     MultipleChoiceOption[]
   >([]);
@@ -228,8 +231,10 @@ export default function ReviewPage() {
     setSelectedOptionId(null);
     setMultipleChoiceOptions([]);
     setCorrectOptionId("");
+    setAnswerEvaluation(null);
     // Word mode state
     setWordModeAnswerCorrect(null);
+    setWordModeEvaluation(null);
   };
 
   const handleClose = () => {
@@ -245,13 +250,15 @@ export default function ReviewPage() {
   };
 
   // Handle fill-in-the-blank answer submission (sentence mode)
-  const handleFillBlankSubmit = (userAnswer: string, isCorrect: boolean) => {
+  const handleFillBlankSubmit = (userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => {
     setIsAnswerCorrect(isCorrect);
+    setAnswerEvaluation(evaluation);
   };
 
   // Handle word mode active recall submission
-  const handleWordModeRecallSubmit = (userAnswer: string, isCorrect: boolean) => {
+  const handleWordModeRecallSubmit = (userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => {
     setWordModeAnswerCorrect(isCorrect);
+    setWordModeEvaluation(evaluation);
   };
 
   // Handle multiple choice selection
@@ -544,12 +551,13 @@ export default function ReviewPage() {
                 {/* Answer section for tour */}
                 <div id="answer-section">
                   {/* Fill-in-the-blank input */}
+                  {/* FIX for Issue #119: User sees Portuguese word, types English meaning */}
                   {exerciseType === "fill_blank" &&
                     reviewState === "recall" &&
                     blankedWord &&
                     isAnswerCorrect === null && (
                       <FillBlankInput
-                        correctAnswer={getTargetLanguageText(blankedWord, targetLanguage)}
+                        correctAnswer={getNativeLanguageText(blankedWord, nativeLanguage)}
                         onSubmit={handleFillBlankSubmit}
                       />
                     )}
@@ -587,12 +595,13 @@ export default function ReviewPage() {
             {/* FIX for Issue #61 & #62: Use focusWord for correct answer display */}
             {isAnswerCorrect !== null && reviewState === "recall" && (
               <AnswerFeedback
-                isCorrect={isAnswerCorrect}
+                status={answerEvaluation?.status || (isAnswerCorrect ? 'correct' : 'incorrect')}
                 correctAnswer={
                   !isAnswerCorrect && focusWord
                     ? getNativeLanguageText(focusWord, nativeLanguage)
                     : undefined
                 }
+                correctedSpelling={answerEvaluation?.correctedSpelling}
               />
             )}
 
@@ -826,8 +835,13 @@ export default function ReviewPage() {
           {/* FIX for Issue #69: Add null check to prevent crash when closing review mid-session */}
           {reviewState === "recall" && wordModeAnswerCorrect !== null && currentWord && (
             <AnswerFeedback
-              isCorrect={wordModeAnswerCorrect}
-              correctAnswer={getNativeLanguageText(currentWord, nativeLanguage)}
+              status={wordModeEvaluation?.status || (wordModeAnswerCorrect ? 'correct' : 'incorrect')}
+              correctAnswer={
+                !wordModeAnswerCorrect
+                  ? getNativeLanguageText(currentWord, nativeLanguage)
+                  : undefined
+              }
+              correctedSpelling={wordModeEvaluation?.correctedSpelling}
             />
           )}
 
