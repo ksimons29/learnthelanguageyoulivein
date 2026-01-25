@@ -1634,37 +1634,11 @@ SELECT COUNT(*) FROM (
 
 ---
 
-## 9. Bug report template
+## 9. Bug reporting
 
-Title
+Use the canonical bug template: [docs/engineering/BUG_REPORTING.md](./BUG_REPORTING.md)
 
-* Short and specific
-
-Environment
-
-* local dev or local production build or production
-* user email
-* browser and device
-
-Repro steps
-1.
-2.
-3.
-
-Expected
-
-* what should happen
-
-Actual
-
-* what happened
-
-Evidence
-
-* screenshot
-* console logs
-* network request payload and response
-* SQL query results if relevant
+Run `/bug` in Claude Code to generate a complete Bug Packet and GitHub issue body.
 
 ---
 
