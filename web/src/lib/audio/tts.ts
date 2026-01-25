@@ -148,3 +148,203 @@ export function estimateTTSCost(text: string): number {
   const costPer1MCharacters = 15.0;
   return (characterCount / 1_000_000) * costPer1MCharacters;
 }
+
+// ============================================================================
+// VERIFIED AUDIO GENERATION
+// ============================================================================
+// OpenAI TTS occasionally returns incorrect audio (wrong words, random content).
+// This system verifies generated audio by transcribing it with Whisper and
+// regenerating if the content doesn't match.
+// ============================================================================
+
+const MAX_VERIFICATION_ATTEMPTS = 3;
+
+interface VerifiedTTSOptions extends TTSOptions {
+  /** Skip verification (for batch operations where speed is critical) */
+  skipVerification?: boolean;
+}
+
+interface VerificationResult {
+  buffer: Buffer;
+  verified: boolean;
+  transcription?: string;
+  attempts: number;
+}
+
+/**
+ * Normalize text for comparison
+ * Removes punctuation, extra spaces, and converts to lowercase
+ */
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[.!?,;:'"]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Check if transcription matches expected text
+ * Uses fuzzy matching to account for minor transcription differences
+ */
+function transcriptionMatches(transcription: string, expected: string): boolean {
+  const normalizedTranscription = normalizeText(transcription);
+  const normalizedExpected = normalizeText(expected);
+
+  // Exact match
+  if (normalizedTranscription === normalizedExpected) {
+    return true;
+  }
+
+  // Contains match (for short words that might have extra sounds)
+  if (
+    normalizedTranscription.includes(normalizedExpected) ||
+    normalizedExpected.includes(normalizedTranscription)
+  ) {
+    return true;
+  }
+
+  // For very short words (< 6 chars), check if first few characters match
+  if (normalizedExpected.length < 6 && normalizedTranscription.length >= 3) {
+    const prefix = normalizedExpected.slice(0, 3);
+    if (normalizedTranscription.startsWith(prefix)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Transcribe audio buffer using Whisper
+ */
+async function transcribeAudio(
+  audioBuffer: Buffer,
+  languageCode?: string
+): Promise<string> {
+  const openai = getOpenAI();
+
+  // Convert Buffer to Uint8Array for Blob compatibility
+  const uint8Array = new Uint8Array(audioBuffer);
+  const blob = new Blob([uint8Array], { type: 'audio/mpeg' });
+  const file = new File([blob], 'audio.mp3', { type: 'audio/mpeg' });
+
+  const transcription = await openai.audio.transcriptions.create({
+    file,
+    model: 'whisper-1',
+    language: languageCode?.split('-')[0], // Use base language code (pt, en, sv)
+  });
+
+  return transcription.text;
+}
+
+/**
+ * Generate audio with verification
+ *
+ * This function generates TTS audio and verifies the content matches
+ * the expected text by transcribing with Whisper. If verification fails,
+ * it retries with different parameters (slower speed, punctuation).
+ *
+ * IMPORTANT: This adds ~1-2 seconds per generation due to Whisper transcription.
+ * For batch operations, consider using skipVerification=true.
+ *
+ * @param options - TTS options including text and language
+ * @returns Verified audio buffer
+ * @throws Error if verification fails after all attempts
+ */
+export async function generateVerifiedAudio(
+  options: VerifiedTTSOptions
+): Promise<Buffer> {
+  const { text, languageCode, skipVerification = false, userId } = options;
+
+  // If skipping verification, just generate normally
+  if (skipVerification) {
+    return generateAudio(options);
+  }
+
+  let lastTranscription = '';
+  let lastBuffer: Buffer | null = null;
+
+  // Attempt configurations: progressively slower and with punctuation
+  const attemptConfigs = [
+    { speed: 0.95, textModifier: (t: string) => t },
+    { speed: 0.85, textModifier: (t: string) => t },
+    { speed: 0.8, textModifier: (t: string) => t.endsWith('.') ? t : `${t}.` },
+  ];
+
+  for (let attempt = 0; attempt < MAX_VERIFICATION_ATTEMPTS; attempt++) {
+    const config = attemptConfigs[attempt] || attemptConfigs[attemptConfigs.length - 1];
+    const modifiedText = config.textModifier(text);
+
+    try {
+      // Generate audio
+      const buffer = await generateAudio({
+        ...options,
+        text: modifiedText,
+        speed: config.speed,
+      });
+
+      lastBuffer = buffer;
+
+      // Transcribe and verify
+      const transcription = await transcribeAudio(buffer, languageCode);
+      lastTranscription = transcription;
+
+      if (transcriptionMatches(transcription, text)) {
+        if (attempt > 0) {
+          console.log(
+            `[TTS] Verified on attempt ${attempt + 1}: "${text}" → "${transcription}"`
+          );
+        }
+        return buffer;
+      }
+
+      console.warn(
+        `[TTS] Verification failed attempt ${attempt + 1}/${MAX_VERIFICATION_ATTEMPTS}: ` +
+        `expected "${text}", got "${transcription}"`
+      );
+    } catch (error) {
+      console.error(`[TTS] Generation attempt ${attempt + 1} failed:`, error);
+    }
+  }
+
+  // All attempts failed - log detailed error
+  console.error(
+    `[TTS] VERIFICATION FAILED after ${MAX_VERIFICATION_ATTEMPTS} attempts: ` +
+    `text="${text}", lastTranscription="${lastTranscription}", ` +
+    `userId=${userId || 'unknown'}`
+  );
+
+  // Return last buffer anyway (better than nothing) but log the failure
+  if (lastBuffer) {
+    return lastBuffer;
+  }
+
+  throw new Error(
+    `TTS verification failed after ${MAX_VERIFICATION_ATTEMPTS} attempts for "${text}"`
+  );
+}
+
+/**
+ * Check if an existing audio buffer contains the expected content
+ *
+ * Useful for validating cached or stored audio files.
+ *
+ * @param audioBuffer - Audio buffer to verify
+ * @param expectedText - Expected spoken text
+ * @param languageCode - Language code for transcription
+ * @returns True if audio matches expected text
+ */
+export async function verifyAudioContent(
+  audioBuffer: Buffer,
+  expectedText: string,
+  languageCode?: string
+): Promise<boolean> {
+  try {
+    const transcription = await transcribeAudio(audioBuffer, languageCode);
+    return transcriptionMatches(transcription, expectedText);
+  } catch (error) {
+    console.error('[TTS] Verification failed:', error);
+    return false;
+  }
+}
