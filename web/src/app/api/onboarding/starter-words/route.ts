@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getStarterWords, getTranslation } from '@/lib/data/starter-vocabulary';
-import { generateAudio } from '@/lib/audio/tts';
+import { generateVerifiedAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { triggerSentencePreGeneration } from '@/lib/sentences';
 import { withRetry, sleep } from '@/lib/utils/retry';
@@ -157,15 +157,16 @@ async function generateTTSForWords(
   wordList: typeof words.$inferSelect[],
   languageCode: string
 ) {
-  const BATCH_SIZE = 3; // Process 3 words at a time to avoid rate limits
-  const BATCH_DELAY_MS = 500; // 500ms delay between batches
+  // Reduced batch size and increased delay to account for Whisper verification
+  const BATCH_SIZE = 2; // Process 2 words at a time (verification adds latency)
+  const BATCH_DELAY_MS = 1000; // 1s delay between batches
 
   const processWord = async (word: typeof words.$inferSelect) => {
     try {
-      // TTS generation with retry (3 retries, 2s base delay)
+      // TTS generation with verification (catches OpenAI reliability issues)
       const audioBuffer = await withRetry(
-        () => generateAudio({ text: word.originalText, languageCode }),
-        3,
+        () => generateVerifiedAudio({ text: word.originalText, languageCode }),
+        2, // Fewer outer retries since verification has internal retries
         2000
       );
 
