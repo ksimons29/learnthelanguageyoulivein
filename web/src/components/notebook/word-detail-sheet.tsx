@@ -182,6 +182,29 @@ export function WordDetailSheet({
           </button>
         </div>
 
+        {/* Example Sentence - shows word in context */}
+        {word.exampleSentence && (
+          <div
+            className="mb-6 p-4 rounded-xl"
+            style={{ backgroundColor: "var(--surface-page)" }}
+          >
+            <p
+              className="text-base italic leading-relaxed"
+              style={{ color: "var(--text-body)" }}
+            >
+              &ldquo;{word.exampleSentence}&rdquo;
+            </p>
+            {word.exampleTranslation && (
+              <p
+                className="text-sm mt-2"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {word.exampleTranslation}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Statistics */}
         <div
           className="grid grid-cols-3 gap-4 p-4 rounded-xl mb-6"

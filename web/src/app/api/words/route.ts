@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, generatedSentences } from '@/lib/db/schema';
-import { generateAudio } from '@/lib/audio/tts';
+import { generateAudio, generateVerifiedAudio } from '@/lib/audio/tts';
 import { uploadAudio, uploadSentenceAudio } from '@/lib/audio/storage';
 import {
   getTranslationName,
@@ -14,7 +14,7 @@ import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
 import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
 import { generateSentenceWithRetry } from '@/lib/sentences/generator';
 import { determineExerciseType } from '@/lib/sentences/exercise-type';
-import { generateAndStoreExampleSentence } from '@/lib/sentences/example-sentence';
+import { generateAndStoreExampleSentence, generateExampleSentence } from '@/lib/sentences/example-sentence';
 import { withRetry } from '@/lib/utils/retry';
 import { withGPTUsageTracking } from '@/lib/api-usage/logger';
 import OpenAI from 'openai';
@@ -309,19 +309,23 @@ export async function POST(request: NextRequest) {
       // Silently fail - this is an optimization, not critical
     });
 
-    // 12. Generate example sentence in background (fire-and-forget)
-    // Uses same pattern as audio generation - doesn't block capture
+    // 12. Generate example sentence in background with retry
+    // Uses retry pattern for reliability - 3 attempts with exponential backoff
     // Determine which text to use: we want the sentence in the TARGET language
     // If user entered in target language (e.g., "obrigado"), use that
     // If user entered in native language (e.g., "thank you"), use the translation
     const sentenceText = isInputInTargetLanguage ? text : translation;
-    generateAndStoreExampleSentence(
-      newWord.id,
-      sentenceText,
-      languagePreference.targetLanguage,
-      languagePreference.nativeLanguage
+    withRetry(
+      () => generateAndStoreExampleSentence(
+        newWord.id,
+        sentenceText,
+        languagePreference.targetLanguage,
+        languagePreference.nativeLanguage
+      ),
+      3,  // 3 retries
+      1000 // 1s base delay with exponential backoff
     ).catch((err) => {
-      console.error('Background example sentence generation failed:', err);
+      console.error('Background example sentence generation failed after retries:', err);
     });
 
     return response;
@@ -421,7 +425,7 @@ export async function GET(request: NextRequest) {
     // 5. Query words with pagination
     // Words now include exampleSentence and exampleTranslation directly
     const offset = (page - 1) * limit;
-    const userWords = await db
+    let userWords = await db
       .select()
       .from(words)
       .where(and(...conditions))
@@ -429,7 +433,60 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // 6. Count total for pagination (safe destructuring to handle empty results)
+    // 6. On-demand example sentence generation (self-healing fallback)
+    // If any words are missing example sentences, generate them now
+    // Limit to 3 per request to avoid timeout
+    const wordsWithoutSentence = userWords
+      .filter(w => !w.exampleSentence)
+      .slice(0, 3);
+
+    if (wordsWithoutSentence.length > 0) {
+      const sentenceGenerationPromises = wordsWithoutSentence.map(async (word) => {
+        try {
+          // Determine which text to use for generation (target language)
+          const isOriginalInTarget = word.sourceLang.split('-')[0] ===
+            languagePreference.targetLanguage.split('-')[0];
+          const textForSentence = isOriginalInTarget ? word.originalText : word.translation;
+
+          const result = await generateExampleSentence(
+            textForSentence,
+            languagePreference.targetLanguage,
+            languagePreference.nativeLanguage
+          );
+
+          // Update database
+          await db
+            .update(words)
+            .set({
+              exampleSentence: result.sentence,
+              exampleTranslation: result.translation,
+            })
+            .where(eq(words.id, word.id));
+
+          return { wordId: word.id, ...result };
+        } catch (err) {
+          console.error(`On-demand sentence generation failed for word ${word.id}:`, err);
+          return null;
+        }
+      });
+
+      const generatedSentencesResults = await Promise.all(sentenceGenerationPromises);
+
+      // Update userWords array with generated sentences
+      userWords = userWords.map(word => {
+        const generated = generatedSentencesResults.find(g => g?.wordId === word.id);
+        if (generated) {
+          return {
+            ...word,
+            exampleSentence: generated.sentence,
+            exampleTranslation: generated.translation,
+          };
+        }
+        return word;
+      });
+    }
+
+    // 7. Count total for pagination (safe destructuring to handle empty results)
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(words)
@@ -711,10 +768,11 @@ async function generateAudioInBackground(
   languageCode: string
 ): Promise<void> {
   try {
-    // TTS generation with retry (3 retries, 2s base delay)
+    // TTS generation with verification (retries internally if transcription doesn't match)
+    // This catches OpenAI TTS reliability issues where wrong audio is returned
     const audioBuffer = await withRetry(
-      () => generateAudio({ text, languageCode, userId }),
-      3,
+      () => generateVerifiedAudio({ text, languageCode, userId }),
+      2, // Fewer outer retries since verification has internal retries
       2000
     );
 

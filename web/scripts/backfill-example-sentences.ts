@@ -155,7 +155,7 @@ OUTPUT FORMAT (JSON only, no markdown):
 async function getUserLanguagePreference(userId: string): Promise<UserLanguagePreference | null> {
   const result = await db`
     SELECT native_language, target_language
-    FROM user_language_preferences
+    FROM user_profiles
     WHERE user_id = ${userId}
   `;
 
