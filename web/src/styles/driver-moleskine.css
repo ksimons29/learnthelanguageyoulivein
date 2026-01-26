@@ -511,8 +511,8 @@ nav.driver-active-element,
     right: 12px;
   }
 
-  /* Stack buttons on very small screens */
-  @media (max-width: 360px) {
+  /* Stack buttons on mobile screens for better touch targets */
+  @media (max-width: 480px) {
     .driver-popover.moleskine-tour-popover .driver-popover-navigation-btns {
       flex-direction: column;
       width: 100%;

@@ -1925,3 +1925,66 @@ Password for all: `TestPassword123!`
    - Console errors (if any)
    - Screenshot
 3. Roll back if critical (Vercel: promote previous deployment)
+
+---
+
+## 13. Mobile Viewport Testing
+
+### 13.1 Why Mobile Testing Matters
+
+- iPhone SE (375px) is Apple's budget option, common among language learners
+- Tour popovers, modals, and sheets can overflow on narrow screens
+- Button touch targets must be accessible
+
+### 13.2 Test Viewports
+
+| Device | Width | Priority |
+|--------|-------|----------|
+| iPhone 16/15/14 Pro Max | 430px | Low (plenty of space) |
+| iPhone 16/15/14 | 390px | Medium |
+| iPhone SE (all generations) | 375px | **HIGH** |
+| iPhone mini | 360px | HIGH |
+| Small Android | 320px | Medium |
+
+### 13.3 How to Test Mobile Viewports
+
+**Using Chrome DevTools:**
+1. Open Chrome DevTools (F12 or Cmd+Option+I)
+2. Click device toolbar icon (Cmd+Shift+M)
+3. Select "Responsive" or choose a device preset
+4. Set width to 375px for iPhone SE testing
+
+**Using Safari Responsive Design Mode:**
+1. Enable Developer menu (Safari → Settings → Advanced)
+2. Develop → Enter Responsive Design Mode
+3. Select iPhone SE or custom width
+
+### 13.4 Mobile Tour Popover Test (Issue #133)
+
+**Steps:**
+1. Set viewport to 375px width
+2. Navigate to production or `vercel dev`
+3. Sign in with test account
+4. Open Feedback → Replay App Tours → Today Dashboard
+5. Navigate through all 5 steps
+
+**Expected:**
+- [ ] No horizontal scrollbar
+- [ ] Back/Next buttons stack vertically (not side-by-side)
+- [ ] All text fully visible
+- [ ] Close button accessible
+
+**CSS Breakpoints (driver-moleskine.css):**
+- ≤640px: Popover max-width becomes `calc(100vw - 24px)`
+- ≤480px: Navigation buttons stack vertically
+
+### 13.5 General Mobile UI Checklist
+
+Run on 375px viewport:
+
+- [ ] Bottom navigation fully visible
+- [ ] Capture input doesn't shift on keyboard open
+- [ ] Review cards fit within viewport
+- [ ] Notebook category grid scrolls properly
+- [ ] Sheets/modals don't overflow
+- [ ] All buttons have 44x44px minimum touch target

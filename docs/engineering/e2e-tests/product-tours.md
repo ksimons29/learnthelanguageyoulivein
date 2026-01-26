@@ -143,8 +143,65 @@ Not applicable for tours - tour content is static English UI text, not user-gene
 
 ## Mobile Verification
 
-Not tested in this session. Manual verification recommended on iOS Safari PWA to confirm:
-- [ ] Overlay doesn't obscure bottom nav
-- [ ] Popover positioning correct
-- [ ] Tap targets meet 44x44px minimum
-- [ ] Teal overlay visible on all backgrounds
+### Test 6: Mobile Viewport Tour Display (CRITICAL)
+
+**Issue:** #133 - Tour popovers overflow on small screens
+
+**Fix applied:** Button stacking breakpoint changed from 360px → 480px
+
+**CSS Responsive Breakpoints:**
+- ≤640px: Popover uses `max-width: calc(100vw - 24px)`, `min-width: auto`
+- ≤480px: Navigation buttons stack vertically (full width)
+
+**Test at these viewport widths:**
+
+| Device | Width | Test Focus |
+|--------|-------|------------|
+| iPhone 16/15/14 | 390-430px | Buttons should stack, popover fits |
+| iPhone SE | 375px | Buttons should stack, popover fits |
+| iPhone mini | 360px | Buttons should stack, popover fits |
+| Small Android | 320px | Buttons should stack, popover fits |
+
+**Steps:**
+1. Open Chrome DevTools (F12)
+2. Click device toolbar icon (Cmd+Shift+M)
+3. Set viewport to 375px width (iPhone SE)
+4. Navigate to https://llyli.vercel.app (or localhost:3000 for local)
+5. Sign in with test account
+6. Open Feedback → Replay App Tours → Today Dashboard
+7. Navigate through all 5 tour steps
+
+**Expected at 375px:**
+- [ ] Popover fits within viewport (no horizontal scroll)
+- [ ] Back/Next buttons stack vertically (not side-by-side)
+- [ ] All button text fully visible
+- [ ] Close (X) button accessible
+- [ ] Page progress text visible ("Page X of 5")
+
+**Expected at 430px (standard iPhone):**
+- [ ] Popover fits within viewport
+- [ ] Buttons may be side-by-side or stacked (480px breakpoint)
+- [ ] All content visible
+
+**Failure indicators:**
+- Horizontal scrollbar appears
+- Buttons cut off at edge
+- Text truncated with ellipsis
+- Elements extend beyond right edge
+
+### Verified: 2026-01-26
+
+**iPhone 16 + Chrome (production):**
+- ✅ Popover fits correctly (screenshots provided by user)
+- ✅ Buttons visible and functional
+- ✅ Tour completes successfully
+
+**Preventive fix applied:**
+- Button stacking now triggers at 480px instead of 360px
+- This ensures iPhone SE (375px) users get stacked buttons
+
+### Original Mobile Checklist
+- [x] Overlay doesn't obscure bottom nav
+- [x] Popover positioning correct
+- [x] Tap targets meet 44x44px minimum (12px padding + 44px button height)
+- [x] Teal overlay visible on all backgrounds
