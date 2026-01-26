@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issue #128 Race Condition Fix** - Fixed TOCTOU race condition in duplicate word detection. Added UNIQUE constraint on `(user_id, lower(original_text))` to prevent concurrent requests from creating duplicates. Cleaned 4 existing duplicates from production. Verified all 3 personas pass duplicate/case-insensitive/race tests. (Session 89)
 - [x] **P0 Mobile Accessibility Fixes** - Fixed 3 critical mobile/WCAG issues from independent audit. #125: Viewport zoom enabled (maximumScale=5, userScalable=true). #126: Safe area bottom support via CSS env() for iPhone home indicator. #127: Onboarding responsive for iPhone SE (340px max-width, overflow-y-auto, mobile-first padding). Build passes, 345 tests pass. Deployed to production, verified via curl, GitHub issues closed. (Session 88)
 - [x] **Issue #123 Example Sentence Display** - Fixed missing example sentences in notebook word detail sheet. Added UI display, retry logic for background generation, on-demand fallback in GET /api/words, and verified TTS for onboarding. Tested all 3 user personas on production. (Session 87)
 - [x] **Issue #121 Post-Deployment Verification** - Verified fix works in production across all user personas. EN→SV confirmed working: sentence with "notan" (bill) + "vatten" (water) correctly excludes second word from options. Screenshots captured. (Session 86)
@@ -100,6 +101,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #128 | Race condition in duplicate word detection | Session 89 |
 | #125 | Viewport zoom disabled (WCAG violation) | Session 88 |
 | #126 | Bottom nav missing safe area (iPhone home indicator) | Session 88 |
 | #127 | Onboarding breaks on iPhone SE (375px) | Session 88 |
@@ -196,6 +198,46 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 89 - 2026-01-26 - Race Condition Fix (#128)
+
+**Focus:** Fix TOCTOU race condition that allowed duplicate words under concurrent requests.
+
+**Issue #128 - Race Condition in Duplicate Word Detection:**
+- **Problem:** Check-then-insert pattern had a gap where two concurrent requests could both pass the duplicate check before either inserted
+- **Evidence:** Found 4 existing duplicates in production: "obrigado", "bom dia", "tack" (x2)
+- **Root Cause:** Application-level check (SELECT) and INSERT weren't atomic
+
+**Fix:**
+| Change | File |
+|--------|------|
+| Add `uniqueIndex` on `(user_id, lower(original_text))` | `web/src/lib/db/schema/words.ts` |
+| Wrap INSERT in try-catch, return 409 on constraint violation | `web/src/app/api/words/route.ts` |
+| SQL migration for production | `supabase/migrations/20260126_fix_word_duplicate_race_condition.sql` |
+
+**Database Work:**
+- Cleaned 4 existing duplicates (92 → 88 words)
+- Applied unique constraint via custom script
+
+**Test Results (All Personas):**
+| Persona | Duplicate Block | Case-Insensitive | Race Condition |
+|---------|-----------------|------------------|----------------|
+| EN→PT | ✅ | ✅ | ✅ |
+| EN→SV | ✅ | ✅ | ✅ |
+| NL→EN | ✅ | ✅ | ✅ |
+
+**Scripts Created:**
+- `scripts/check-duplicate-words.js` - Verify no duplicates exist
+- `scripts/cleanup-duplicate-words.js` - Clean up duplicates
+- `scripts/apply-unique-constraint.js` - Apply unique index
+- `scripts/test-duplicate-prevention.js` - Test all scenarios
+
+**Commits:**
+- `1034e8b` - fix(#128): prevent duplicate words with database constraint
+
+**Closes:** #128
+
+---
 
 ### Session 86 - 2026-01-25 - Post-Deployment Verification (#121)
 
