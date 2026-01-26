@@ -301,48 +301,32 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
    * Submit review for all words in the current sentence
    *
    * Applies the same rating to all words in the sentence.
-   * Each word's FSRS parameters are updated individually.
-   * Uses batched submission with validation to prevent silent failures.
+   * Uses batch endpoint (Issue #132 fix) for:
+   * - Single network round-trip
+   * - Atomic transaction (all-or-nothing)
+   * - No race conditions on session stats
    */
   submitSentenceReview: async (rating: 1 | 2 | 3 | 4) => {
     const { sessionId, sentenceTargetWords } = get();
     set({ isLoading: true, error: null });
 
     try {
-      // Submit all reviews in parallel using Promise.allSettled
-      const reviewPromises = sentenceTargetWords.map((word) =>
-        fetch('/api/reviews', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wordId: word.id, rating, sessionId }),
-        }).then(async (response) => {
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `Failed to submit review for word ${word.id}`);
-          }
-          return response.json();
-        })
-      );
+      // Extract word IDs for batch submission
+      const wordIds = sentenceTargetWords.map((word) => word.id);
 
-      const results = await Promise.allSettled(reviewPromises);
+      // Submit all reviews in a single batch request
+      const response = await fetch('/api/reviews/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wordIds, rating, sessionId }),
+      });
 
-      // Check for failures
-      const failures = results.filter((r) => r.status === 'rejected');
-      const successes = results.filter((r) => r.status === 'fulfilled');
-
-      if (failures.length > 0) {
-        // Some reviews failed - only count successes
-        const failedCount = failures.length;
-        const successCount = successes.length;
-
-        if (successCount === 0) {
-          // All failed - show error
-          throw new Error(`Failed to submit review for all ${failedCount} words in sentence`);
-        }
-
-        // Partial success - warn user but continue
-        console.error(`${failedCount} of ${sentenceTargetWords.length} word reviews failed`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to submit sentence review');
       }
+
+      const { data } = await response.json();
 
       // Map numeric rating to string
       const ratingMap: Record<number, Rating> = {
@@ -352,8 +336,8 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
         4: 'easy',
       };
 
-      // Update stats (only count successful submissions)
-      const wordsReviewedCount = successes.length;
+      // Update local state - all words succeeded (atomic transaction)
+      const wordsReviewedCount = data.words.length;
       const correctWords = rating >= 3 ? wordsReviewedCount : 0;
 
       set((state) => ({
@@ -362,10 +346,10 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
         correctCount: state.correctCount + correctWords,
         reviewState: 'feedback',
         isLoading: false,
-        error: failures.length > 0
-          ? `${failures.length} word(s) failed to save. They will be reviewed again.`
-          : null,
+        error: null,
       }));
+
+      return data;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to submit sentence review',
