@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, HelpCircle, Lightbulb, Loader2 } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -45,36 +46,74 @@ export default function ReviewPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
   const { emitItemAnswered } = useGamificationStore();
+
+  // FIX for Issue #130: Use granular Zustand selectors to prevent unnecessary re-renders
+  // Previously, destructuring 20+ properties caused re-render on ANY state change
+  // Now, each selector group only triggers re-render when its specific state changes
+
+  // Session state (stable during session)
+  const { sessionId, dueWords, nativeLanguage, targetLanguage } = useReviewStore(
+    useShallow((state) => ({
+      sessionId: state.sessionId,
+      dueWords: state.dueWords,
+      nativeLanguage: state.nativeLanguage,
+      targetLanguage: state.targetLanguage,
+    }))
+  );
+
+  // Current item state (changes on each card transition)
+  const { currentIndex, reviewMode, currentSentence, sentenceTargetWords, multipleChoiceOptions, correctOptionId } = useReviewStore(
+    useShallow((state) => ({
+      currentIndex: state.currentIndex,
+      reviewMode: state.reviewMode,
+      currentSentence: state.currentSentence,
+      sentenceTargetWords: state.sentenceTargetWords,
+      multipleChoiceOptions: state.multipleChoiceOptions,
+      correctOptionId: state.correctOptionId,
+    }))
+  );
+
+  // UI state (changes frequently during interactions)
+  const { reviewState, isLoading, error } = useReviewStore(
+    useShallow((state) => ({
+      reviewState: state.reviewState,
+      isLoading: state.isLoading,
+      error: state.error,
+    }))
+  );
+
+  // Feedback state (changes after grading)
+  const { lastRating, lastNextReviewText, lastMasteryAchieved, wordsReviewed } = useReviewStore(
+    useShallow((state) => ({
+      lastRating: state.lastRating,
+      lastNextReviewText: state.lastNextReviewText,
+      lastMasteryAchieved: state.lastMasteryAchieved,
+      wordsReviewed: state.wordsReviewed,
+    }))
+  );
+
+  // Actions (stable references, never cause re-renders)
   const {
-    sessionId,
-    dueWords,
-    currentIndex,
-    reviewState,
-    lastRating,
-    lastNextReviewText,
-    lastMasteryAchieved,
-    wordsReviewed,
-    isLoading,
-    error,
     startSession,
     submitReview,
     setReviewState,
     setCurrentIndex,
     resetSession,
-    // Sentence mode state
-    reviewMode,
-    currentSentence,
-    sentenceTargetWords,
     fetchNextSentence,
     submitSentenceReview,
-    // Language preferences for exercise generation
-    nativeLanguage,
-    targetLanguage,
-    // Multiple choice state (FIX for Issue #131: pre-fetched with sentence)
-    multipleChoiceOptions,
-    correctOptionId,
     clearMultipleChoiceOptions,
-  } = useReviewStore();
+  } = useReviewStore(
+    useShallow((state) => ({
+      startSession: state.startSession,
+      submitReview: state.submitReview,
+      setReviewState: state.setReviewState,
+      setCurrentIndex: state.setCurrentIndex,
+      resetSession: state.resetSession,
+      fetchNextSentence: state.fetchNextSentence,
+      submitSentenceReview: state.submitSentenceReview,
+      clearMultipleChoiceOptions: state.clearMultipleChoiceOptions,
+    }))
+  );
 
   const [showMastery, setShowMastery] = useState(false);
   const [masteredPhrase, setMasteredPhrase] = useState("");
@@ -197,8 +236,11 @@ export default function ReviewPage() {
     };
   }, [stop]);
 
+  // FIX for Issue #130: Memoize handlers to prevent unnecessary child re-renders
+  // When handlers are recreated on every render, child components receiving them as props re-render too
+
   // Reset exercise state when moving to next item
-  const resetExerciseState = () => {
+  const resetExerciseState = useCallback(() => {
     // Sentence mode state
     setIsAnswerCorrect(null);
     setSelectedOptionId(null);
@@ -207,48 +249,48 @@ export default function ReviewPage() {
     // Word mode state
     setWordModeAnswerCorrect(null);
     setWordModeEvaluation(null);
-  };
+  }, [clearMultipleChoiceOptions]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     // FIX for Issue #69: Set closing flag BEFORE reset to prevent race condition
     // This stops the useEffect from trying to start a new session
     setIsClosing(true);
     resetSession();
     router.push("/");
-  };
+  }, [resetSession, router]);
 
-  const handleReveal = () => {
+  const handleReveal = useCallback(() => {
     setReviewState("revealed");
-  };
+  }, [setReviewState]);
 
   // Handle fill-in-the-blank answer submission (sentence mode)
-  const handleFillBlankSubmit = (userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => {
+  const handleFillBlankSubmit = useCallback((userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => {
     setIsAnswerCorrect(isCorrect);
     setAnswerEvaluation(evaluation);
-  };
+  }, []);
 
   // Handle word mode active recall submission
-  const handleWordModeRecallSubmit = (userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => {
+  const handleWordModeRecallSubmit = useCallback((userAnswer: string, isCorrect: boolean, evaluation: AnswerEvaluation) => {
     setWordModeAnswerCorrect(isCorrect);
     setWordModeEvaluation(evaluation);
-  };
+  }, []);
 
   // Handle multiple choice selection
-  const handleMultipleChoiceSelect = (
+  const handleMultipleChoiceSelect = useCallback((
     selectedId: string,
     isCorrect: boolean
   ) => {
     setSelectedOptionId(selectedId);
     setIsAnswerCorrect(isCorrect);
-  };
+  }, []);
 
   // Proceed to grading after answering
-  const handleProceedToGrading = () => {
+  const handleProceedToGrading = useCallback(() => {
     setReviewState("revealed");
-  };
+  }, [setReviewState]);
 
   // Handle grading for word mode
-  const handleGrade = async (rating: Rating) => {
+  const handleGrade = useCallback(async (rating: Rating) => {
     if (!currentWord || !sessionId) return;
 
     const ratingMap: Record<Rating, 1 | 2 | 3 | 4> = {
@@ -278,10 +320,10 @@ export default function ReviewPage() {
     } catch (err) {
       console.error("Failed to submit review:", err);
     }
-  };
+  }, [currentWord, sessionId, submitReview, setReviewState, emitItemAnswered, lastMasteryAchieved]);
 
   // Handle grading for sentence mode
-  const handleSentenceGrade = async (rating: Rating) => {
+  const handleSentenceGrade = useCallback(async (rating: Rating) => {
     if (!sessionId || sentenceTargetWords.length === 0) return;
 
     const ratingMap: Record<Rating, 1 | 2 | 3 | 4> = {
@@ -308,9 +350,9 @@ export default function ReviewPage() {
     } catch (err) {
       console.error("Failed to submit sentence review:", err);
     }
-  };
+  }, [sessionId, sentenceTargetWords, submitSentenceReview, setReviewState, emitItemAnswered, exerciseType]);
 
-  const handleContinue = async () => {
+  const handleContinue = useCallback(async () => {
     resetExerciseState();
 
     // Try to get next sentence
@@ -329,14 +371,14 @@ export default function ReviewPage() {
       setCurrentIndex(currentIndex + 1);
       setReviewState("recall");
     }
-  };
+  }, [resetExerciseState, fetchNextSentence, setReviewState, currentIndex, dueWords.length, router, setCurrentIndex]);
 
-  const handleMasteryContinue = () => {
+  const handleMasteryContinue = useCallback(() => {
     setShowMastery(false);
     handleContinue();
-  };
+  }, [handleContinue]);
 
-  const handlePlayAudio = () => {
+  const handlePlayAudio = useCallback(() => {
     const audioUrl =
       reviewMode === "sentence" && currentSentence
         ? currentSentence.audioUrl
@@ -349,7 +391,7 @@ export default function ReviewPage() {
         play(audioUrl);
       }
     }
-  };
+  }, [reviewMode, currentSentence, currentWord?.audioUrl, isPlaying, stop, play]);
 
   const getFeedbackMessage = () => {
     switch (lastRating) {
