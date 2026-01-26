@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issues #134 + #135 Audio Verification & Polling UX** - Combined fix for audio quality and UX issues. #134: Added `audioVerificationFailed` column to track when Whisper verification fails; shows amber warning icon on audio button. #135: Added warning thresholds at 15s ("Taking longer...") and 20s (early retry button) during audio polling. E2E verified on production: capture → timeout → retry → audio plays. (Session 92)
 - [x] **Issue #130 Zustand Selector Optimization** - Fixed review page sluggishness caused by full store subscriptions. Now uses granular `useShallow` selectors grouped by update frequency (session/item/UI/feedback/actions) and `useCallback` for memoized handlers. Reduces unnecessary re-renders significantly. (Session 91)
 - [x] **Issue #131 Distractor Loading Delay** - Fixed 100-500ms loading spinner on multiple-choice exercises. Distractors now pre-fetched inline in `fetchNextSentence` before state update, eliminating the async waterfall: fetch sentence → render → detect MC → fetch distractors → render. Options are now ready immediately when exercise renders. (Session 91)
 - [x] **Issue #132 Batch Reviews Fix** - Fixed race condition in sentence reviews. Created `POST /api/reviews/batch` endpoint that processes all word reviews in a single transaction. Updated `submitSentenceReview` to use batch endpoint instead of 2-4 parallel calls. Benefits: single network round-trip, atomic session stats update, no partial failures. (Session 90)
@@ -54,10 +55,12 @@ npm run build             # Production build
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission
+- [ ] **50-User Beta Test** - Setting up Resend SMTP to bypass Supabase free tier email limits (2/hour) ([#144](https://github.com/ksimons29/learnthelanguageyoulivein/issues/144))
 
 ### Not Started
 - **Stripe payments** - Post-MVP priority
 - **Speech input** - Voice capture for iOS app (post-MVP)
+- **Backend scaling evaluation** - Analyze Supabase Pro vs alternatives for iOS launch ([#143](https://github.com/ksimons29/learnthelanguageyoulivein/issues/143))
 
 ## Key Files
 | File | Purpose |
@@ -203,6 +206,39 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 92 - 2026-01-26 - Audio Verification & Polling UX (#134, #135)
+
+**Focus:** Combined fix for two audio-related issues from the review session bug list.
+
+**Issue #134 - Audio Verification Failure Silent:**
+- **Problem:** When Whisper verification fails after 3 attempts, `generateVerifiedAudio` returned unverified audio without any indication
+- **Root Cause:** Function returned `Buffer` directly, silently degrading quality without flagging it
+- **Fix:** Changed return type to `{ buffer, verified }`, added `audioVerificationFailed` column to track status, show amber warning icon in UI
+
+**Issue #135 - Audio Polling UX:**
+- **Problem:** Users waited up to 30s with just a spinner before seeing any feedback
+- **Fix:** Added warning thresholds: 15s shows "Taking longer...", 20s shows early retry button while still polling
+
+**Changes:**
+
+| Change | File |
+|--------|------|
+| Add `audioVerificationFailed` column | `web/src/lib/db/schema/words.ts` |
+| Return `{ buffer, verified }` from TTS | `web/src/lib/audio/tts.ts` |
+| Store verification status in DB | `web/src/app/api/words/route.ts` + 2 other routes |
+| Add warning thresholds (15s, 20s) | `web/src/lib/audio/polling-config.ts` |
+| Track `audioWarningIds`, `audioShowRetryIds` | `web/src/lib/store/words-store.ts` |
+| Show warning badge on AudioPlayButton | `web/src/components/audio/audio-play-button.tsx` |
+| Pass verification/warning props | `phrase-card.tsx`, `word-card.tsx` |
+
+**E2E Testing:**
+- Captured test word "computador" on production
+- Observed timeout → retry button appeared
+- Clicked retry → audio generated successfully
+- Verified playback works
+
+---
 
 ### Session 91 - 2026-01-26 - Review Performance Fixes (#130, #131)
 

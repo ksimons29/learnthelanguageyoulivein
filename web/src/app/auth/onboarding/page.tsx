@@ -48,10 +48,12 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get language options
+  // Get language options sorted alphabetically by display name
   // Step 1: Show ALL languages for native selection
   // Step 2: Filter out the selected native language from target options
-  const languageCodes = getSupportedLanguageCodes();
+  const languageCodes = getSupportedLanguageCodes().sort((a, b) =>
+    SUPPORTED_LANGUAGES[a].name.localeCompare(SUPPORTED_LANGUAGES[b].name)
+  );
   const nativeLanguageOptions = languageCodes; // Show all languages
   const targetLanguageOptions = languageCodes.filter(
     (code) => code !== nativeLanguage
