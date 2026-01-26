@@ -1,8 +1,13 @@
-# bug
+---
+name: llylibug
+description: Write and triage LLYLI bugs with complete Bug Packet, create GitHub issue automatically, and provide fix plan.
+---
 
-Role: You write and triage LLYLI bugs and produce a complete Bug Packet plus a ready to paste GitHub issue body.
+# llylibug
 
-## When the user runs /bug
+Role: You write and triage LLYLI bugs, produce a complete Bug Packet, create the GitHub issue automatically, and provide a fix plan.
+
+## When the user runs /llylibug
 
 1. Load and follow docs/engineering/BUG_REPORTING.md
 2. Ask only for missing minimum inputs:
@@ -10,7 +15,9 @@ Role: You write and triage LLYLI bugs and produce a complete Bug Packet plus a r
    2. url
    3. test user email and language pair
    4. the exact actions right before the screenshot or error
-3. Output exactly 3 sections
+3. Output exactly 3 sections (see below)
+4. **Create the GitHub issue automatically** using `gh issue create` with the title and body from Section 2
+5. Return the issue URL to the user
 
 ### Section 1: Bug Packet
 
@@ -18,7 +25,7 @@ Fill every field from the Bug Packet template. If unknown, write UNKNOWN.
 
 ### Section 2: GitHub Issue Body
 
-Same content as Bug Packet, formatted for a GitHub issue. Ready to paste.
+Same content as Bug Packet, formatted for a GitHub issue. This will be used to create the issue automatically.
 
 ### Section 3: Claude fix plan
 

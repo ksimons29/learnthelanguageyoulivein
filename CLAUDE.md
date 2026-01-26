@@ -18,7 +18,7 @@ LLYLI turns real life phrases into smart cards with native audio and spaced repe
 2. Before testing, verify you are logged into the intended test user and the notebook title matches that account.
 3. Any production bug must be reproduced again in a fresh incognito session before filing.
 4. Any production bug must be tracked as a GitHub issue. No loose bug notes.
-5. Bug reports must follow docs/engineering/BUG_REPORTING.md and use /bug.
+5. Bug reports must follow docs/engineering/BUG_REPORTING.md and use /llylibug.
 
 ## How we work in Claude Code
 
