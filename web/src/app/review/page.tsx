@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, HelpCircle, Lightbulb, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -26,13 +26,10 @@ import {
   selectWordToBlank,
 } from "@/lib/sentences/exercise-type";
 import {
-  prepareMultipleChoiceOptions,
   getNativeLanguageText,
   getTargetLanguageText,
-  type MultipleChoiceOption,
 } from "@/lib/review/distractors";
 import type { AnswerEvaluation } from "@/lib/review/answer-evaluation";
-import type { Word } from "@/lib/db/schema";
 import {
   hasMemoryContext,
   formatMemoryContextShort,
@@ -73,6 +70,10 @@ export default function ReviewPage() {
     // Language preferences for exercise generation
     nativeLanguage,
     targetLanguage,
+    // Multiple choice state (FIX for Issue #131: pre-fetched with sentence)
+    multipleChoiceOptions,
+    correctOptionId,
+    clearMultipleChoiceOptions,
   } = useReviewStore();
 
   const [showMastery, setShowMastery] = useState(false);
@@ -90,11 +91,6 @@ export default function ReviewPage() {
   // Word mode active recall state
   const [wordModeAnswerCorrect, setWordModeAnswerCorrect] = useState<boolean | null>(null);
   const [wordModeEvaluation, setWordModeEvaluation] = useState<AnswerEvaluation | null>(null);
-  const [multipleChoiceOptions, setMultipleChoiceOptions] = useState<
-    MultipleChoiceOption[]
-  >([]);
-  const [correctOptionId, setCorrectOptionId] = useState<string>("");
-  const [isLoadingDistractors, setIsLoadingDistractors] = useState(false);
 
   // Audio player for current word/sentence
   const currentWord = dueWords[currentIndex];
@@ -145,25 +141,8 @@ export default function ReviewPage() {
   // For multiple_choice, we still need focusWord for loading correct distractors
   const blankedWord = exerciseType === "fill_blank" ? focusWord : null;
 
-  // Load distractors for multiple choice
-  // IMPORTANT: nativeLanguage ensures all options are in the user's native language
-  // FIX for Issue #121: Pass all sentence word IDs to exclude them from distractors
-  const loadDistractors = useCallback(async (targetWord: Word, sentenceWords: Word[]) => {
-    setIsLoadingDistractors(true);
-    try {
-      // Extract IDs of all words in the sentence to exclude from distractors
-      const sentenceWordIds = sentenceWords.map(w => w.id);
-      const { options, correctOptionId: correctId } =
-        await prepareMultipleChoiceOptions(targetWord, nativeLanguage, sentenceWordIds);
-      setMultipleChoiceOptions(options);
-      setCorrectOptionId(correctId);
-    } catch (err) {
-      console.error("Failed to load distractors:", err);
-      setMultipleChoiceOptions([]);
-    } finally {
-      setIsLoadingDistractors(false);
-    }
-  }, [nativeLanguage]);
+  // FIX for Issue #131: Distractors are now pre-fetched in fetchNextSentence
+  // No more loadDistractors callback or useEffect - options are ready when sentence loads
 
   // Setup offline auto-sync on mount
   useEffect(() => {
@@ -207,20 +186,9 @@ export default function ReviewPage() {
     }
   }, [user, authLoading, sessionId, isLoading, isClosing, startSession, fetchNextSentence, router]);
 
-  // Load distractors when we have a multiple choice sentence
-  // FIX for Issue #61 & #62: Use focusWord instead of sentenceTargetWords[0]
-  // This ensures options are generated for the word that is actually highlighted
-  // FIX for Issue #121: Pass all sentenceTargetWords to exclude them from distractors
-  useEffect(() => {
-    if (
-      reviewMode === "sentence" &&
-      focusWord &&
-      exerciseType === "multiple_choice" &&
-      sentenceTargetWords.length > 0
-    ) {
-      loadDistractors(focusWord, sentenceTargetWords);
-    }
-  }, [reviewMode, focusWord, exerciseType, sentenceTargetWords, loadDistractors]);
+  // FIX for Issue #131: Removed useEffect that loaded distractors
+  // Distractors are now pre-fetched inline in fetchNextSentence before state is set
+  // This eliminates the loading spinner delay on multiple_choice exercises
 
   // Cleanup on unmount
   useEffect(() => {
@@ -234,8 +202,7 @@ export default function ReviewPage() {
     // Sentence mode state
     setIsAnswerCorrect(null);
     setSelectedOptionId(null);
-    setMultipleChoiceOptions([]);
-    setCorrectOptionId("");
+    clearMultipleChoiceOptions(); // FIX for Issue #131: Use store's clear function
     setAnswerEvaluation(null);
     // Word mode state
     setWordModeAnswerCorrect(null);
@@ -568,9 +535,9 @@ export default function ReviewPage() {
                     )}
 
                   {/* Multiple choice options */}
+                  {/* FIX for Issue #131: Options are now pre-fetched - no loading spinner needed */}
                   {exerciseType === "multiple_choice" &&
                     reviewState === "recall" &&
-                    !isLoadingDistractors &&
                     multipleChoiceOptions.length > 0 && (
                       <MultipleChoiceOptions
                         options={multipleChoiceOptions}
@@ -579,18 +546,6 @@ export default function ReviewPage() {
                         disabled={selectedOptionId !== null}
                         selectedId={selectedOptionId}
                       />
-                    )}
-
-                  {/* Loading distractors */}
-                  {exerciseType === "multiple_choice" &&
-                    reviewState === "recall" &&
-                    isLoadingDistractors && (
-                      <div className="mt-4 flex justify-center">
-                        <Loader2
-                          className="h-6 w-6 animate-spin"
-                          style={{ color: "var(--accent-nav)" }}
-                        />
-                      </div>
                     )}
                 </div>
               </SentenceCard>

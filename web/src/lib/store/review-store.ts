@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { Word, GeneratedSentence } from '@/lib/db/schema';
-import type { ExerciseType } from '@/lib/sentences/exercise-type';
 import { queueOfflineReview } from '@/lib/offline';
+import { determineExerciseType, selectWordToBlank } from '@/lib/sentences/exercise-type';
+import { prepareMultipleChoiceOptions, type MultipleChoiceOption } from '@/lib/review/distractors';
 
 /**
  * Review Store
@@ -34,6 +35,11 @@ interface ReviewStoreState {
   currentSentence: GeneratedSentence | null;
   sentenceTargetWords: Word[];
 
+  // Multiple Choice State (pre-fetched with sentence to avoid loading delay)
+  // FIX for Issue #131: Distractors are now fetched inline with sentence
+  multipleChoiceOptions: MultipleChoiceOption[];
+  correctOptionId: string;
+
   // Session Stats
   wordsReviewed: number;
   correctCount: number;
@@ -49,6 +55,7 @@ interface ReviewStoreState {
   setReviewState: (state: ReviewState) => void;
   setLastRating: (rating: Rating | null) => void;
   setReviewMode: (mode: ReviewMode) => void;
+  clearMultipleChoiceOptions: () => void;
   incrementReviewed: () => void;
   incrementCorrect: () => void;
   resetSession: () => void;
@@ -83,6 +90,10 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   currentSentence: null,
   sentenceTargetWords: [],
 
+  // Multiple Choice State
+  multipleChoiceOptions: [],
+  correctOptionId: '',
+
   // Session Stats
   wordsReviewed: 0,
   correctCount: 0,
@@ -96,6 +107,7 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   setReviewState: (state) => set({ reviewState: state }),
   setLastRating: (rating) => set({ lastRating: rating }),
   setReviewMode: (mode) => set({ reviewMode: mode }),
+  clearMultipleChoiceOptions: () => set({ multipleChoiceOptions: [], correctOptionId: '' }),
   incrementReviewed: () => set((state) => ({ wordsReviewed: state.wordsReviewed + 1 })),
   incrementCorrect: () => set((state) => ({ correctCount: state.correctCount + 1 })),
 
@@ -113,6 +125,8 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
       reviewMode: 'word',
       currentSentence: null,
       sentenceTargetWords: [],
+      multipleChoiceOptions: [],
+      correctOptionId: '',
       wordsReviewed: 0,
       correctCount: 0,
       error: null,
@@ -251,9 +265,13 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
    *
    * Returns true if a sentence was found, false otherwise.
    * When no sentence is available, falls back to word mode.
+   *
+   * FIX for Issue #131: Distractors are now fetched INLINE before setting state.
+   * This eliminates the loading spinner delay when multiple_choice exercises render.
+   * The flow is: fetch sentence → determine exercise type → fetch distractors if needed → set all state at once.
    */
   fetchNextSentence: async () => {
-    const { sessionId } = get();
+    const { sessionId, nativeLanguage } = get();
     set({ isLoading: true, error: null });
 
     try {
@@ -270,11 +288,39 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
       const { data } = await response.json();
 
       if (data.sentence && data.targetWords.length > 0) {
+        const targetWords: Word[] = data.targetWords;
+
+        // FIX for Issue #131: Determine exercise type and prefetch distractors BEFORE setting state
+        // This eliminates the waterfall: sentence load → render → detect multiple_choice → load distractors → render
+        const exerciseType = determineExerciseType(targetWords);
+        let multipleChoiceOptions: MultipleChoiceOption[] = [];
+        let correctOptionId = '';
+
+        if (exerciseType === 'multiple_choice') {
+          // Get the focus word (word with lowest mastery)
+          const focusWord = selectWordToBlank(targetWords);
+          if (focusWord) {
+            try {
+              // Extract IDs of all words in the sentence to exclude from distractors
+              const sentenceWordIds = targetWords.map(w => w.id);
+              const result = await prepareMultipleChoiceOptions(focusWord, nativeLanguage, sentenceWordIds);
+              multipleChoiceOptions = result.options;
+              correctOptionId = result.correctOptionId;
+            } catch (err) {
+              console.error('Failed to prefetch distractors:', err);
+              // Continue without distractors - will show loading in worst case
+            }
+          }
+        }
+
+        // Set all state at once - no waterfall, no loading spinner for distractors
         set({
           currentSentence: data.sentence,
-          sentenceTargetWords: data.targetWords,
+          sentenceTargetWords: targetWords,
           reviewMode: 'sentence',
           reviewState: 'recall',
+          multipleChoiceOptions,
+          correctOptionId,
           isLoading: false,
         });
         return true;
@@ -283,6 +329,8 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
         set({
           currentSentence: null,
           sentenceTargetWords: [],
+          multipleChoiceOptions: [],
+          correctOptionId: '',
           reviewMode: 'word',
           isLoading: false,
         });
