@@ -32,12 +32,12 @@ const progressTourSteps = [
     align: "center",
   }),
   createScrollingStep({
-    element: "#streak-section",
-    title: "Build Consistency",
+    element: "#streak-badges",
+    title: "Track Your Consistency",
     description:
-      "Daily streaks unlock Boss Rounds and Bingo challenges. Make learning a habit!",
-    side: "top",
-    align: "center",
+      "Your streak shows daily practice. Retention rate reflects how well you remember words over time.",
+    side: "bottom",
+    align: "end",
   }),
 ];
 

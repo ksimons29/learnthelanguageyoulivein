@@ -168,19 +168,17 @@ export default function ProgressPage() {
 
         {/* Compact Progress Card - contains stats and streak */}
         <section id="stats-overview" className="mb-4">
-          <div id="streak-section">
-            <CompactProgressCard
-              totalWords={data.totalWords}
-              wordsThisWeek={data.wordsThisWeek}
-              retentionRate={data.retentionRate}
-              currentStreak={data.currentStreak}
-              dueToday={data.dueToday}
-              needPractice={data.needPractice}
-              strugglingWordsList={data.strugglingWordsList}
-              newCardsCount={data.newCardsCount}
-              masteredWords={data.masteredWords}
-            />
-          </div>
+          <CompactProgressCard
+            totalWords={data.totalWords}
+            wordsThisWeek={data.wordsThisWeek}
+            retentionRate={data.retentionRate}
+            currentStreak={data.currentStreak}
+            dueToday={data.dueToday}
+            needPractice={data.needPractice}
+            strugglingWordsList={data.strugglingWordsList}
+            newCardsCount={data.newCardsCount}
+            masteredWords={data.masteredWords}
+          />
         </section>
 
         {/* Forecast Chart */}

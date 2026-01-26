@@ -61,7 +61,7 @@ export function CompactProgressCard({
           >
             Your Progress
           </h3>
-          <div className="flex items-center gap-3">
+          <div id="streak-badges" className="flex items-center gap-3">
             {/* Streak */}
             <div className="flex items-center gap-1">
               <Flame
