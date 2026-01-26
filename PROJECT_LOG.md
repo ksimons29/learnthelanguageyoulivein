@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issue #130 Zustand Selector Optimization** - Fixed review page sluggishness caused by full store subscriptions. Now uses granular `useShallow` selectors grouped by update frequency (session/item/UI/feedback/actions) and `useCallback` for memoized handlers. Reduces unnecessary re-renders significantly. (Session 91)
 - [x] **Issue #131 Distractor Loading Delay** - Fixed 100-500ms loading spinner on multiple-choice exercises. Distractors now pre-fetched inline in `fetchNextSentence` before state update, eliminating the async waterfall: fetch sentence → render → detect MC → fetch distractors → render. Options are now ready immediately when exercise renders. (Session 91)
 - [x] **Issue #132 Batch Reviews Fix** - Fixed race condition in sentence reviews. Created `POST /api/reviews/batch` endpoint that processes all word reviews in a single transaction. Updated `submitSentenceReview` to use batch endpoint instead of 2-4 parallel calls. Benefits: single network round-trip, atomic session stats update, no partial failures. (Session 90)
 - [x] **Issue #128 Race Condition Fix** - Fixed TOCTOU race condition in duplicate word detection. Added UNIQUE constraint on `(user_id, lower(original_text))` to prevent concurrent requests from creating duplicates. Cleaned 4 existing duplicates from production. Verified all 3 personas pass duplicate/case-insensitive/race tests. (Session 89)
@@ -103,6 +104,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #130 | Review page sluggish (Zustand full subscriptions) | Session 91 |
 | #131 | Distractor loading delay (100-500ms spinner) | Session 91 |
 | #128 | Race condition in duplicate word detection | Session 89 |
 | #125 | Viewport zoom disabled (WCAG violation) | Session 88 |
@@ -202,36 +204,46 @@ npm run build             # Production build
 
 ## Session Log
 
-### Session 91 - 2026-01-26 - Distractor Loading Delay (#131)
+### Session 91 - 2026-01-26 - Review Performance Fixes (#130, #131)
 
-**Focus:** Eliminate loading spinner delay on multiple-choice exercises by pre-fetching distractors inline.
+**Focus:** Two performance fixes for the review page - eliminate distractor loading delay and reduce unnecessary re-renders.
 
 **Issue #131 - Distractor Loading Delay:**
 - **Problem:** Multiple-choice options were fetched on-demand via useEffect after sentence loaded, causing 100-500ms delay and visible spinner
 - **Root Cause:** Async waterfall: `fetchNextSentence` → state update → render → useEffect detects MC → `loadDistractors` → state update → render
-- **Impact:** Breaks review flow state, disrupts learning momentum
+- **Fix:** Inline distractor fetch in `fetchNextSentence` before state update
 
-**Fix:**
+**Issue #130 - Zustand Subscription Performance:**
+- **Problem:** Review page destructured 20+ properties from `useReviewStore()`, causing full re-render on ANY state change
+- **Root Cause:** Zustand creates a subscription that triggers re-render when any selected state changes
+- **Fix:** Use `useShallow` selectors grouped by update frequency + `useCallback` for handlers
+
+**Changes:**
 
 | Change | File |
 |--------|------|
-| Add `multipleChoiceOptions`, `correctOptionId` to store state | `web/src/lib/store/review-store.ts` |
-| Inline distractor fetch in `fetchNextSentence` before state update | `web/src/lib/store/review-store.ts` |
-| Remove local distractor state and useEffect from page | `web/src/app/review/page.tsx` |
+| Add `multipleChoiceOptions`, `correctOptionId` to store | `web/src/lib/store/review-store.ts` |
+| Inline distractor fetch in `fetchNextSentence` | `web/src/lib/store/review-store.ts` |
+| Use `useShallow` selectors (5 groups) | `web/src/app/review/page.tsx` |
+| Memoize handlers with `useCallback` | `web/src/app/review/page.tsx` |
 
-**Flow Comparison:**
-- **Before:** Sentence load → render → useEffect → fetch distractors → loading spinner → render
-- **After:** Sentence load → determine exercise type → fetch distractors → single state update → render (options ready)
+**Selector Groups:**
+1. Session state (stable during session): sessionId, dueWords, languages
+2. Current item state (changes per card): currentIndex, reviewMode, sentence, options
+3. UI state (frequent changes): reviewState, isLoading, error
+4. Feedback state (after grading): lastRating, mastery, wordsReviewed
+5. Actions (stable references): all store functions
 
 **Verification:**
 - Build passes
 - 357 tests pass
-- No new TypeScript errors in production code
+- Manual E2E test: full review flow working
 
 **Commits:**
 - `ffbc824` - fix(#131): prefetch distractors inline to eliminate loading delay
+- `c0df168` - perf(#130): use Zustand selectors to reduce review page re-renders
 
-**Closes:** #131
+**Closes:** #130, #131
 
 ---
 
