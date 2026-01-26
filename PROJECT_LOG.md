@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issue #123 Example Sentence Display** - Fixed missing example sentences in notebook word detail sheet. Added UI display, retry logic for background generation, on-demand fallback in GET /api/words, and verified TTS for onboarding. Tested all 3 user personas on production. (Session 87)
 - [x] **Issue #121 Post-Deployment Verification** - Verified fix works in production across all user personas. EN→SV confirmed working: sentence with "notan" (bill) + "vatten" (water) correctly excludes second word from options. Screenshots captured. (Session 86)
 - [x] **Multiple-Choice Distractor Fix** - Fixed bug where multiple-choice options could include two valid answers when a sentence contains multiple vocabulary words from the same category (e.g., "prazo" and "reunião"). Now excludes all sentence words from distractors. E2E verified in production. (#121, Session 85)
 - [x] **Fill-in-the-Blank Fix + Fuzzy Matching** - Fixed broken fill_blank UX (word now highlighted, user types English meaning) and added typo-tolerant answer validation using Levenshtein distance (1 typo/5 chars). Three-state feedback: correct (green), correct_with_typo (amber), incorrect (red). (#119, #120, Session 84)
@@ -78,6 +79,10 @@ npm run build             # Production build
 | `web/src/lib/review/answer-evaluation.ts` | Fuzzy answer matching with Levenshtein distance |
 | `web/src/lib/sentences/generator.ts` | Sentence generation with Unicode validation |
 | `web/src/lib/tours/hooks/use-tour.ts` | React hook for tour state management |
+| `web/src/lib/audio/tts.ts` | TTS with verified audio generation (Whisper transcription check) |
+| `web/src/lib/sentences/example-sentence.ts` | Example sentence generation for word captures |
+| `web/scripts/backfill-example-sentences.ts` | Backfill script for missing example sentences |
+| `web/scripts/test-example-sentence-reliability.ts` | Reliability test for sentence generation |
 
 ## Open Bugs
 
@@ -94,6 +99,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #123 | Example sentences not showing in notebook word detail sheet | Session 87 |
 | #121 | Multiple valid answers in sentence-based multiple-choice | Session 85, verified Session 86 |
 | #119 | Fill-in-the-blank shows invisible word, expects Portuguese answer | Session 84 |
 | #120 | No typo tolerance in answer validation | Session 84 |
