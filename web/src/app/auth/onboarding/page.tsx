@@ -49,13 +49,24 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Get language options
+  // Step 1: Show ALL languages for native selection
+  // Step 2: Filter out the selected native language from target options
   const languageCodes = getSupportedLanguageCodes();
-  const nativeLanguageOptions = languageCodes.filter(
-    (code) => code !== targetLanguage
-  );
+  const nativeLanguageOptions = languageCodes; // Show all languages
   const targetLanguageOptions = languageCodes.filter(
     (code) => code !== nativeLanguage
   );
+
+  // If user selects same language as target, auto-switch target to something else
+  useEffect(() => {
+    if (nativeLanguage === targetLanguage) {
+      // Find a different default target
+      const newTarget = languageCodes.find((code) => code !== nativeLanguage);
+      if (newTarget) {
+        setTargetLanguage(newTarget);
+      }
+    }
+  }, [nativeLanguage, targetLanguage, languageCodes]);
 
   // Check if user is authenticated
   useEffect(() => {
