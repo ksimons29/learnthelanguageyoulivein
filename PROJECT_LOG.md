@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issue #132 Batch Reviews Fix** - Fixed race condition in sentence reviews. Created `POST /api/reviews/batch` endpoint that processes all word reviews in a single transaction. Updated `submitSentenceReview` to use batch endpoint instead of 2-4 parallel calls. Benefits: single network round-trip, atomic session stats update, no partial failures. (Session 90)
 - [x] **Issue #128 Race Condition Fix** - Fixed TOCTOU race condition in duplicate word detection. Added UNIQUE constraint on `(user_id, lower(original_text))` to prevent concurrent requests from creating duplicates. Cleaned 4 existing duplicates from production. Verified all 3 personas pass duplicate/case-insensitive/race tests. (Session 89)
 - [x] **P0 Mobile Accessibility Fixes** - Fixed 3 critical mobile/WCAG issues from independent audit. #125: Viewport zoom enabled (maximumScale=5, userScalable=true). #126: Safe area bottom support via CSS env() for iPhone home indicator. #127: Onboarding responsive for iPhone SE (340px max-width, overflow-y-auto, mobile-first padding). Build passes, 345 tests pass. Deployed to production, verified via curl, GitHub issues closed. (Session 88)
 - [x] **Issue #123 Example Sentence Display** - Fixed missing example sentences in notebook word detail sheet. Added UI display, retry logic for background generation, on-demand fallback in GET /api/words, and verified TTS for onboarding. Tested all 3 user personas on production. (Session 87)
