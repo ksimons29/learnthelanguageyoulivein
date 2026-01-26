@@ -80,6 +80,7 @@ web/src/
 | Document | Purpose |
 |----------|---------|
 | [CAPACITOR_IOS_SETUP.md](./CAPACITOR_IOS_SETUP.md) | iOS app setup, native plugins |
+| [audio-architecture.md](./audio-architecture.md) | TTS, verification, iOS audio strategy |
 
 ### Archive
 
