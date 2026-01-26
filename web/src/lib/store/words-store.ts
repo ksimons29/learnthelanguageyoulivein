@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import type { Word } from '@/lib/db/schema';
 import type { MemoryContext } from '@/lib/config/memory-context';
+import {
+  AUDIO_POLLING_TIMEOUT_MS,
+  AUDIO_POLLING_INITIAL_INTERVAL_MS,
+  AUDIO_POLLING_BACKOFF_MULTIPLIER,
+  AUDIO_POLLING_MAX_INTERVAL_MS,
+} from '@/lib/audio/polling-config';
 
 /**
  * Timeout for network requests in milliseconds
@@ -347,14 +353,14 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       return { audioGeneratingIds: newSet };
     });
 
-    // Exponential backoff polling:
-    // - Total timeout: 60 seconds
+    // Exponential backoff polling (config from @/lib/audio/polling-config):
+    // - Total timeout: 30 seconds (reduced from 60s per Issue #129)
     // - Intervals: 1s → 1.5s → 2.25s → 3.4s → 5s (cap)
     // - Early termination if server sets audioGenerationFailed=true
-    const TOTAL_TIMEOUT_MS = 60000;
-    const INITIAL_INTERVAL_MS = 1000;
-    const BACKOFF_MULTIPLIER = 1.5;
-    const MAX_INTERVAL_MS = 5000;
+    const TOTAL_TIMEOUT_MS = AUDIO_POLLING_TIMEOUT_MS;
+    const INITIAL_INTERVAL_MS = AUDIO_POLLING_INITIAL_INTERVAL_MS;
+    const BACKOFF_MULTIPLIER = AUDIO_POLLING_BACKOFF_MULTIPLIER;
+    const MAX_INTERVAL_MS = AUDIO_POLLING_MAX_INTERVAL_MS;
 
     const startTime = Date.now();
     let currentInterval = INITIAL_INTERVAL_MS;

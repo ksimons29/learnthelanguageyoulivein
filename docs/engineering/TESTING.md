@@ -311,7 +311,7 @@ Expected
 
 * All tests pass
 
-### 4.2.1 Unit Test Coverage (293 tests)
+### 4.2.1 Unit Test Coverage (357 tests)
 
 The test suite covers core business logic. Tests run automatically via GitHub Actions CI on every push to `main` and on pull requests.
 
@@ -322,13 +322,16 @@ The test suite covers core business logic. Tests run automatically via GitHub Ac
 | `fsrs.test.ts` | 53 | FSRS-4.5 algorithm implementation, spaced repetition scheduling, mastery progression (3 correct sessions rule), interval calculations, stability/difficulty updates |
 | `categories.test.ts` | 26 | Category assignment logic, category validation, category mapping |
 | `distractors.test.ts` | 25 | Multiple choice option generation, shuffle algorithm, bidirectional capture handling, focus word selection, null safety for text helpers |
+| `answer-evaluation.test.ts` | 24 | Answer correctness evaluation, typo detection, near-match handling |
 | `shuffle.test.ts` | 19 | Fisher-Yates shuffle, priority band shuffling (overdue > due > new), review queue deduplication |
 | `categories-cognitive.test.ts` | 17 | Cognitive load balancing, category mixing in review sessions |
 | `exercise-type.test.ts` | 13 | Exercise type determination based on mastery level |
+| `audio-polling-config.test.ts` | 12 | Audio polling timeout (30s per Issue #129), backoff intervals, polling sequence validation |
 | `sentence-card.test.tsx` | 9 | Sentence card component rendering, fill-in-blank display, answer validation |
+| `retry.test.ts` | 9 | Retry logic with exponential backoff, max retries, base delay configuration |
 | `due-count.test.ts` | 8 | Due word calculation, new card limits, review scheduling |
 
-**Total: 293 tests**
+**Total: 357 tests**
 
 #### Key Test Categories
 
@@ -1833,7 +1836,36 @@ Expected
 * Memory stable after completion
 * AbortControllers cleaned up
 
-### 10.10 Admin Query Performance (P2)
+### 10.10 Audio Polling Timeout (P1) - Issue #129
+
+Verify audio polling times out after 30 seconds (not 60 seconds).
+
+**Automated Tests:** `audio-polling-config.test.ts` (12 tests)
+
+Run the unit tests:
+
+```bash
+cd web && npm run test:run -- src/__tests__/lib/audio-polling-config.test.ts
+```
+
+Expected
+
+* `AUDIO_POLLING_TIMEOUT_MS` equals 30000 (30 seconds)
+* Polling sequence allows 5+ attempts within timeout
+* Maximum interval between polls is 5 seconds
+
+Manual verification (simulate slow audio generation):
+
+Steps
+
+1. Capture a word
+2. Open Network tab in DevTools
+3. Observe polling requests to `/api/words/{id}`
+4. If audio doesn't arrive, verify "Retry" button appears within ~30 seconds (not 60)
+
+Configuration file: `web/src/lib/audio/polling-config.ts`
+
+### 10.11 Admin Query Performance (P2)
 
 Test admin dashboard loads efficiently.
 
