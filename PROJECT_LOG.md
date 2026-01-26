@@ -229,7 +229,7 @@ npm run build             # Production build
 - No new TypeScript errors in production code
 
 **Commits:**
-- `TBD` - fix(#131): prefetch distractors inline to eliminate loading delay
+- `ffbc824` - fix(#131): prefetch distractors inline to eliminate loading delay
 
 **Closes:** #131
 
