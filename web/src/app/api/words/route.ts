@@ -252,35 +252,78 @@ export async function POST(request: NextRequest) {
     const captureTime = new Date();
     const timeOfDay = getTimeOfDay(captureTime);
 
-    const [newWord] = await db
-      .insert(words)
-      .values({
-        userId: user.id,
-        originalText: text.trim(),
-        translation,
-        language,
-        // Store actual language codes used for this translation
-        sourceLang,
-        targetLang,
-        translationProvider: 'openai-gpt4o-mini',
-        category,
-        categoryConfidence: confidence,
-        // FSRS initial values (from implementation_plan.md lines 147-154)
-        difficulty: 5.0,
-        stability: 1.0,
-        retrievability: 1.0,
-        nextReviewDate: new Date(), // Due immediately for first review
-        reviewCount: 0,
-        lapseCount: 0,
-        consecutiveCorrectSessions: 0,
-        masteryStatus: 'learning',
-        // Memory context (Personal Memory Journal)
-        locationHint: memoryContext?.locationHint || null,
-        timeOfDay: timeOfDay, // Auto-detected from capture time
-        situationTags: memoryContext?.situationTags || null,
-        personalNote: memoryContext?.personalNote || null,
-      })
-      .returning();
+    // Wrap INSERT in try-catch to handle race condition edge case
+    // Even though we checked for duplicates above, concurrent requests can slip through
+    // The database UNIQUE constraint is the final line of defense
+    let newWord;
+    try {
+      [newWord] = await db
+        .insert(words)
+        .values({
+          userId: user.id,
+          originalText: text.trim(),
+          translation,
+          language,
+          // Store actual language codes used for this translation
+          sourceLang,
+          targetLang,
+          translationProvider: 'openai-gpt4o-mini',
+          category,
+          categoryConfidence: confidence,
+          // FSRS initial values (from implementation_plan.md lines 147-154)
+          difficulty: 5.0,
+          stability: 1.0,
+          retrievability: 1.0,
+          nextReviewDate: new Date(), // Due immediately for first review
+          reviewCount: 0,
+          lapseCount: 0,
+          consecutiveCorrectSessions: 0,
+          masteryStatus: 'learning',
+          // Memory context (Personal Memory Journal)
+          locationHint: memoryContext?.locationHint || null,
+          timeOfDay: timeOfDay, // Auto-detected from capture time
+          situationTags: memoryContext?.situationTags || null,
+          personalNote: memoryContext?.personalNote || null,
+        })
+        .returning();
+    } catch (insertError: unknown) {
+      // Check for PostgreSQL unique constraint violation (code 23505)
+      // This catches race conditions where two requests pass the duplicate check simultaneously
+      const isUniqueViolation =
+        insertError instanceof Error &&
+        (insertError.message.includes('unique constraint') ||
+          insertError.message.includes('duplicate key') ||
+          (insertError as { code?: string }).code === '23505');
+
+      if (isUniqueViolation) {
+        // Fetch the existing word to return helpful info
+        const [existingWord] = await db
+          .select({
+            id: words.id,
+            originalText: words.originalText,
+            translation: words.translation,
+          })
+          .from(words)
+          .where(
+            and(
+              eq(words.userId, user.id),
+              ilike(words.originalText, text.trim())
+            )
+          )
+          .limit(1);
+
+        return NextResponse.json(
+          {
+            error: 'Already in notebook',
+            message: `"${existingWord?.originalText || text.trim()}" is already in your notebook`,
+            existingWord: existingWord || null,
+          },
+          { status: 409 }
+        );
+      }
+      // Re-throw non-duplicate errors
+      throw insertError;
+    }
 
     // 9. Return word immediately (audio will be generated in background)
     // This reduces capture time from ~10s to ~2-4s

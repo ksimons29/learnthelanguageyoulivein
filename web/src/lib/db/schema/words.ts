@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, real, timestamp, integer, boolean, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, real, timestamp, integer, boolean, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * Word Entity
@@ -78,8 +79,9 @@ export const words = pgTable('words', {
   index('words_user_created_idx').on(table.userId, table.createdAt),
   // Index for category filtering - used by notebook category view
   index('words_user_category_idx').on(table.userId, table.category),
-  // Index for duplicate detection - used by capture endpoint
-  index('words_user_original_text_idx').on(table.userId, table.originalText),
+  // UNIQUE constraint for duplicate prevention - enforces one word per user (case-insensitive)
+  // This prevents race conditions in concurrent word captures (TOCTOU bug fix)
+  uniqueIndex('words_user_original_text_unique_idx').on(table.userId, sql`lower(${table.originalText})`),
 ]);
 
 export type Word = typeof words.$inferSelect;
