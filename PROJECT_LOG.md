@@ -13,6 +13,8 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Issue #145 Portuguese (Portugal) Native Language + Alphabetical Sort** - Added pt-PT to native language selection (was hidden as default target). Languages now sorted alphabetically: Dutch, English, French, German, Portuguese (Brazil), Portuguese (Portugal), Spanish, Swedish. (Session 93)
+- [x] **50-User Beta Prep** - Disabled email confirmation in Supabase to bypass 2/hour email limit. Tested new user signup flow—instant account creation, straight to onboarding. Created GitHub issues for Resend SMTP (#144) and backend scaling evaluation (#143). (Session 93)
 - [x] **Issues #134 + #135 Audio Verification & Polling UX** - Combined fix for audio quality and UX issues. #134: Added `audioVerificationFailed` column to track when Whisper verification fails; shows amber warning icon on audio button. #135: Added warning thresholds at 15s ("Taking longer...") and 20s (early retry button) during audio polling. E2E verified on production: capture → timeout → retry → audio plays. (Session 92)
 - [x] **Issue #130 Zustand Selector Optimization** - Fixed review page sluggishness caused by full store subscriptions. Now uses granular `useShallow` selectors grouped by update frequency (session/item/UI/feedback/actions) and `useCallback` for memoized handlers. Reduces unnecessary re-renders significantly. (Session 91)
 - [x] **Issue #131 Distractor Loading Delay** - Fixed 100-500ms loading spinner on multiple-choice exercises. Distractors now pre-fetched inline in `fetchNextSentence` before state update, eliminating the async waterfall: fetch sentence → render → detect MC → fetch distractors → render. Options are now ready immediately when exercise renders. (Session 91)
@@ -55,7 +57,7 @@ npm run build             # Production build
 - [ ] **Sentence generation** - Backend works, review integration exists, needs E2E testing
 - [ ] **PWA offline caching** - Basic setup done, needs testing
 - [ ] **iOS App Store** - Capacitor setup complete, needs submission
-- [ ] **50-User Beta Test** - Setting up Resend SMTP to bypass Supabase free tier email limits (2/hour) ([#144](https://github.com/ksimons29/learnthelanguageyoulivein/issues/144))
+- [ ] **50-User Beta Test** - Ready! Email confirmation disabled. Resend SMTP setup optional ([#144](https://github.com/ksimons29/learnthelanguageyoulivein/issues/144))
 
 ### Not Started
 - **Stripe payments** - Post-MVP priority
