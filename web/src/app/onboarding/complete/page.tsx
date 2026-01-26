@@ -74,14 +74,14 @@ export default function CompletePage() {
   if (isLoading) {
     return (
       <div
-        className="min-h-screen flex flex-col items-center justify-center px-6"
+        className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6"
         style={{ backgroundColor: "var(--surface-notebook)" }}
       >
         <Loader2
-          className="h-12 w-12 animate-spin mb-4"
+          className="h-10 w-10 sm:h-12 sm:w-12 animate-spin mb-4"
           style={{ color: "var(--accent-nav)" }}
         />
-        <p style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm sm:text-base" style={{ color: "var(--text-muted)" }}>
           Preparing your notebook...
         </p>
       </div>
@@ -90,11 +90,11 @@ export default function CompletePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center px-6 py-12"
+      className="min-h-screen flex flex-col items-center px-4 sm:px-6 py-6 sm:py-12 overflow-y-auto"
       style={{ backgroundColor: "var(--surface-notebook)" }}
     >
       {/* Progress dots */}
-      <div className="flex justify-center gap-2 mb-8">
+      <div className="flex justify-center gap-2 mb-4 sm:mb-8">
         <div
           className="w-2 h-2 rounded-full"
           style={{ backgroundColor: "var(--accent-nav)" }}
@@ -111,18 +111,18 @@ export default function CompletePage() {
 
       {/* Celebration icon */}
       <div
-        className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
+        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-4 sm:mb-6"
         style={{ backgroundColor: "var(--accent-ribbon-light)" }}
       >
         <Sparkles
-          className="h-8 w-8"
+          className="h-6 w-6 sm:h-8 sm:w-8"
           style={{ color: "var(--accent-ribbon)" }}
         />
       </div>
 
       {/* Card */}
       <div
-        className="w-full max-w-md rounded-lg p-8"
+        className="w-full max-w-[340px] sm:max-w-md rounded-lg p-4 sm:p-8"
         style={{
           backgroundColor: "var(--surface-page)",
           boxShadow: "var(--shadow-page)",
@@ -130,14 +130,14 @@ export default function CompletePage() {
       >
         {/* Title */}
         <h1
-          className="text-2xl font-serif text-center mb-2"
+          className="text-xl sm:text-2xl font-serif text-center mb-2"
           style={{ color: "var(--text-heading)" }}
         >
           Your notebook is ready!
         </h1>
 
         <p
-          className="text-center text-sm mb-6"
+          className="text-center text-xs sm:text-sm mb-4 sm:mb-6"
           style={{ color: "var(--text-muted)" }}
         >
           {starterWords.length > 0
@@ -147,7 +147,7 @@ export default function CompletePage() {
 
         {/* Starter Words Grid */}
         {starterWords.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
             {starterWords.map((word) => (
               <button
                 key={word.id}
@@ -214,7 +214,7 @@ export default function CompletePage() {
 
         {/* Explanation */}
         <p
-          className="text-center text-sm mb-6"
+          className="text-center text-xs sm:text-sm mb-4 sm:mb-6"
           style={{ color: "var(--text-muted)" }}
         >
           {starterWords.length > 0 ? (
@@ -243,16 +243,16 @@ export default function CompletePage() {
 
       {/* Data safety assurance */}
       <div
-        className="mt-6 flex items-center justify-center gap-2 text-xs"
+        className="mt-4 sm:mt-6 flex items-center justify-center gap-2 text-[10px] sm:text-xs"
         style={{ color: "var(--text-muted)" }}
       >
-        <Cloud className="w-3.5 h-3.5" style={{ color: "var(--accent-nav)" }} />
+        <Cloud className="w-3 h-3 sm:w-3.5 sm:h-3.5" style={{ color: "var(--accent-nav)" }} />
         <span>Your progress is safely synced to your account</span>
       </div>
 
       {/* Subtitle */}
       <p
-        className="mt-3 text-sm text-center max-w-xs"
+        className="mt-2 sm:mt-3 mb-4 text-xs sm:text-sm text-center max-w-xs"
         style={{ color: "var(--text-muted)" }}
       >
         Welcome to LLYLI - your personal language notebook

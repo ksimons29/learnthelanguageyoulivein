@@ -966,3 +966,24 @@
       inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   }
 }
+
+/* ========================================
+   SAFE AREA UTILITIES
+   For iPhone notch/home indicator support
+   ======================================== */
+
+.h-safe-area-inset-bottom {
+  height: env(safe-area-inset-bottom, 0px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}

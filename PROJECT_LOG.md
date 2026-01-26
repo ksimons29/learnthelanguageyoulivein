@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **P0 Mobile Accessibility Fixes** - Fixed 3 critical mobile/WCAG issues from independent audit. #125: Viewport zoom enabled (maximumScale=5, userScalable=true). #126: Safe area bottom support via CSS env() for iPhone home indicator. #127: Onboarding responsive for iPhone SE (340px max-width, overflow-y-auto, mobile-first padding). Build passes, 345 tests pass. (Session 88)
 - [x] **Issue #123 Example Sentence Display** - Fixed missing example sentences in notebook word detail sheet. Added UI display, retry logic for background generation, on-demand fallback in GET /api/words, and verified TTS for onboarding. Tested all 3 user personas on production. (Session 87)
 - [x] **Issue #121 Post-Deployment Verification** - Verified fix works in production across all user personas. EN→SV confirmed working: sentence with "notan" (bill) + "vatten" (water) correctly excludes second word from options. Screenshots captured. (Session 86)
 - [x] **Multiple-Choice Distractor Fix** - Fixed bug where multiple-choice options could include two valid answers when a sentence contains multiple vocabulary words from the same category (e.g., "prazo" and "reunião"). Now excludes all sentence words from distractors. E2E verified in production. (#121, Session 85)
@@ -99,6 +100,9 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #125 | Viewport zoom disabled (WCAG violation) | Session 88 |
+| #126 | Bottom nav missing safe area (iPhone home indicator) | Session 88 |
+| #127 | Onboarding breaks on iPhone SE (375px) | Session 88 |
 | #123 | Example sentences not showing in notebook word detail sheet | Session 87 |
 | #121 | Multiple valid answers in sentence-based multiple-choice | Session 85, verified Session 86 |
 | #119 | Fill-in-the-blank shows invisible word, expects Portuguese answer | Session 84 |

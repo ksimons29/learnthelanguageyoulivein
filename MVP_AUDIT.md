@@ -233,10 +233,10 @@ A feature step FAILS when:
 - [x] Core flows verified (48/70 passing = 69%)
 - [x] E2E verification complete for critical paths ✅
 - [x] Multi-language pair testing complete (EN→PT verified Session 76)
-- [ ] Mobile viewport verified
+- [ ] Mobile viewport verified - **BLOCKING** (see Audit Findings below)
 - [x] Gamification E2E tested ✅ (Sessions 73-76)
 
-**Current Status: MVP Ready - Minor items remaining**
+**Current Status: MVP Ready - Critical mobile fixes required**
 
 ### What's Left (Non-Blocking)
 1. **Settings & Profile** - 4 untested steps (account deletion, language change)
@@ -247,15 +247,54 @@ A feature step FAILS when:
 
 ---
 
+## Independent Audit Findings (2026-01-26)
+
+A comprehensive architecture review identified the following issues:
+
+### ✅ Critical Mobile Issues (Fixed - Session 88)
+
+| Issue | GitHub | Status |
+|-------|--------|--------|
+| ~~Viewport zoom disabled~~ | [#125](https://github.com/ksimons29/learnthelanguageyoulivein/issues/125) | ✅ Fixed - maximumScale=5, userScalable=true |
+| ~~Bottom nav missing safe area~~ | [#126](https://github.com/ksimons29/learnthelanguageyoulivein/issues/126) | ✅ Fixed - CSS env(safe-area-inset-bottom) |
+| ~~Onboarding breaks on iPhone SE~~ | [#127](https://github.com/ksimons29/learnthelanguageyoulivein/issues/127) | ✅ Fixed - max-w-[340px], overflow-y-auto |
+
+### 🟠 High Priority Issues
+
+| Issue | GitHub | Impact |
+|-------|--------|--------|
+| Race condition in capture | [#128](https://github.com/ksimons29/learnthelanguageyoulivein/issues/128) | Duplicate words possible |
+| Silent audio failures | [#129](https://github.com/ksimons29/learnthelanguageyoulivein/issues/129) | No user feedback on failures |
+| Review performance | [#130](https://github.com/ksimons29/learnthelanguageyoulivein/issues/130) | Sluggish review experience |
+| Tour popover overflow | [#133](https://github.com/ksimons29/learnthelanguageyoulivein/issues/133) | Tours break on small screens |
+
+### Mobile Testing Required
+
+After fixing P0 issues, verify on real devices:
+- [ ] iPhone SE (375x667) - smallest supported
+- [ ] iPhone 14/15 (390x844) - common size
+- [ ] iPhone 14 Pro (393x852) - dynamic island
+- [ ] Android (various) - Chrome browser
+
+Test flows:
+1. Full onboarding on iPhone SE - all steps visible
+2. Review session - no sluggishness, tours don't overflow
+3. Pinch to zoom works after accessibility fix
+4. Bottom nav not obscured by home indicator
+
+---
+
 ## Document Info
 - **Created:** 2026-01-21
-- **Last Updated:** 2026-01-23 (Session 77)
+- **Last Updated:** 2026-01-26 (Session 88)
 - **Purpose:** Comprehensive MVP readiness tracking
-- **Status:** MVP Ready - 69% verified, 0 blockers
+- **Status:** MVP Ready - P0 mobile issues fixed, P1 items remain
 
 ### Update History
 | Session | Changes |
 |---------|---------|
+| 88 | Fixed all 3 P0 critical issues: #125 (viewport zoom), #126 (safe area), #127 (onboarding responsive). Build passes, 345 tests pass. |
+| Audit | Independent architecture review: 11 issues filed (3 P0, 6 P1, 2 P2). Mobile responsiveness is blocking. |
 | 77 | Fixed P2 #15 (duplicate capture), created GitHub #99 for distractor quality (deferred post-MVP) |
 | 76 | Comprehensive E2E testing: 48/70 steps verified (69%), all critical flows pass |
 | 62 | Updated status for 10 fixed bugs, added Gamification flow, corrected summary |

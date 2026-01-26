@@ -34,8 +34,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: "#0C6B70",
 };
@@ -66,8 +66,13 @@ export default function RootLayout({
             {/* PWA: Offline status indicator */}
             <OfflineIndicator />
 
-            {/* Main content with bottom padding for nav */}
-            <main className="min-h-screen pb-20">{children}</main>
+            {/* Main content with bottom padding for nav + safe area */}
+            <main
+              className="min-h-screen"
+              style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+            >
+              {children}
+            </main>
 
             {/* Navigation */}
             <FloatingActionButton />

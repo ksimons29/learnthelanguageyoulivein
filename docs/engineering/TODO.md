@@ -1,7 +1,45 @@
 # LLYLI MVP - Remaining Work
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-26
 **Status:** Active Development
+
+---
+
+## Independent Audit Findings (2026-01-26)
+
+The following issues were identified during an independent architecture review. All have been filed as GitHub issues.
+
+### P0 - Critical (Must Fix Before Launch)
+
+| Issue | GitHub | Description | Status |
+|-------|--------|-------------|--------|
+| ~~Viewport zoom disabled~~ | [#125](https://github.com/ksimons29/learnthelanguageyoulivein/issues/125) | WCAG accessibility violation - users can't zoom | ✅ Fixed Session 88 |
+| ~~Bottom nav safe area~~ | [#126](https://github.com/ksimons29/learnthelanguageyoulivein/issues/126) | Navigation hidden behind iPhone home indicator | ✅ Fixed Session 88 |
+| ~~Onboarding breaks on small screens~~ | [#127](https://github.com/ksimons29/learnthelanguageyoulivein/issues/127) | Hardcoded dimensions break on iPhone SE | ✅ Fixed Session 88 |
+
+### P1 - High Priority (Should Fix Soon)
+
+| Issue | GitHub | Description | Effort |
+|-------|--------|-------------|--------|
+| Race condition in duplicate detection | [#128](https://github.com/ksimons29/learnthelanguageyoulivein/issues/128) | Duplicates possible under concurrent requests | 30 min |
+| Silent audio generation failures | [#129](https://github.com/ksimons29/learnthelanguageyoulivein/issues/129) | No user feedback when background tasks fail | 1-2 hrs |
+| Review page sluggish | [#130](https://github.com/ksimons29/learnthelanguageyoulivein/issues/130) | Full Zustand subscriptions cause re-renders | 1-2 hrs |
+| Distractor loading delay | [#131](https://github.com/ksimons29/learnthelanguageyoulivein/issues/131) | Visible spinner on every MC exercise | 30 min - 2 hrs |
+| Parallel review API calls | [#132](https://github.com/ksimons29/learnthelanguageyoulivein/issues/132) | Sentence reviews trigger race conditions | 1-2 hrs |
+| Tour popover overflow | [#133](https://github.com/ksimons29/learnthelanguageyoulivein/issues/133) | Tours overflow on iPhone SE | 30 min |
+
+### P2 - Nice to Have
+
+| Issue | GitHub | Description | Effort |
+|-------|--------|-------------|--------|
+| Audio verification indicator | [#134](https://github.com/ksimons29/learnthelanguageyoulivein/issues/134) | Flag unverified audio to users | 30 min |
+| Polling timeout too long | [#135](https://github.com/ksimons29/learnthelanguageyoulivein/issues/135) | Reduce 60s timeout to 30s with earlier retry | 20 min |
+
+**Recommended Fix Order:**
+1. P0 items first (45 min total) - accessibility + mobile basics
+2. Race condition fix (#128) - data integrity
+3. Review performance (#130, #131) - user experience
+4. Remaining P1 items
 
 ---
 
@@ -233,21 +271,35 @@ The following documents are **outdated** and should be moved to `/docs/engineeri
 
 | Priority | Items | Estimated Hours |
 |----------|-------|-----------------|
+| **P0 (Audit)** | 3 critical mobile/accessibility fixes | 1 hour |
 | **P0** | 1 item remaining (E2E Testing) | 16-24 hours |
+| **P1 (Audit)** | 6 performance & reliability fixes | 5-10 hours |
 | **P1** | 4 items | 30-44 hours |
-| **P2** | 4 items (Offline Sync merged into PWA) | 40-58 hours |
-| **Total** | 9 items | **86-126 hours** |
+| **P2** | 4 items + 2 audit items | 40-58 hours |
+| **Total** | 20 items | **92-138 hours** |
 
 **Completed P0:** PWA Implementation (8-12 hours) ✅
+
+**Audit Quick Wins (< 1 hour total):**
+- [#125](https://github.com/ksimons29/learnthelanguageyoulivein/issues/125) Viewport zoom (5 min)
+- [#126](https://github.com/ksimons29/learnthelanguageyoulivein/issues/126) Safe area (10 min)
+- [#135](https://github.com/ksimons29/learnthelanguageyoulivein/issues/135) Polling timeout (20 min)
 
 ---
 
 ## Quick Wins (< 4 hours each)
 
-1. Delete/archive outdated documentation
-2. ~~Add PWA manifest.json~~ ✅ Done
-3. Configure Google OAuth in Supabase
-4. Add export button (basic CSV)
+### From Audit (< 1 hour total - DO FIRST)
+1. Fix viewport zoom (#125) - 5 min
+2. Add safe area to bottom nav (#126) - 10 min
+3. Reduce polling timeout (#135) - 20 min
+4. Fix onboarding responsive (#127) - 30 min
+
+### Original Quick Wins
+5. Delete/archive outdated documentation
+6. ~~Add PWA manifest.json~~ ✅ Done
+7. Configure Google OAuth in Supabase
+8. Add export button (basic CSV)
 
 ---
 

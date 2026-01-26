@@ -104,11 +104,11 @@ export default function CapturePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center px-6 py-12"
+      className="min-h-screen flex flex-col items-center px-4 sm:px-6 py-6 sm:py-12 overflow-y-auto"
       style={{ backgroundColor: "var(--surface-notebook)" }}
     >
       {/* Progress dots */}
-      <div className="flex justify-center gap-2 mb-8">
+      <div className="flex justify-center gap-2 mb-4 sm:mb-8">
         <div
           className="w-2 h-2 rounded-full"
           style={{ backgroundColor: "var(--accent-nav)" }}
@@ -125,7 +125,7 @@ export default function CapturePage() {
 
       {/* Card */}
       <div
-        className="w-full max-w-md rounded-lg p-8"
+        className="w-full max-w-[340px] sm:max-w-md rounded-lg p-4 sm:p-8"
         style={{
           backgroundColor: "var(--surface-page)",
           boxShadow: "var(--shadow-page)",
@@ -133,13 +133,13 @@ export default function CapturePage() {
       >
         {/* Title */}
         <h1
-          className="text-2xl font-serif text-center mb-2"
+          className="text-xl sm:text-2xl font-serif text-center mb-2"
           style={{ color: "var(--text-heading)" }}
         >
           Add your first words
         </h1>
         <p
-          className="text-center mb-4"
+          className="text-center mb-3 sm:mb-4 text-sm sm:text-base"
           style={{ color: "var(--text-muted)" }}
         >
           What words have you seen or heard recently?
@@ -150,7 +150,7 @@ export default function CapturePage() {
         </p>
 
         {/* Progress indicator - shows count and minimum */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4 sm:mb-6">
           <div
             className="py-2 px-4 rounded-full inline-flex items-center gap-2"
             style={{

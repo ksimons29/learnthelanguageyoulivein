@@ -73,20 +73,20 @@ export default function LanguagesPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-8 notebook-bg"
+      className="min-h-screen flex flex-col items-center justify-start sm:justify-center px-3 sm:px-4 py-4 sm:py-8 overflow-y-auto notebook-bg"
     >
       {/* Logo */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6 mt-2 sm:mt-0">
         <img
           src="/images/llyli-icon.png"
           alt="LLYLI"
-          className="h-16 w-16 rounded-xl shadow-md"
+          className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl shadow-md"
         />
       </div>
 
       {/* Card - Moleskine page style */}
       <div
-        className="w-full max-w-sm rounded-r-lg p-6 page-surface relative"
+        className="w-full max-w-[340px] sm:max-w-sm rounded-r-lg p-4 sm:p-6 page-surface relative"
         style={{
           boxShadow: "var(--shadow-page)",
         }}
@@ -100,14 +100,14 @@ export default function LanguagesPage() {
         />
 
         {/* Step indicator - like notebook page tabs */}
-        <div className="flex justify-center gap-3 mb-6">
+        <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           {[1, 2, 3].map((s) => (
             <div
               key={s}
               className="relative"
             >
               <div
-                className="w-8 h-1.5 rounded-full transition-all duration-300"
+                className="w-6 sm:w-8 h-1 sm:h-1.5 rounded-full transition-all duration-300"
                 style={{
                   backgroundColor:
                     s === 1 || (s === 2 && step === "native")
@@ -116,17 +116,17 @@ export default function LanguagesPage() {
                 }}
               />
               {s === 1 && (
-                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                   Learning
                 </span>
               )}
               {s === 2 && (
-                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                   Native
                 </span>
               )}
               {s === 3 && (
-                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                   Ready
                 </span>
               )}
@@ -136,7 +136,7 @@ export default function LanguagesPage() {
 
         {/* Title - Serif for Moleskine feel */}
         <h1
-          className="text-xl font-serif text-center mb-1 mt-6"
+          className="text-lg sm:text-xl font-serif text-center mb-1 mt-4 sm:mt-6"
           style={{
             color: "var(--text-heading)",
             fontFamily: "var(--font-heading)",
@@ -147,7 +147,7 @@ export default function LanguagesPage() {
             : "And your mother tongue?"}
         </h1>
         <p
-          className="text-center mb-6 text-sm"
+          className="text-center mb-4 sm:mb-6 text-xs sm:text-sm"
           style={{ color: "var(--text-muted)" }}
         >
           {step === "target"
@@ -169,7 +169,7 @@ export default function LanguagesPage() {
         )}
 
         {/* Language grid - Clean layout */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
           {currentLanguages.map((code) => {
             const lang = SUPPORTED_LANGUAGES[code];
             const isSelected =
@@ -186,7 +186,7 @@ export default function LanguagesPage() {
                     : handleNativeSelect(code)
                 }
                 disabled={isSubmitting}
-                className="flex flex-col items-center gap-2 p-2 rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex flex-col items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: isSelected
                     ? "var(--accent-nav-light)"
@@ -202,7 +202,7 @@ export default function LanguagesPage() {
 
                 {/* Language name */}
                 <span
-                  className="text-xs font-medium text-center leading-tight"
+                  className="text-[10px] sm:text-xs font-medium text-center leading-tight"
                   style={{ color: "var(--text-heading)" }}
                 >
                   {lang?.name || code}
@@ -241,7 +241,7 @@ export default function LanguagesPage() {
       {/* Skip option - subtle, like a notebook margin note */}
       <button
         onClick={() => router.push("/onboarding/complete")}
-        className="mt-6 text-sm flex items-center gap-1 transition-colors hover:opacity-70"
+        className="mt-4 sm:mt-6 mb-4 text-xs sm:text-sm flex items-center gap-1 transition-colors hover:opacity-70"
         style={{
           color: "var(--text-muted)",
           fontStyle: "italic",
