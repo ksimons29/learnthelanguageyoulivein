@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Responsive Tour Fixes (#146)** - Fixed 4 tour bugs: (1) Tour shown every time → added tourStartedRef guard to all pages; (2) Mobile overlap → element scrolls to TOP, popover fixed at BOTTOM; (3) Notebook button not visible → added nav-notebook step; (4) Info button missing → added tour step. E2E verified on production. (Session 94)
 - [x] **Issue #145 Portuguese (Portugal) Native Language + Alphabetical Sort** - Added pt-PT to native language selection (was hidden as default target). Languages now sorted alphabetically: Dutch, English, French, German, Portuguese (Brazil), Portuguese (Portugal), Spanish, Swedish. (Session 93)
 - [x] **50-User Beta Prep** - Disabled email confirmation in Supabase to bypass 2/hour email limit. Tested new user signup flow—instant account creation, straight to onboarding. Created GitHub issues for Resend SMTP (#144) and backend scaling evaluation (#143). (Session 93)
 - [x] **Issues #134 + #135 Audio Verification & Polling UX** - Combined fix for audio quality and UX issues. #134: Added `audioVerificationFailed` column to track when Whisper verification fails; shows amber warning icon on audio button. #135: Added warning thresholds at 15s ("Taking longer...") and 20s (early retry button) during audio polling. E2E verified on production: capture → timeout → retry → audio plays. (Session 92)
@@ -109,6 +110,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #146 | Responsive tour - element and popover not visible together on mobile | Session 94 |
 | #130 | Review page sluggish (Zustand full subscriptions) | Session 91 |
 | #131 | Distractor loading delay (100-500ms spinner) | Session 91 |
 | #128 | Race condition in duplicate word detection | Session 89 |
@@ -208,6 +210,47 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 94 - 2026-01-26 - Responsive Tour Fixes (#146)
+
+**Focus:** Fixed 4 tour bugs that degraded mobile onboarding experience.
+
+**Issues Fixed:**
+
+1. **Tour shown every time** (not just first sign-in)
+   - Root cause: Missing `useRef` guard in page components
+   - Fix: Added `tourStartedRef` pattern to capture, notebook, progress, review pages
+
+2. **Mobile overlap - element and popover not visible together**
+   - Root cause: Driver.js positions popover relative to element, but on mobile there's not enough room
+   - Fix: Two-part responsive strategy:
+     - JS: Elements scroll to TOP on mobile (`block: "start"`), CENTER on desktop
+     - CSS: Popover becomes fixed bottom sheet on mobile (<640px)
+
+3. **Notebook button not visible during explanation**
+   - Fix: Added `#nav-notebook` step as first step of notebook tour
+
+4. **Info button explanation missing**
+   - Fix: Added `#tour-info-button` ID and "Learn About LLYLI" tour step
+
+**Changes:**
+
+| Change | File |
+|--------|------|
+| tourStartedRef guard | `capture/page.tsx`, `notebook/page.tsx`, `progress/page.tsx`, `review/page.tsx` |
+| Auto-enhance steps with scroll | `tour-manager.ts` |
+| isMobileScreen(), responsive scroll | `driver-config.ts` |
+| Mobile bottom sheet CSS | `driver-moleskine.css` |
+| Nav item IDs | `bottom-nav.tsx` |
+| Info button ID | `info-button.tsx` |
+| Updated tour steps | `today-tour.ts`, `notebook-tour.ts`, `progress-tour.ts` |
+
+**E2E Testing:**
+- Verified on production at 375px (iPhone SE) viewport
+- Step 2 "Words to Review": Element at TOP, popover below, both visible ✅
+- All 357 unit tests passing
+
+---
 
 ### Session 92 - 2026-01-26 - Audio Verification & Polling UX (#134, #135)
 
