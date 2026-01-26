@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Progress Tour Element Targeting (#147)** - Fixed Step 3 to highlight actual streak/retention badges instead of redundant wrapper div. Added `id="streak-badges"` to CompactProgressCard, removed nested wrapper from page, updated tour to target badges with proper positioning. Verified on production at 375px viewport. (Session 95)
 - [x] **Responsive Tour Fixes (#146)** - Fixed 4 tour bugs: (1) Tour shown every time → added tourStartedRef guard to all pages; (2) Mobile overlap → element scrolls to TOP, popover fixed at BOTTOM; (3) Notebook button not visible → added nav-notebook step; (4) Info button missing → added tour step. E2E verified on production. (Session 94)
 - [x] **Issue #145 Portuguese (Portugal) Native Language + Alphabetical Sort** - Added pt-PT to native language selection (was hidden as default target). Languages now sorted alphabetically: Dutch, English, French, German, Portuguese (Brazil), Portuguese (Portugal), Spanish, Swedish. (Session 93)
 - [x] **50-User Beta Prep** - Disabled email confirmation in Supabase to bypass 2/hour email limit. Tested new user signup flow—instant account creation, straight to onboarding. Created GitHub issues for Resend SMTP (#144) and backend scaling evaluation (#143). (Session 93)
@@ -210,6 +211,42 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 95 - 2026-01-26 - Progress Tour Element Targeting (#147)
+
+**Focus:** Fix Progress tour Step 3 to highlight actual streak badges instead of redundant wrapper.
+
+**Issue #147 - Progress Tour Element Targeting:**
+- **Problem:** Step 3 targeted `#streak-section` which was a wrapper div around the entire card, not the actual streak badges
+- **Root Cause:** The `#streak-section` ID was on a redundant nested div, making the tour highlight unclear
+- **Fix:** Target `#streak-badges` - the actual streak count and retention percentage badges in the card header
+
+**Changes:**
+
+| Change | File |
+|--------|------|
+| Add `id="streak-badges"` to badge container | `compact-progress-card.tsx` |
+| Remove redundant `#streak-section` wrapper | `progress/page.tsx` |
+| Update Step 3 element selector + positioning | `progress-tour.ts` |
+
+**Tour Step 3 Updates:**
+- Element: `#streak-section` → `#streak-badges`
+- Title: "Build Consistency" → "Track Your Consistency"
+- Side: `top` → `bottom` (badges are at top of card)
+- Align: `center` → `end` (badges are right-aligned)
+
+**Verification:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 357 passing
+- ✅ Production: `#streak-badges` exists with correct content (streak "1", retention "73%")
+- ✅ Old `#streak-section` wrapper removed
+
+**Commits:**
+- `0c47723` - fix(#147): improve Progress tour streak badge targeting
+
+**Closes:** #147
+
+---
 
 ### Session 94 - 2026-01-26 - Responsive Tour Fixes (#146)
 
