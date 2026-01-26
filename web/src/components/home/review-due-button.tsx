@@ -48,7 +48,7 @@ export function ReviewDueButton({ dueCount }: ReviewDueButtonProps) {
           className="text-xl font-semibold tracking-wide"
           style={{ color: "var(--text-heading)" }}
         >
-          Review Due
+          Due Today
         </span>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           <Clock className="inline h-3 w-3 mr-1" />

@@ -194,7 +194,7 @@ export function CompactProgressCard({
               color: "var(--text-on-ribbon)",
             }}
           >
-            Start Review ({dueToday} due)
+            Start practice ({dueToday} due)
           </Link>
         </div>
       )}

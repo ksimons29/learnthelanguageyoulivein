@@ -491,9 +491,9 @@ describe('FSRS Algorithm', () => {
       vi.useRealTimers();
     });
 
-    it('returns "Review now" for past dates', () => {
+    it('returns "Due now" for past dates', () => {
       const pastDate = new Date('2026-01-20');
-      expect(getNextReviewText(pastDate)).toBe('Review now');
+      expect(getNextReviewText(pastDate)).toBe('Due now');
     });
 
     it('returns day name for dates within a week', () => {

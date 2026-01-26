@@ -44,7 +44,7 @@ const TOUR_ITEMS = [
   },
   {
     id: "review" as TourId,
-    label: "Review Session",
+    label: "Practice Session",
     icon: Target,
     register: registerReviewTour,
     path: "/review",

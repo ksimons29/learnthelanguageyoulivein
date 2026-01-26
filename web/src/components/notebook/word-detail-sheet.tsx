@@ -212,7 +212,7 @@ export function WordDetailSheet({
         >
           <StatItem
             icon={BarChart3}
-            label="Reviews"
+            label="Practiced"
             value={word.reviewCount.toString()}
           />
           <StatItem
@@ -220,7 +220,7 @@ export function WordDetailSheet({
             label="Correct"
             value={word.consecutiveCorrectSessions.toString()}
           />
-          <StatItem icon={Calendar} label="Next Review" value={nextReviewDate} />
+          <StatItem icon={Calendar} label="Next Due" value={nextReviewDate} />
         </div>
 
         {/* Memory Section - Only show if there's context */}

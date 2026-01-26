@@ -126,7 +126,7 @@ export function AttentionSection({ className }: AttentionSectionProps) {
             color: "white",
           }}
         >
-          Review Now
+          Practice now
         </button>
       </div>
 

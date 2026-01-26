@@ -427,7 +427,7 @@ export default function ReviewPage() {
             className="h-8 w-8 animate-spin"
             style={{ color: "var(--accent-nav)" }}
           />
-          <p style={{ color: "var(--text-muted)" }}>Loading review session...</p>
+          <p style={{ color: "var(--text-muted)" }}>Loading practice...</p>
         </div>
       </div>
     );
@@ -474,7 +474,7 @@ export default function ReviewPage() {
             All caught up!
           </p>
           <p style={{ color: "var(--text-muted)" }}>
-            No words due for review right now.
+            You are done for today.
           </p>
           <button
             onClick={() => router.push("/")}
@@ -724,7 +724,7 @@ export default function ReviewPage() {
             className="text-white"
             style={{ backgroundColor: "var(--accent-nav)" }}
           >
-            REVIEW SESSION
+            PRACTICE SESSION
           </Badge>
         </div>
 
@@ -887,7 +887,7 @@ export default function ReviewPage() {
               className="text-center text-sm"
               style={{ color: "var(--text-muted)" }}
             >
-              Reviewed: {wordsReviewed} of {dueWords.length}
+              Practiced: {wordsReviewed} of {dueWords.length}
             </p>
           )}
 

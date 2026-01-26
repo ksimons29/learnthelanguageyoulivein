@@ -25,7 +25,7 @@ const todayTourSteps = [
   // Scroll these elements into view on mobile
   createScrollingStep({
     element: "#tour-due-today",
-    title: "Words to Review",
+    title: "Words to Practice",
     description:
       "When words are ready to practice, they appear here. Our AI creates unique sentences—never the same twice.",
     side: "bottom",
@@ -60,7 +60,7 @@ const todayTourSteps = [
     element: "#tour-bottom-nav",
     title: "Navigate Your Notebook",
     description:
-      "Review • Capture • Notebook • Progress. Everything you need is one tap away.",
+      "Practice • Capture • Notebook • Progress. Everything you need is one tap away.",
     side: "top",
     align: "center",
   }),

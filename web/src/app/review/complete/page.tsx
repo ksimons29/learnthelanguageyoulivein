@@ -228,7 +228,7 @@ export default function ReviewCompletePage() {
               >
                 {wordsReviewed || dueWords.length}
               </p>
-              <p style={{ color: "var(--text-muted)" }}>words reviewed</p>
+              <p style={{ color: "var(--text-muted)" }}>words practiced</p>
             </div>
 
             <div
@@ -319,7 +319,7 @@ export default function ReviewCompletePage() {
                   className="text-lg font-semibold"
                   style={{ color: "var(--text-heading)" }}
                 >
-                  {isDailyGoalComplete ? "Daily goal complete!" : `${daily.completedReviews}/${daily.targetReviews} reviews`}
+                  {isDailyGoalComplete ? "Daily goal complete!" : `${daily.completedReviews}/${daily.targetReviews} practiced`}
                 </p>
                 <p
                   className="text-sm"
@@ -395,7 +395,7 @@ export default function ReviewCompletePage() {
                 className="text-lg font-semibold"
                 style={{ color: "var(--text-heading)" }}
               >
-                {tomorrowDue} words due for review
+                {tomorrowDue} words due tomorrow
               </p>
             </div>
           </div>

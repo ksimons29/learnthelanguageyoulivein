@@ -22,7 +22,7 @@ interface BingoBoardProps {
 
 // Square labels and icons for display
 const SQUARE_LABELS: Record<BingoSquareId, { short: string; full: string }> = {
-  review5: { short: "5", full: "Review 5 words" },
+  review5: { short: "5", full: "Practice 5 words" },
   streak3: { short: "3x", full: "3 in a row" },
   fillBlank: { short: "Fill", full: "Fill in the blank" },
   multipleChoice: { short: "Pick", full: "Multiple choice" },

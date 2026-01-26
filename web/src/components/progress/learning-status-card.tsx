@@ -53,7 +53,7 @@ export function LearningStatusCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" style={{ color: "var(--accent-nav)" }} />
-              <span style={{ color: "var(--text-body)" }}>Due for Review</span>
+              <span style={{ color: "var(--text-body)" }}>Due Today</span>
             </div>
             <span
               className="font-bold text-lg"

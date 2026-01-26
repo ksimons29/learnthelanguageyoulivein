@@ -852,7 +852,7 @@ export default function AdminDashboard() {
 
             {/* Reviews Section */}
             <section>
-              <SectionHeader title="Review Sessions" icon={Brain} />
+              <SectionHeader title="Practice Sessions" icon={Brain} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
                   title="Total Sessions"
@@ -860,7 +860,7 @@ export default function AdminDashboard() {
                   icon={Brain}
                 />
                 <StatCard
-                  title="Total Reviews"
+                  title="Total Practiced"
                   value={stats.reviews.totalReviews.toLocaleString()}
                   icon={CheckCircle2}
                 />

@@ -175,7 +175,7 @@ export function getNextReviewText(nextReviewDate: Date): string {
   const diffMs = nextReviewDate.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays <= 0) return 'Review now';
+  if (diffDays <= 0) return 'Due now';
 
   // For days within a week, show the actual day name
   if (diffDays <= 7) {

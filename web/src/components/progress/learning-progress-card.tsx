@@ -59,7 +59,7 @@ export function LearningProgressCard({
           className="flex items-center justify-between px-5 py-4 border-b"
           style={{ borderColor: "#e2e8f0" }}
         >
-          <span className="text-gray-700">Due for Review</span>
+          <span className="text-gray-700">Due Today</span>
           <span
             className="text-2xl font-bold"
             style={{ color: "#667eea" }}
@@ -88,7 +88,7 @@ export function LearningProgressCard({
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="h-4 w-4" style={{ color: "#f59e0b" }} />
               <span className="text-sm font-medium text-gray-600">
-                Words to Review ({strugglingWordsList.length}+ fails)
+                Words to Practice ({strugglingWordsList.length}+ fails)
               </span>
             </div>
 
@@ -124,7 +124,7 @@ export function LearningProgressCard({
                 background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
               }}
             >
-              Start Review
+              Start practice
             </Link>
           </div>
         )}

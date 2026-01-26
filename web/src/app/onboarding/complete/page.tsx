@@ -219,12 +219,12 @@ export default function CompletePage() {
         >
           {starterWords.length > 0 ? (
             <>
-              Tap any phrase to hear it spoken. During reviews, we&apos;ll create
+              Tap any phrase to hear it spoken. During practice, we&apos;ll create
               sentences using <strong>your words</strong> to help you remember
               them.
             </>
           ) : (
-            "The more phrases you add, the better your review sessions will be!"
+            "The more phrases you add, the better your practice sessions will be!"
           )}
         </p>
 

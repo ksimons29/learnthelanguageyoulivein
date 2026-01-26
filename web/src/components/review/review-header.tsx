@@ -19,7 +19,7 @@ export function ReviewHeader({ current, total, onClose }: ReviewHeaderProps) {
           backgroundColor: "rgba(180, 170, 155, 0.2)",
           color: "var(--text-muted)",
         }}
-        aria-label="Close review"
+        aria-label="Close practice"
       >
         <X className="h-5 w-5" />
       </button>
