@@ -63,7 +63,7 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
         id="tour-info-button"
         onClick={handleClick}
         className={cn(
-          "relative w-10 h-10 rounded-xl overflow-hidden",
+          "relative z-20 w-10 h-10 rounded-xl overflow-hidden",
           "transition-all duration-200",
           "hover:scale-105 hover:shadow-md",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
