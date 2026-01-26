@@ -2,9 +2,10 @@
  * Review Session Tour
  *
  * Introduces users to the review experience.
- * 6 steps covering sentences, audio, exercises, rating, and feedback.
+ * 4 steps covering sentences, audio, progress, and feedback.
+ * Note: Rating buttons step removed - appears only after answering.
  *
- * Duration: ~60 seconds
+ * Duration: ~30 seconds
  */
 
 import { createStep } from "../driver-config";
@@ -12,6 +13,7 @@ import { tourManager, type TourDefinition } from "../tour-manager";
 
 /**
  * Tour step definitions for the Review page
+ * Only includes elements that exist at page load
  */
 const reviewTourSteps = [
   createStep({
@@ -31,26 +33,10 @@ const reviewTourSteps = [
     align: "center",
   }),
   createStep({
-    element: "#answer-section",
-    title: "Choose the Meaning",
-    description:
-      "We start with recognition. As you improve, exercises get harder—from multiple choice to typing.",
-    side: "top",
-    align: "center",
-  }),
-  createStep({
-    element: "#rating-buttons",
-    title: "Rate Honestly",
-    description:
-      "This powers the FSRS algorithm. 'Hard' isn't failure—it's feedback for better scheduling.",
-    side: "top",
-    align: "center",
-  }),
-  createStep({
     element: "#progress-indicator",
-    title: "Your Progress",
+    title: "Track Your Progress",
     description:
-      "We track 3 correct recalls across separate sessions. That's when words become 'Ready to Use'.",
+      "After answering, rate how hard it was. This powers spaced repetition for optimal memory.",
     side: "bottom",
     align: "center",
   }),
@@ -59,7 +45,7 @@ const reviewTourSteps = [
     title: "Report Issues",
     description:
       "Found a bad translation? Tap Feedback anytime. This is beta—your input shapes the app!",
-    side: "right",
+    side: "top",
     align: "center",
   }),
 ];
