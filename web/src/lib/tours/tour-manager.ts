@@ -15,7 +15,7 @@
  */
 
 import { type DriveStep } from "driver.js";
-import { createTour } from "./driver-config";
+import { createTour, scrollIntoViewForTour, isMobileScreen } from "./driver-config";
 
 /**
  * Available tour identifiers
@@ -91,6 +91,24 @@ class TourManager {
   }
 
   /**
+   * Enhance steps with responsive scroll behavior
+   * Ensures highlighted elements are visible on both mobile and desktop
+   */
+  private enhanceStepsForResponsive(steps: DriveStep[]): DriveStep[] {
+    return steps.map((step) => ({
+      ...step,
+      onHighlightStarted: (element, stepDef, opts) => {
+        // Scroll element into view (uses appropriate positioning for screen size)
+        if (step.element && typeof step.element === "string") {
+          scrollIntoViewForTour(step.element);
+        }
+        // Call original callback if provided
+        step.onHighlightStarted?.(element, stepDef, opts);
+      },
+    }));
+  }
+
+  /**
    * Start a tour by ID
    *
    * @param tourId - The tour to start
@@ -114,8 +132,11 @@ class TourManager {
     // Call onStart callback if provided
     definition.onStart?.();
 
+    // Enhance steps with responsive scroll behavior
+    const responsiveSteps = this.enhanceStepsForResponsive(definition.steps);
+
     // Create and start the tour
-    this.activeTour = createTour(definition.steps, {
+    this.activeTour = createTour(responsiveSteps, {
       onDestroyStarted: () => {
         // Tour is being closed (either completed or dismissed)
         const wasCompleted = this.activeTour?.isLastStep?.();

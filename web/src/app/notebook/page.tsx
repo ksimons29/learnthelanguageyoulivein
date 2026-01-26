@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   SearchBar,
   InboxCard,
@@ -47,30 +47,35 @@ export default function NotebookPage() {
 
   // Tour state
   const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("notebook");
+  const tourStartedRef = useRef(false);
 
   // Fetch categories on mount
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Register notebook tour and auto-trigger for first-time visitors
+  // Register notebook tour with completion callback
   useEffect(() => {
-    if (tourLoading || categoriesLoading) return;
+    registerNotebookTour(markTourComplete);
+  }, [markTourComplete]);
 
-    // Register the tour with completion callback
-    registerNotebookTour(() => {
-      markTourComplete();
-    });
-
-    // Auto-start tour if user hasn't completed it and we have content
-    if (!tourCompleted && categories.length > 0) {
+  // Auto-start tour for first-time visitors (only once per session)
+  useEffect(() => {
+    if (
+      !tourLoading &&
+      !tourCompleted &&
+      !tourStartedRef.current &&
+      !categoriesLoading &&
+      categories.length > 0
+    ) {
+      tourStartedRef.current = true;
       // Small delay to ensure DOM elements are rendered
       const timer = setTimeout(() => {
         startTour();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [tourLoading, tourCompleted, categoriesLoading, categories.length, startTour, markTourComplete]);
+  }, [tourLoading, tourCompleted, categoriesLoading, categories.length, startTour]);
 
   // Debounced word search
   useEffect(() => {

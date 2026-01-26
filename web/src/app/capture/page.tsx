@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { PhraseInput } from "@/components/capture";
@@ -56,25 +56,29 @@ export default function CapturePage() {
 
   // Tour state
   const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("capture");
+  const tourStartedRef = useRef(false);
 
-  // Register capture tour and auto-trigger for first-time visitors
+  // Register capture tour with completion callback
   useEffect(() => {
-    if (tourLoading || !user) return;
+    registerCaptureTour(markTourComplete);
+  }, [markTourComplete]);
 
-    // Register the tour with completion callback
-    registerCaptureTour(() => {
-      markTourComplete();
-    });
-
-    // Auto-start tour if user hasn't completed it
-    if (!tourCompleted) {
+  // Auto-start tour for first-time visitors (only once per session)
+  useEffect(() => {
+    if (
+      !tourLoading &&
+      !tourCompleted &&
+      !tourStartedRef.current &&
+      user
+    ) {
+      tourStartedRef.current = true;
       // Small delay to ensure DOM elements are rendered
       const timer = setTimeout(() => {
         startTour();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [tourLoading, user, tourCompleted, startTour, markTourComplete]);
+  }, [tourLoading, tourCompleted, user, startTour]);
 
   // Redirect unauthenticated users
   useEffect(() => {

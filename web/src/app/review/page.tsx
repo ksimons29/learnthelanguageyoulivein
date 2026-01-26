@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, HelpCircle, Lightbulb, Loader2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -137,25 +137,32 @@ export default function ReviewPage() {
 
   // Tour state
   const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("review");
+  const tourStartedRef = useRef(false);
 
-  // Register review tour and auto-trigger for first-time visitors
+  // Register review tour with completion callback
   useEffect(() => {
-    if (tourLoading || !user || !sessionId || dueWords.length === 0) return;
+    registerReviewTour(markTourComplete);
+  }, [markTourComplete]);
 
-    // Register the tour with completion callback
-    registerReviewTour(() => {
-      markTourComplete();
-    });
-
-    // Auto-start tour if user hasn't completed it and we have content to show
-    if (!tourCompleted && reviewState === "recall") {
+  // Auto-start tour for first-time visitors (only once per session)
+  useEffect(() => {
+    if (
+      !tourLoading &&
+      !tourCompleted &&
+      !tourStartedRef.current &&
+      user &&
+      sessionId &&
+      dueWords.length > 0 &&
+      reviewState === "recall"
+    ) {
+      tourStartedRef.current = true;
       // Small delay to ensure DOM elements are rendered
       const timer = setTimeout(() => {
         startTour();
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [tourLoading, user, sessionId, dueWords.length, tourCompleted, reviewState, startTour, markTourComplete]);
+  }, [tourLoading, tourCompleted, user, sessionId, dueWords.length, reviewState, startTour]);
 
   // Determine exercise type and focus word for sentence mode
   // IMPORTANT: focusWord is the single word being tested in this exercise

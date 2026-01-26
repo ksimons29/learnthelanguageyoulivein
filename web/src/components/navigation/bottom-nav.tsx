@@ -59,7 +59,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              id={item.label === "Capture" ? "nav-capture" : undefined}
+              id={`nav-${item.label.toLowerCase()}`}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors",
                 isActive

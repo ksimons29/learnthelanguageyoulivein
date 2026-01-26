@@ -7,26 +7,27 @@
  * Duration: ~30 seconds
  */
 
-import { createStep } from "../driver-config";
+import { createStep, createScrollingStep } from "../driver-config";
 import { tourManager, type TourDefinition } from "../tour-manager";
 
 /**
  * Tour step definitions for the Notebook page
  */
 const notebookTourSteps = [
+  // Start with the nav button to show where we are
   createStep({
-    element: "#category-grid",
-    title: "Your Words by Category",
+    element: "#nav-notebook",
+    title: "Your Notebook",
     description:
-      "Food, work, social, transport—AI organizes everything automatically based on context.",
+      "This is your notebook—where all captured phrases are organized and ready to explore.",
     side: "top",
     align: "center",
   }),
   createStep({
-    element: "#inbox-category",
-    title: "Check Your Inbox",
+    element: "#journal-header",
+    title: "Track Your Progress",
     description:
-      "New words land here first. After your first review, they get properly categorized.",
+      "Learning → Learned → Ready to Use. Watch your vocabulary grow over time.",
     side: "bottom",
     align: "center",
   }),
@@ -38,12 +39,21 @@ const notebookTourSteps = [
     side: "bottom",
     align: "center",
   }),
-  createStep({
-    element: "#journal-header",
-    title: "Track Your Progress",
+  // Scroll these into view on mobile
+  createScrollingStep({
+    element: "#inbox-category",
+    title: "Check Your Inbox",
     description:
-      "Learning → Learned → Ready to Use. Watch your vocabulary grow over time.",
+      "New words land here first. After your first review, they get properly categorized.",
     side: "bottom",
+    align: "center",
+  }),
+  createScrollingStep({
+    element: "#category-grid",
+    title: "Your Words by Category",
+    description:
+      "Food, work, social, transport—AI organizes everything automatically based on context.",
+    side: "top",
     align: "center",
   }),
 ];

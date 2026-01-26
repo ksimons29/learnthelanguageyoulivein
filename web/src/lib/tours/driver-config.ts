@@ -124,3 +124,58 @@ export function isDarkMode(): boolean {
   if (typeof window === "undefined") return false;
   return document.documentElement.classList.contains("dark");
 }
+
+/**
+ * Check if we're on a mobile screen
+ */
+export function isMobileScreen(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth <= 640;
+}
+
+/**
+ * Scroll an element into view for tour highlighting
+ *
+ * On mobile: Scrolls to TOP of viewport, leaving room for the bottom sheet popover
+ * On desktop: Scrolls to CENTER for traditional tooltip positioning
+ */
+export function scrollIntoViewForTour(selector: string): void {
+  if (typeof window === "undefined") return;
+
+  const element = document.querySelector(selector);
+  if (!element) return;
+
+  // On mobile, scroll to top to leave room for bottom sheet
+  // On desktop, scroll to center for better tooltip positioning
+  const blockPosition = isMobileScreen() ? "start" : "center";
+
+  element.scrollIntoView({
+    behavior: "smooth",
+    block: blockPosition,
+    inline: "center",
+  });
+}
+
+/**
+ * Create a step with automatic scroll-into-view behavior
+ * This ensures elements are visible on mobile before highlighting
+ *
+ * The scroll happens when the highlight starts, positioning the element
+ * appropriately for the mobile bottom sheet or desktop tooltip.
+ */
+export function createScrollingStep(options: TourStepOptions): DriveStep {
+  return {
+    element: options.element,
+    popover: {
+      title: options.title,
+      description: options.description,
+      side: options.side || "bottom",
+      align: options.align || "center",
+    },
+    onHighlightStarted: () => {
+      scrollIntoViewForTour(options.element);
+      options.onHighlightStarted?.();
+    },
+    onDeselected: options.onDeselected,
+  };
+}

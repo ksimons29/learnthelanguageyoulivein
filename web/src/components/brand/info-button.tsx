@@ -60,6 +60,7 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
       {/* Trigger button - small LLYLI logo with notebook styling */}
       <button
         type="button"
+        id="tour-info-button"
         onClick={handleClick}
         className={cn(
           "relative w-10 h-10 rounded-xl overflow-hidden",

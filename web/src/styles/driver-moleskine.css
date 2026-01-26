@@ -630,3 +630,71 @@ nav.driver-active-element,
   padding: 10px 24px;
   font-weight: 600;
 }
+
+/* ======================
+   MOBILE BOTTOM SHEET TOUR
+   ====================== */
+
+/* On mobile, transform the popover into a fixed bottom sheet
+   This ensures both the highlighted element and explanation
+   are always visible together on screen */
+@media (max-width: 640px) {
+  .driver-popover.moleskine-tour-popover {
+    /* Fixed positioning at bottom of screen */
+    position: fixed !important;
+    bottom: 100px !important; /* Above bottom nav */
+    top: auto !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+
+    /* Reset any calculated transforms */
+    transform: none !important;
+
+    /* Ensure it's above everything */
+    z-index: 100010 !important;
+
+    /* Smooth entry from bottom */
+    animation: slideUpSheet 250ms ease-out;
+  }
+
+  /* Hide the arrow on mobile since popover is detached from element */
+  .driver-popover.moleskine-tour-popover .driver-popover-arrow {
+    display: none !important;
+  }
+
+  /* Adjust border radius for bottom sheet style */
+  .driver-popover.moleskine-tour-popover {
+    border-radius: 16px !important;
+  }
+
+  /* Keep the binding strip but adjust for rounded corners */
+  .driver-popover.moleskine-tour-popover::before {
+    border-radius: 16px 0 0 16px;
+  }
+}
+
+@keyframes slideUpSheet {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* When highlighting fixed elements (bottom nav), ensure proper z-index stacking */
+.driver-active-element[style*="position: fixed"] {
+  z-index: 10002 !important;
+}
+
+/* Ensure highlighted elements are always somewhat visible on mobile */
+@media (max-width: 640px) {
+  .driver-active-element {
+    /* Ensure element doesn't get hidden behind the bottom sheet */
+    z-index: 10001 !important;
+  }
+}

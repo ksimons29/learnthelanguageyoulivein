@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { CompactProgressCard, ForecastChart } from "@/components/progress";
 import { InfoButton } from "@/components/brand";
@@ -37,6 +37,7 @@ export default function ProgressPage() {
 
   // Tour state
   const { isCompleted: tourCompleted, isLoading: tourLoading, startTour, markTourComplete } = useTour("progress");
+  const tourStartedRef = useRef(false);
 
   useEffect(() => {
     async function fetchProgress() {
@@ -62,24 +63,28 @@ export default function ProgressPage() {
     fetchProgress();
   }, []);
 
-  // Register progress tour and auto-trigger for first-time visitors
+  // Register progress tour with completion callback
   useEffect(() => {
-    if (tourLoading || isLoading || !data) return;
+    registerProgressTour(markTourComplete);
+  }, [markTourComplete]);
 
-    // Register the tour with completion callback
-    registerProgressTour(() => {
-      markTourComplete();
-    });
-
-    // Auto-start tour if user hasn't completed it
-    if (!tourCompleted) {
+  // Auto-start tour for first-time visitors (only once per session)
+  useEffect(() => {
+    if (
+      !tourLoading &&
+      !tourCompleted &&
+      !tourStartedRef.current &&
+      !isLoading &&
+      data
+    ) {
+      tourStartedRef.current = true;
       // Small delay to ensure DOM elements are rendered
       const timer = setTimeout(() => {
         startTour();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [tourLoading, isLoading, data, tourCompleted, startTour, markTourComplete]);
+  }, [tourLoading, tourCompleted, isLoading, data, startTour]);
 
   // Loading state
   if (isLoading) {

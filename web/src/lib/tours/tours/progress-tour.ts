@@ -7,7 +7,7 @@
  * Duration: ~20 seconds
  */
 
-import { createStep } from "../driver-config";
+import { createStep, createScrollingStep } from "../driver-config";
 import { tourManager, type TourDefinition } from "../tour-manager";
 
 /**
@@ -22,7 +22,8 @@ const progressTourSteps = [
     side: "bottom",
     align: "center",
   }),
-  createStep({
+  // Scroll these into view on mobile
+  createScrollingStep({
     element: "#forecast-chart",
     title: "Science-Based Scheduling",
     description:
@@ -30,7 +31,7 @@ const progressTourSteps = [
     side: "top",
     align: "center",
   }),
-  createStep({
+  createScrollingStep({
     element: "#streak-section",
     title: "Build Consistency",
     description:

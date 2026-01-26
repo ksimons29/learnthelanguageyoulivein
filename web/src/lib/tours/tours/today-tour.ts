@@ -7,7 +7,7 @@
  * Duration: ~45 seconds
  */
 
-import { createStep } from "../driver-config";
+import { createStep, createScrollingStep } from "../driver-config";
 import { tourManager, type TourDefinition } from "../tour-manager";
 
 /**
@@ -22,7 +22,8 @@ const todayTourSteps = [
     side: "bottom",
     align: "start",
   }),
-  createStep({
+  // Scroll these elements into view on mobile
+  createScrollingStep({
     element: "#tour-due-today",
     title: "Words to Review",
     description:
@@ -30,7 +31,7 @@ const todayTourSteps = [
     side: "bottom",
     align: "center",
   }),
-  createStep({
+  createScrollingStep({
     element: "#daily-goal-stat",
     title: "Daily Goal",
     description:
@@ -38,6 +39,15 @@ const todayTourSteps = [
     side: "top",
     align: "center",
   }),
+  createStep({
+    element: "#tour-info-button",
+    title: "Learn About LLYLI",
+    description:
+      "Tap here to see the science behind spaced repetition, sign out, or explore app features.",
+    side: "bottom",
+    align: "end",
+  }),
+  // Nav items are fixed, position popover above them
   createStep({
     element: "#nav-capture",
     title: "Capture Words Anytime",
