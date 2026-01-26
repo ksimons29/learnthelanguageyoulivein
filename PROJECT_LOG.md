@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Review Tour Fix + Full Mobile E2E (#147 continued)** - Fixed Review tour targeting non-existent elements (`#answer-section`, `#rating-buttons` only appear after user answers). Removed Steps 3 & 4, merged rating guidance into progress step. E2E tested all 5 tours on mobile (375×667): Review (4 steps), Today (6), Capture (4), Notebook (5), Progress (3). All tours pass on production. (Session 96)
 - [x] **Progress Tour Element Targeting (#147)** - Fixed Step 3 to highlight actual streak/retention badges instead of redundant wrapper div. Added `id="streak-badges"` to CompactProgressCard, removed nested wrapper from page, updated tour to target badges with proper positioning. Verified on production at 375px viewport. (Session 95)
 - [x] **Responsive Tour Fixes (#146)** - Fixed 4 tour bugs: (1) Tour shown every time → added tourStartedRef guard to all pages; (2) Mobile overlap → element scrolls to TOP, popover fixed at BOTTOM; (3) Notebook button not visible → added nav-notebook step; (4) Info button missing → added tour step. E2E verified on production. (Session 94)
 - [x] **Issue #145 Portuguese (Portugal) Native Language + Alphabetical Sort** - Added pt-PT to native language selection (was hidden as default target). Languages now sorted alphabetically: Dutch, English, French, German, Portuguese (Brazil), Portuguese (Portugal), Spanish, Swedish. (Session 93)
@@ -111,6 +112,7 @@ npm run build             # Production build
 ### Recently Closed Bugs
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
+| #147 | Review tour targeting non-existent elements (answer-section, rating-buttons) | Session 96 |
 | #146 | Responsive tour - element and popover not visible together on mobile | Session 94 |
 | #130 | Review page sluggish (Zustand full subscriptions) | Session 91 |
 | #131 | Distractor loading delay (100-500ms spinner) | Session 91 |
