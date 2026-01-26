@@ -15,6 +15,12 @@ interface PhraseCardProps {
   onRetryAudio?: () => void;
   onEdit?: () => void;
   className?: string;
+  /** Issue #134: Audio verification failed - show warning indicator */
+  audioVerificationFailed?: boolean;
+  /** Issue #135: Audio is taking longer than expected (>15s) */
+  audioWarning?: boolean;
+  /** Issue #135: Show early retry option (>20s) */
+  showEarlyRetry?: boolean;
 }
 
 export function PhraseCard({
@@ -27,6 +33,9 @@ export function PhraseCard({
   onRetryAudio,
   onEdit,
   className,
+  audioVerificationFailed = false,
+  audioWarning = false,
+  showEarlyRetry = false,
 }: PhraseCardProps) {
   const { play, isPlaying, isLoading, currentUrl } = useAudioPlayer();
 
@@ -97,13 +106,25 @@ export function PhraseCard({
             size="md"
           />
         ) : (
-          <AudioPlayButton
-            isPlaying={isThisPlaying}
-            isLoading={audioGenerating || (isLoading && currentUrl === audioUrl)}
-            hasAudio={!!audioUrl || audioGenerating}
-            onClick={handlePlay}
-            size="md"
-          />
+          <>
+            <AudioPlayButton
+              isPlaying={isThisPlaying}
+              isLoading={audioGenerating || (isLoading && currentUrl === audioUrl)}
+              hasAudio={!!audioUrl || audioGenerating}
+              onClick={handlePlay}
+              size="md"
+              verificationFailed={audioVerificationFailed}
+              showWarning={audioWarning}
+            />
+            {/* Issue #135: Show early retry button alongside play button after 20s */}
+            {showEarlyRetry && audioGenerating && onRetryAudio && (
+              <AudioRetryButton
+                isRetrying={isRetryingAudio}
+                onRetry={onRetryAudio}
+                size="md"
+              />
+            )}
+          </>
         )}
       </div>
     </div>

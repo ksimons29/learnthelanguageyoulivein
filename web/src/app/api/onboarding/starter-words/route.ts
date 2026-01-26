@@ -164,7 +164,8 @@ async function generateTTSForWords(
   const processWord = async (word: typeof words.$inferSelect) => {
     try {
       // TTS generation with verification (catches OpenAI reliability issues)
-      const audioBuffer = await withRetry(
+      // Issue #134: Now returns { buffer, verified } so we can flag unverified audio
+      const result = await withRetry(
         () => generateVerifiedAudio({ text: word.originalText, languageCode }),
         2, // Fewer outer retries since verification has internal retries
         2000
@@ -172,15 +173,19 @@ async function generateTTSForWords(
 
       // Storage upload with retry (2 retries, 1s base delay)
       const audioUrl = await withRetry(
-        () => uploadAudio(userId, word.id, audioBuffer),
+        () => uploadAudio(userId, word.id, result.buffer),
         2,
         1000
       );
 
-      // Success - update word with audio URL
+      // Success - update word with audio URL and verification status
       await db
         .update(words)
-        .set({ audioUrl, audioGenerationFailed: false })
+        .set({
+          audioUrl,
+          audioGenerationFailed: false,
+          audioVerificationFailed: !result.verified,
+        })
         .where(eq(words.id, word.id));
 
       return { wordId: word.id, success: true };

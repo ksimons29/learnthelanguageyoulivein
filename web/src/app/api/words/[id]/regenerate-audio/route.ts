@@ -3,7 +3,7 @@ import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { generateAudio } from '@/lib/audio/tts';
+import { generateVerifiedAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { getLanguageConfig } from '@/lib/config/languages';
 import { withRetry } from '@/lib/utils/retry';
@@ -68,24 +68,34 @@ export async function POST(
       );
     }
 
-    // 6. Generate audio with retry logic (3 retries, exponential backoff: 2s → 4s → 8s)
-    const audioBuffer = await withRetry(
-      () => generateAudio({ text: audioText, languageCode: ttsLanguage }),
-      3,
+    // 6. Generate audio with verification and retry logic
+    // Issue #134: Use verified audio to track verification status
+    const result = await withRetry(
+      () => generateVerifiedAudio({
+        text: audioText,
+        languageCode: ttsLanguage,
+        userId: user.id,
+      }),
+      2, // Fewer outer retries since verification has internal retries
       2000
     );
 
     // 7. Upload to storage with retry logic (2 retries, exponential backoff: 1s → 2s)
     const audioUrl = await withRetry(
-      () => uploadAudio(user.id, wordId, audioBuffer),
+      () => uploadAudio(user.id, wordId, result.buffer),
       2,
       1000
     );
 
-    // 8. Update word with audio URL and clear failure flag
+    // 8. Update word with audio URL and clear/set flags
     const [updatedWord] = await db
       .update(words)
-      .set({ audioUrl, audioGenerationFailed: false, updatedAt: new Date() })
+      .set({
+        audioUrl,
+        audioGenerationFailed: false,
+        audioVerificationFailed: !result.verified,
+        updatedAt: new Date(),
+      })
       .where(eq(words.id, wordId))
       .returning();
 

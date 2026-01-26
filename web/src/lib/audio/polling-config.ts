@@ -3,6 +3,12 @@
  *
  * These constants control how the client polls for audio generation status.
  * Extracted to a separate module for testability.
+ *
+ * Issue #135 UX improvement timeline:
+ * - 0-15s: Normal spinner
+ * - 15-20s: Show "Taking longer than expected..." warning
+ * - 20-30s: Show "Retry" button (user can retry or keep waiting)
+ * - 30s: Auto-fail, show permanent retry button
  */
 
 /**
@@ -17,6 +23,20 @@
  * 30s provides generous headroom while improving failure feedback time.
  */
 export const AUDIO_POLLING_TIMEOUT_MS = 30000;
+
+/**
+ * Threshold for showing "Taking longer than expected..." message.
+ * At 15 seconds, the user has been waiting long enough to appreciate feedback.
+ * Issue #135: Provides early feedback before showing retry option.
+ */
+export const AUDIO_SHOW_WARNING_MS = 15000;
+
+/**
+ * Threshold for showing early "Retry" button while still waiting.
+ * At 20 seconds, give users the option to retry without waiting for full timeout.
+ * Issue #135: Users can choose to retry early or continue waiting.
+ */
+export const AUDIO_SHOW_EARLY_RETRY_MS = 20000;
 
 /**
  * Initial polling interval in milliseconds.

@@ -22,6 +22,7 @@ export const words = pgTable('words', {
   language: text('language', { enum: ['source', 'target'] }).notNull(), // Detected language
   audioUrl: text('audio_url'), // Supabase Storage URL for TTS audio
   audioGenerationFailed: boolean('audio_generation_failed').default(false), // True if TTS generation failed after retries
+  audioVerificationFailed: boolean('audio_verification_failed').default(false), // True if audio was generated but Whisper verification failed (Issue #134)
 
   // Language Codes (ISO 639-1, e.g., 'en', 'pt-PT', 'nl', 'sv')
   // Tracks which specific languages were used for this word

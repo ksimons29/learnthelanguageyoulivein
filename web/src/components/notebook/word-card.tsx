@@ -156,6 +156,7 @@ export function WordCard({
             hasAudio={!!word.audioUrl}
             onClick={handleAudioClick}
             size="md"
+            verificationFailed={word.audioVerificationFailed ?? false}
           />
         </div>
 

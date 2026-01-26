@@ -813,7 +813,8 @@ async function generateAudioInBackground(
   try {
     // TTS generation with verification (retries internally if transcription doesn't match)
     // This catches OpenAI TTS reliability issues where wrong audio is returned
-    const audioBuffer = await withRetry(
+    // Issue #134: Now returns { buffer, verified } so we can flag unverified audio
+    const result = await withRetry(
       () => generateVerifiedAudio({ text, languageCode, userId }),
       2, // Fewer outer retries since verification has internal retries
       2000
@@ -821,15 +822,20 @@ async function generateAudioInBackground(
 
     // Storage upload with retry (2 retries, 1s base delay)
     const audioUrl = await withRetry(
-      () => uploadAudio(userId, wordId, audioBuffer),
+      () => uploadAudio(userId, wordId, result.buffer),
       2,
       1000
     );
 
-    // Success - update word with audio URL
+    // Success - update word with audio URL and verification status
+    // Issue #134: Store audioVerificationFailed flag so UI can show warning icon
     await db
       .update(words)
-      .set({ audioUrl, audioGenerationFailed: false })
+      .set({
+        audioUrl,
+        audioGenerationFailed: false,
+        audioVerificationFailed: !result.verified,
+      })
       .where(eq(words.id, wordId));
   } catch (error) {
     console.error('Background audio generation failed after retries:', error);

@@ -6,6 +6,8 @@ import {
   AUDIO_POLLING_INITIAL_INTERVAL_MS,
   AUDIO_POLLING_BACKOFF_MULTIPLIER,
   AUDIO_POLLING_MAX_INTERVAL_MS,
+  AUDIO_SHOW_WARNING_MS,
+  AUDIO_SHOW_EARLY_RETRY_MS,
 } from '@/lib/audio/polling-config';
 
 /**
@@ -115,6 +117,9 @@ interface WordsState {
   // Audio generation tracking
   audioGeneratingIds: Set<string>;
   audioFailedIds: Set<string>;
+  // Issue #135: Track warning states during polling
+  audioWarningIds: Set<string>;      // Words past 15s - show "Taking longer..."
+  audioShowRetryIds: Set<string>;    // Words past 20s - show early retry option
 
   // Categories State
   categories: CategoryStats[];
@@ -150,6 +155,9 @@ interface WordsState {
   pollForAudio: (wordId: string) => void;
   isAudioGenerating: (wordId: string) => boolean;
   isAudioFailed: (wordId: string) => boolean;
+  // Issue #135: New selectors for warning states
+  isAudioWarning: (wordId: string) => boolean;
+  showEarlyRetry: (wordId: string) => boolean;
   retryAudioGeneration: (wordId: string) => Promise<void>;
   clearAudioFailed: (wordId: string) => void;
 }
@@ -164,6 +172,9 @@ export const useWordsStore = create<WordsState>((set, get) => ({
   // Audio generation tracking
   audioGeneratingIds: new Set<string>(),
   audioFailedIds: new Set<string>(),
+  // Issue #135: Warning state tracking
+  audioWarningIds: new Set<string>(),
+  audioShowRetryIds: new Set<string>(),
 
   // Categories Initial State
   categories: [],
@@ -365,6 +376,10 @@ export const useWordsStore = create<WordsState>((set, get) => ({
     const startTime = Date.now();
     let currentInterval = INITIAL_INTERVAL_MS;
 
+    // Issue #135: Track whether we've set warning states to avoid redundant updates
+    let warningSet = false;
+    let showRetrySet = false;
+
     const poll = async () => {
       // Check if polling was cancelled
       if (controller.signal.aborted) {
@@ -372,6 +387,24 @@ export const useWordsStore = create<WordsState>((set, get) => ({
       }
 
       const elapsedMs = Date.now() - startTime;
+
+      // Issue #135: Set warning states at thresholds
+      if (!warningSet && elapsedMs >= AUDIO_SHOW_WARNING_MS) {
+        warningSet = true;
+        set((state) => {
+          const warningIds = new Set(state.audioWarningIds);
+          warningIds.add(wordId);
+          return { audioWarningIds: warningIds };
+        });
+      }
+      if (!showRetrySet && elapsedMs >= AUDIO_SHOW_EARLY_RETRY_MS) {
+        showRetrySet = true;
+        set((state) => {
+          const showRetryIds = new Set(state.audioShowRetryIds);
+          showRetryIds.add(wordId);
+          return { audioShowRetryIds: showRetryIds };
+        });
+      }
 
       // Check if we've exceeded total timeout
       if (elapsedMs >= TOTAL_TIMEOUT_MS) {
@@ -382,9 +415,16 @@ export const useWordsStore = create<WordsState>((set, get) => ({
           generatingSet.delete(wordId);
           const failedSet = new Set(state.audioFailedIds);
           failedSet.add(wordId);
+          // Clear warning states on timeout
+          const warningIds = new Set(state.audioWarningIds);
+          warningIds.delete(wordId);
+          const showRetryIds = new Set(state.audioShowRetryIds);
+          showRetryIds.delete(wordId);
           return {
             audioGeneratingIds: generatingSet,
             audioFailedIds: failedSet,
+            audioWarningIds: warningIds,
+            audioShowRetryIds: showRetryIds,
           };
         });
         return;
@@ -407,10 +447,23 @@ export const useWordsStore = create<WordsState>((set, get) => ({
           set((state) => {
             const newSet = new Set(state.audioGeneratingIds);
             newSet.delete(wordId);
+            // Clear warning states on success
+            const warningIds = new Set(state.audioWarningIds);
+            warningIds.delete(wordId);
+            const showRetryIds = new Set(state.audioShowRetryIds);
+            showRetryIds.delete(wordId);
             return {
               audioGeneratingIds: newSet,
+              audioWarningIds: warningIds,
+              audioShowRetryIds: showRetryIds,
               words: state.words.map((w) =>
-                w.id === wordId ? { ...w, audioUrl: word.audioUrl, audioGenerationFailed: false } : w
+                w.id === wordId ? {
+                  ...w,
+                  audioUrl: word.audioUrl,
+                  audioGenerationFailed: false,
+                  // Issue #134: Update verification status from server
+                  audioVerificationFailed: word.audioVerificationFailed ?? false,
+                } : w
               ),
             };
           });
@@ -426,9 +479,16 @@ export const useWordsStore = create<WordsState>((set, get) => ({
             generatingSet.delete(wordId);
             const failedSet = new Set(state.audioFailedIds);
             failedSet.add(wordId);
+            // Clear warning states on failure
+            const warningIds = new Set(state.audioWarningIds);
+            warningIds.delete(wordId);
+            const showRetryIds = new Set(state.audioShowRetryIds);
+            showRetryIds.delete(wordId);
             return {
               audioGeneratingIds: generatingSet,
               audioFailedIds: failedSet,
+              audioWarningIds: warningIds,
+              audioShowRetryIds: showRetryIds,
               words: state.words.map((w) =>
                 w.id === wordId ? { ...w, audioGenerationFailed: true } : w
               ),
@@ -463,6 +523,15 @@ export const useWordsStore = create<WordsState>((set, get) => ({
 
   isAudioFailed: (wordId: string) => {
     return get().audioFailedIds.has(wordId);
+  },
+
+  // Issue #135: Selectors for warning states
+  isAudioWarning: (wordId: string) => {
+    return get().audioWarningIds.has(wordId);
+  },
+
+  showEarlyRetry: (wordId: string) => {
+    return get().audioShowRetryIds.has(wordId);
   },
 
   clearAudioFailed: (wordId: string) => {

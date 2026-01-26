@@ -164,6 +164,15 @@ interface VerifiedTTSOptions extends TTSOptions {
   skipVerification?: boolean;
 }
 
+/**
+ * Result from generateVerifiedAudio
+ * Issue #134: Now returns verification status so callers can flag unverified audio
+ */
+export interface VerifiedAudioResult {
+  buffer: Buffer;
+  verified: boolean;
+}
+
 interface VerificationResult {
   buffer: Buffer;
   verified: boolean;
@@ -248,18 +257,23 @@ async function transcribeAudio(
  * IMPORTANT: This adds ~1-2 seconds per generation due to Whisper transcription.
  * For batch operations, consider using skipVerification=true.
  *
+ * Issue #134 change: Now returns { buffer, verified } instead of just buffer.
+ * When verification fails after all retries, returns the last buffer with verified=false.
+ * This allows callers to store the flag and show a warning icon in the UI.
+ *
  * @param options - TTS options including text and language
- * @returns Verified audio buffer
- * @throws Error if verification fails after all attempts
+ * @returns Object with audio buffer and verification status
+ * @throws Error if no audio could be generated at all
  */
 export async function generateVerifiedAudio(
   options: VerifiedTTSOptions
-): Promise<Buffer> {
+): Promise<VerifiedAudioResult> {
   const { text, languageCode, skipVerification = false, userId } = options;
 
-  // If skipping verification, just generate normally
+  // If skipping verification, just generate normally (assume verified)
   if (skipVerification) {
-    return generateAudio(options);
+    const buffer = await generateAudio(options);
+    return { buffer, verified: true };
   }
 
   let lastTranscription = '';
@@ -296,7 +310,7 @@ export async function generateVerifiedAudio(
             `[TTS] Verified on attempt ${attempt + 1}: "${text}" → "${transcription}"`
           );
         }
-        return buffer;
+        return { buffer, verified: true };
       }
 
       console.warn(
@@ -315,13 +329,14 @@ export async function generateVerifiedAudio(
     `userId=${userId || 'unknown'}`
   );
 
-  // Return last buffer anyway (better than nothing) but log the failure
+  // Issue #134: Return last buffer with verified=false instead of throwing/silently returning
+  // This allows callers to store the unverified flag and show a warning icon in the UI
   if (lastBuffer) {
-    return lastBuffer;
+    return { buffer: lastBuffer, verified: false };
   }
 
   throw new Error(
-    `TTS verification failed after ${MAX_VERIFICATION_ATTEMPTS} attempts for "${text}"`
+    `TTS generation failed after ${MAX_VERIFICATION_ATTEMPTS} attempts for "${text}"`
   );
 }
 
