@@ -6,16 +6,31 @@ import { checkIpRateLimit } from '@/lib/security/rate-limit-check';
  * Next.js Middleware
  *
  * Runs on every request to:
- * 1. Apply IP-based rate limiting for API routes (DDoS protection)
+ * 1. Apply IP-based rate limiting for mutating API routes (DDoS protection)
  * 2. Refresh Supabase auth sessions and protect routes
+ *
+ * Rate limiting strategy:
+ * - Middleware: Only rate-limits POST/PUT/DELETE requests (mutation protection)
+ * - Route-level: Individual routes apply their own tier-based limits
+ *
+ * Why only mutating requests?
+ * - GET requests are read-only and relatively cheap
+ * - A page load triggers 5-6 concurrent GET requests (onboarding/status, words,
+ *   words/stats, tours/progress, gamification/state)
+ * - The old 10 req/min limit for ALL requests caused 429s on normal page loads
+ * - DDoS/brute force attacks target write endpoints (auth, word capture)
  */
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
 
-  // IP-based rate limiting for API routes
-  // This catches brute force/DDoS before authentication
-  if (pathname.startsWith('/api/')) {
+  // IP-based rate limiting for mutating API routes only
+  // GET requests are cheaper and have route-level rate limiting
+  // This catches brute force/DDoS on write operations before authentication
+  const isMutatingRequest = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
+
+  if (pathname.startsWith('/api/') && isMutatingRequest) {
     try {
       const rateLimit = await checkIpRateLimit(request);
       if (!rateLimit.success && rateLimit.response) {
