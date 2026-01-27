@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **DDoS/Brute Force Rate Limiting (#136)** - Added Upstash Redis security rate limiting with 4 tiers: unauthenticated (10/min), expensive (30/min), write (60/min), read (120/min). IP-based limiting in middleware catches abuse before auth. User-based limiting in route handlers for authenticated requests. Fail-open strategy when Redis unavailable. Added 23 unit tests. (Session 97)
 - [x] **Review Tour Fix + Full Mobile E2E (#147 continued)** - Fixed Review tour targeting non-existent elements (`#answer-section`, `#rating-buttons` only appear after user answers). Removed Steps 3 & 4, merged rating guidance into progress step. E2E tested all 5 tours on mobile (375×667): Review (4 steps), Today (6), Capture (4), Notebook (5), Progress (3). All tours pass on production. (Session 96)
 - [x] **Progress Tour Element Targeting (#147)** - Fixed Step 3 to highlight actual streak/retention badges instead of redundant wrapper div. Added `id="streak-badges"` to CompactProgressCard, removed nested wrapper from page, updated tour to target badges with proper positioning. Verified on production at 375px viewport. (Session 95)
 - [x] **Responsive Tour Fixes (#146)** - Fixed 4 tour bugs: (1) Tour shown every time → added tourStartedRef guard to all pages; (2) Mobile overlap → element scrolls to TOP, popover fixed at BOTTOM; (3) Notebook button not visible → added nav-notebook step; (4) Info button missing → added tour step. E2E verified on production. (Session 94)
@@ -213,6 +214,64 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 97 - 2026-01-27 - DDoS/Brute Force Rate Limiting (#136)
+
+**Focus:** Add frequency-based rate limiting using Upstash Redis to protect against DDoS attacks and brute force attempts.
+
+**Architecture:**
+- **Hybrid approach:** Per-route helper function (primary) + middleware fallback
+- **Separate from subscription limits:** This is security rate limiting, not the existing 50 words/day quota
+- **Fail-open strategy:** When Redis unavailable, requests allowed through (subscription limits still apply)
+
+**Rate Limit Tiers:**
+| Tier | Requests/min | Use Cases |
+|------|-------------|-----------|
+| `unauthenticated` | 10 | IP-based, catches brute force before auth |
+| `expensive` | 30 | POST /api/words (OpenAI ~$0.02/call) |
+| `write` | 60 | POST /api/reviews, /api/feedback |
+| `read` | 120 | All GET endpoints |
+
+**Files Created:**
+| File | Purpose |
+|------|---------|
+| `web/src/lib/security/rate-limiter.ts` | Core rate limiter with Upstash Redis, tier configs, sliding window |
+| `web/src/lib/security/rate-limit-check.ts` | API helper, builds 429 responses with X-RateLimit-* headers |
+| `web/src/__tests__/lib/security/rate-limiter.test.ts` | 23 unit tests for fail-open, tier configs, response format |
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `web/middleware.ts` | Added IP-based rate check before auth |
+| `web/src/app/api/words/route.ts` | Added `expensive` tier check after auth |
+| `web/src/app/api/reviews/route.ts` | Added `write` tier check after auth |
+| `web/package.json` | Added `@upstash/ratelimit`, `@upstash/redis` |
+
+**Response Format (matches existing rateLimitResponse):**
+```json
+{
+  "error": "Too many requests",
+  "code": "RATE_LIMIT_EXCEEDED",
+  "details": { "limit": 30, "remaining": 0, "resetsAt": "..." }
+}
+```
+Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After`
+
+**Environment Variables Required:**
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+**Verification:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 380 passing (23 new rate limiter tests)
+- ⬜ Production: Needs Upstash env vars added to Vercel
+
+**Commits:**
+- `848db79` - feat(#136): add DDoS/brute force rate limiting with Upstash Redis
+
+**Closes:** #136
+
+---
 
 ### Session 95 - 2026-01-26 - Progress Tour Element Targeting (#147)
 
