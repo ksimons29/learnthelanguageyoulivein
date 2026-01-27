@@ -1879,6 +1879,55 @@ Expected
 * Dashboard loads in < 5 seconds
 * Queries run in parallel (check server logs)
 
+### 10.12 Security Rate Limiting (P1) - DDoS/Brute Force Protection
+
+**Architecture:**
+Security rate limiting (via Upstash Redis) is separate from subscription limits (50 words/day).
+
+**Rate Limit Tiers:**
+| Tier | Limit | Use Cases |
+|------|-------|-----------|
+| `unauthenticated` | 10 req/min | IP-based, mutations only (POST/PUT/DELETE/PATCH) |
+| `expensive` | 30 req/min | POST /api/words (OpenAI ~$0.02/call) |
+| `write` | 60 req/min | POST /api/reviews, /api/feedback |
+| `read` | 120 req/min | All GET endpoints (route-level only) |
+
+**Important:** Middleware rate limiting applies ONLY to mutating requests (POST/PUT/DELETE/PATCH), not GETs. This prevents 429 errors during normal page loads which fire 5-6 concurrent GET requests.
+
+**Automated Tests:** `rate-limiter.test.ts` (23 tests)
+
+Run the unit tests:
+
+```bash
+cd web && npm run test:run -- src/__tests__/lib/security/rate-limiter.test.ts
+```
+
+**Manual verification (DDoS protection):**
+
+Steps
+
+1. Open terminal
+2. Send 11 rapid POST requests to the same endpoint:
+   ```bash
+   for i in {1..11}; do
+     curl -X POST https://llyli.vercel.app/api/words \
+       -H "Content-Type: application/json" \
+       -d '{"text":"test"}' -w "%{http_code}\n" &
+   done
+   wait
+   ```
+
+Expected
+
+* First 10 requests return 401 (unauthorized) or succeed
+* 11th request returns 429 with `X-RateLimit-*` headers
+* Response includes `Retry-After` header
+
+**Key Files:**
+* `web/src/middleware.ts` - Applies rate limiting to mutations only
+* `web/src/lib/security/rate-limiter.ts` - Upstash Redis rate limiter
+* `web/src/lib/security/rate-limit-check.ts` - Helper for 429 responses
+
 ---
 
 ## 11. Release readiness checklist
