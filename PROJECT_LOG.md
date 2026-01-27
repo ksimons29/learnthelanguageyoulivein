@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Onboarding Flow Unification (#152)** - Fixed critical bug where new users were routed to wrong onboarding flow (`/auth/onboarding` instead of `/onboarding`). Unified to single 4-step flow: Languages (flags) → Goals (multi-select reasons) → Capture (3+ words) → Complete (starter words). Created `/onboarding/reason` page with multi-select "Why are you learning?". Deleted deprecated `/auth/onboarding` (484 lines). E2E verified full flow in production. (Session 99)
 - [x] **Rate Limiting Production Fix (#136 cont.)** - Fixed middleware not executing: moved `middleware.ts` from `web/` to `web/src/` (Next.js requires middleware in `src/` when using `src/` directory structure). Set up Upstash Redis credentials in Vercel (fixed trailing newline in URL that caused silent failures). Verified 429 responses after 10 requests/min with proper headers. (Session 98)
 - [x] **DDoS/Brute Force Rate Limiting (#136)** - Added Upstash Redis security rate limiting with 4 tiers: unauthenticated (10/min), expensive (30/min), write (60/min), read (120/min). IP-based limiting in middleware catches abuse before auth. User-based limiting in route handlers for authenticated requests. Fail-open strategy when Redis unavailable. Added 23 unit tests. (Session 97)
 - [x] **Review Tour Fix + Full Mobile E2E (#147 continued)** - Fixed Review tour targeting non-existent elements (`#answer-section`, `#rating-buttons` only appear after user answers). Removed Steps 3 & 4, merged rating guidance into progress step. E2E tested all 5 tours on mobile (375×667): Review (4 steps), Today (6), Capture (4), Notebook (5), Progress (3). All tours pass on production. (Session 96)
@@ -215,6 +216,49 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 99 - 2026-01-27 - Onboarding Flow Unification (#152)
+
+**Focus:** Fix critical bug where new users were routed to wrong onboarding flow, missing flags, capture step, and starter words.
+
+**Root Cause:**
+Two separate onboarding flows existed in parallel:
+- `/auth/onboarding` - OLD: text lists, no capture, no starter words
+- `/onboarding/languages` - NEW: flag stamps, capture step, starter words
+
+Entry points (`auth/callback`, `sign-up`) were never updated to point to the new flow.
+
+**Changes:**
+
+| File | Change |
+|------|--------|
+| `auth/callback/route.ts` | Redirect `/auth/onboarding` → `/onboarding` |
+| `auth/sign-up/page.tsx` | Redirect `/auth/onboarding` → `/onboarding` |
+| `onboarding/reason/page.tsx` | **NEW** - Multi-select "Why are you learning?" |
+| `api/onboarding/reason/route.ts` | **NEW** - Stores reasons as JSON array |
+| `onboarding/languages/page.tsx` | Updated flow: languages → reason (was → capture) |
+| `onboarding/capture/page.tsx` | Updated step indicators (4 steps) |
+| `onboarding/complete/page.tsx` | Updated step indicators (4 steps) |
+| `lib/supabase/middleware.ts` | Removed `/auth/onboarding` from allowlist |
+| `auth/onboarding/page.tsx` | **DELETED** - 484 lines removed |
+
+**New Flow (4 steps):**
+1. Languages (flag stamps) → 2. Goals (multi-select) → 3. Words (capture 3+) → 4. Ready (celebration)
+
+**Verification:**
+- ✅ Build passes (380 tests)
+- ✅ E2E tested full signup → onboarding → home flow in production
+- ✅ Multi-select reasons working (stores as JSON array)
+- ✅ Starter words seeded (12 phrases)
+- ✅ User captured words + starter = 15 phrases ready
+
+**Commits:**
+- `5168478` - fix(#152): unify onboarding flow with flags, capture, starter words, multi-select reasons
+- `de73681` - chore: delete deprecated /auth/onboarding page
+
+**Closes:** #152
+
+---
 
 ### Session 97 - 2026-01-27 - DDoS/Brute Force Rate Limiting (#136)
 
