@@ -16,9 +16,14 @@ export async function middleware(request: NextRequest) {
   // IP-based rate limiting for API routes
   // This catches brute force/DDoS before authentication
   if (pathname.startsWith('/api/')) {
-    const rateLimit = await checkIpRateLimit(request);
-    if (!rateLimit.success && rateLimit.response) {
-      return rateLimit.response;
+    try {
+      const rateLimit = await checkIpRateLimit(request);
+      if (!rateLimit.success && rateLimit.response) {
+        return rateLimit.response;
+      }
+    } catch (error) {
+      // Fail-open: log error but continue
+      console.error('[Middleware] Rate limit error:', error);
     }
   }
 
