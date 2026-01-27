@@ -93,8 +93,12 @@ export default function CompletePage() {
       className="min-h-screen flex flex-col items-center px-4 sm:px-6 py-6 sm:py-12 overflow-y-auto"
       style={{ backgroundColor: "var(--surface-notebook)" }}
     >
-      {/* Progress dots */}
+      {/* Progress indicator - 4 steps, step 4 active */}
       <div className="flex justify-center gap-2 mb-4 sm:mb-8">
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: "var(--accent-nav)" }}
+        />
         <div
           className="w-2 h-2 rounded-full"
           style={{ backgroundColor: "var(--accent-nav)" }}

@@ -61,8 +61,8 @@ export default function LanguagesPage() {
         // Continue anyway - user can capture words manually
       });
 
-      // 3. Go to capture step - users add their own words after starter words injected
-      router.push("/onboarding/capture");
+      // 3. Go to reason step - users select why they're learning
+      router.push("/onboarding/reason");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsSubmitting(false);
@@ -101,7 +101,7 @@ export default function LanguagesPage() {
 
         {/* Step indicator - like notebook page tabs */}
         <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
               className="relative"
@@ -117,15 +117,20 @@ export default function LanguagesPage() {
               />
               {s === 1 && (
                 <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                  Learning
+                  Languages
                 </span>
               )}
               {s === 2 && (
                 <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                  Native
+                  Goals
                 </span>
               )}
               {s === 3 && (
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
+                  Words
+                </span>
+              )}
+              {s === 4 && (
                 <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                   Ready
                 </span>

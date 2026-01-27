@@ -125,7 +125,7 @@ export default function SignUpPage() {
       }
 
       // Session exists - auto-confirm is enabled, proceed to onboarding
-      router.push('/auth/onboarding');
+      router.push('/onboarding');
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {

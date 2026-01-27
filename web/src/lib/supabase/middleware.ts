@@ -68,11 +68,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect to home if already authenticated and trying to access certain auth pages
-  // Exception: /auth/update-password (password reset flow), /auth/callback, /auth/onboarding
+  // Exception: /auth/update-password (password reset flow), /auth/callback
+  // Note: /onboarding (not /auth/onboarding) is used for new user onboarding
   const authPagesAllowedWhenAuthenticated = [
     '/auth/update-password',
     '/auth/callback',
-    '/auth/onboarding',
   ];
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isAllowedAuthPage = authPagesAllowedWhenAuthenticated.some((path) =>

@@ -15,7 +15,7 @@ interface CapturedWord {
 /**
  * Guided Capture Page
  *
- * Step 2 of onboarding - users capture their first 3+ words.
+ * Step 3 of onboarding - users capture their first 3+ words.
  * Minimum 3 words required, but users are encouraged to add more.
  * Guides them toward same-category words for better sentence generation.
  */
@@ -107,8 +107,12 @@ export default function CapturePage() {
       className="min-h-screen flex flex-col items-center px-4 sm:px-6 py-6 sm:py-12 overflow-y-auto"
       style={{ backgroundColor: "var(--surface-notebook)" }}
     >
-      {/* Progress dots */}
+      {/* Progress indicator - 4 steps, step 3 active */}
       <div className="flex justify-center gap-2 mb-4 sm:mb-8">
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: "var(--accent-nav)" }}
+        />
         <div
           className="w-2 h-2 rounded-full"
           style={{ backgroundColor: "var(--accent-nav)" }}

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         // Redirect based on onboarding status
         if (!profile || !profile.onboarding_completed) {
           return NextResponse.redirect(
-            new URL('/auth/onboarding', requestUrl.origin)
+            new URL('/onboarding', requestUrl.origin)
           );
         }
       }
