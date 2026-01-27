@@ -5,6 +5,7 @@ import { words, reviewSessions } from '@/lib/db/schema';
 import { isDue, processReview, getNextReviewText } from '@/lib/fsrs';
 import { eq, and, desc, lte, or, isNull, sql } from 'drizzle-orm';
 import { shuffleWithinPriorityBands } from '@/lib/review/shuffle';
+import { checkApiRateLimit } from '@/lib/security/rate-limit-check';
 
 /**
  * Session boundary: 2 hours
@@ -154,6 +155,13 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 1a. Security rate limit (DDoS/brute force protection)
+    // Uses 'write' tier (60 req/min) for review submissions
+    const securityLimit = await checkApiRateLimit(request, user.id, 'write');
+    if (!securityLimit.success && securityLimit.response) {
+      return securityLimit.response;
     }
 
     // 2. Validate request body

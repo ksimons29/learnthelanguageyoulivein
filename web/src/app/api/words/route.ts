@@ -10,6 +10,7 @@ import {
   isLanguageSupported,
 } from '@/lib/config/languages';
 import { checkWordCaptureLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { checkApiRateLimit } from '@/lib/security/rate-limit-check';
 import { getTimeOfDay, type MemoryContext } from '@/lib/config/memory-context';
 import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/word-matcher';
 import { generateSentenceWithRetry } from '@/lib/sentences/generator';
@@ -44,6 +45,13 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 1a. Security rate limit (DDoS/brute force protection)
+    // Uses 'expensive' tier (30 req/min) since this endpoint calls OpenAI (~$0.02/call)
+    const securityLimit = await checkApiRateLimit(request, user.id, 'expensive');
+    if (!securityLimit.success && securityLimit.response) {
+      return securityLimit.response;
     }
 
     // 1b. Check rate limit (daily word capture limit)
