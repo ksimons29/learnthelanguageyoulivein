@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkSecurityRateLimit, SECURITY_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 /**
- * Debug endpoint to test rate limiting
+ * Debug endpoint to test rate limiting directly
  * GET /api/dev/rate-limit-test
  */
 export async function GET(request: NextRequest) {
@@ -16,16 +17,40 @@ export async function GET(request: NextRequest) {
   const forwardedFor = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
   const ip = forwardedFor?.split(',')[0].trim() || realIp || 'unknown';
-
-  // Test rate limit
   const identifier = `test:ip:${ip}`;
-  const result = await checkSecurityRateLimit('unauthenticated', identifier);
+
+  let directResult = null;
+  let directError = null;
+
+  // Test Upstash directly
+  try {
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+
+    const ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, '1 m'),
+      prefix: 'test:ratelimit',
+    });
+
+    const result = await ratelimit.limit(identifier);
+    directResult = {
+      success: result.success,
+      limit: result.limit,
+      remaining: result.remaining,
+      reset: result.reset,
+    };
+  } catch (error) {
+    directError = error instanceof Error ? error.message : String(error);
+  }
 
   return NextResponse.json({
     envCheck,
     ip,
     identifier,
-    limits: SECURITY_RATE_LIMITS,
-    result,
+    directResult,
+    directError,
   });
 }
