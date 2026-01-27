@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Rate Limit Fix for Page Loads + Test Account Reset** - Fixed middleware applying 10 req/min limit to ALL API routes, causing 429 errors on normal page loads (5-6 concurrent GET requests). Fix: Only rate-limit mutating requests (POST/PUT/DELETE/PATCH). Reset all 4 test accounts to fresh state. Updated GitHub Issue #122 with comprehensive testing personas and per-persona testing guide. (Session 100)
 - [x] **Onboarding Flow Unification (#152)** - Fixed critical bug where new users were routed to wrong onboarding flow (`/auth/onboarding` instead of `/onboarding`). Unified to single 4-step flow: Languages (flags) → Goals (multi-select reasons) → Capture (3+ words) → Complete (starter words). Created `/onboarding/reason` page with multi-select "Why are you learning?". Deleted deprecated `/auth/onboarding` (484 lines). E2E verified full flow in production. (Session 99)
 - [x] **Rate Limiting Production Fix (#136 cont.)** - Fixed middleware not executing: moved `middleware.ts` from `web/` to `web/src/` (Next.js requires middleware in `src/` when using `src/` directory structure). Set up Upstash Redis credentials in Vercel (fixed trailing newline in URL that caused silent failures). Verified 429 responses after 10 requests/min with proper headers. (Session 98)
 - [x] **DDoS/Brute Force Rate Limiting (#136)** - Added Upstash Redis security rate limiting with 4 tiers: unauthenticated (10/min), expensive (30/min), write (60/min), read (120/min). IP-based limiting in middleware catches abuse before auth. User-based limiting in route handlers for authenticated requests. Fail-open strategy when Redis unavailable. Added 23 unit tests. (Session 97)
@@ -99,6 +100,10 @@ npm run build             # Production build
 | `web/src/lib/sentences/example-sentence.ts` | Example sentence generation for word captures |
 | `web/scripts/backfill-example-sentences.ts` | Backfill script for missing example sentences |
 | `web/scripts/test-example-sentence-reliability.ts` | Reliability test for sentence generation |
+| `web/src/middleware.ts` | Next.js middleware: rate limiting for mutations, session handling |
+| `web/src/lib/security/rate-limiter.ts` | Upstash Redis rate limiter with 4 tiers |
+| `web/src/lib/security/rate-limit-check.ts` | API helper for rate limit checks, 429 responses |
+| `web/scripts/reset-user-account.ts` | Reset test account to fresh state (words, sentences, gamification) |
 
 ## Open Bugs
 
@@ -216,6 +221,60 @@ npm run build             # Production build
 ---
 
 ## Session Log
+
+### Session 100 - 2026-01-27 - Rate Limit Fix + Test Account Reset
+
+**Focus:** Fix 429 rate limit errors on page load and reset all test accounts for beta testing.
+
+**Problem:**
+The middleware applied IP-based rate limiting (10 req/min) to ALL API routes. A single page load fires 5-6 concurrent GET requests:
+- `/api/onboarding/status`
+- `/api/words?...`
+- `/api/words/stats`
+- `/api/tours/progress`
+- `/api/gamification/state`
+
+This instantly consumed half the rate limit, causing 429 errors on normal page navigation.
+
+**Root Cause:**
+The middleware's `unauthenticated` tier was designed for brute force protection but was being applied to all requests, not just auth-related write operations.
+
+**Fix:**
+Only apply middleware rate limiting to mutating requests (POST/PUT/DELETE/PATCH):
+- GET requests are read-only and cheaper
+- Route-level rate limiting handles authenticated reads
+- DDoS protection preserved for write endpoints
+
+**Test Account Reset:**
+Reset all 4 test accounts to fresh state:
+| Account | Data Deleted |
+|---------|--------------|
+| test-en-pt@llyli.test | 21 words, 7 sentences, 5 sessions |
+| test-en-sv@llyli.test | 16 words, 8 sentences, 3 sessions |
+| test-nl-en@llyli.test | 6 words, 1 sentence, 5 sessions |
+| koossimons91@gmail.com | gamification data |
+
+**GitHub Issue #122 Updated:**
+- Added 3 test personas (Koos, Ralf, automated accounts)
+- Per-persona testing guide with step-by-step instructions
+- Account credentials table with reset status
+- Complete testing flow (6 steps)
+- Bug reporting instructions
+
+**Files Modified:**
+| File | Change |
+|------|--------|
+| `web/src/middleware.ts` | Only rate-limit POST/PUT/DELETE/PATCH requests |
+
+**Verification:**
+- ✅ Build: PASSED
+- ✅ Unit tests: 380 passing (23 rate limiter tests)
+- ⏳ Production: Needs deployment to verify
+
+**Commits:**
+- `1733f54` - fix: rate limit only mutating requests to prevent 429 on page load
+
+---
 
 ### Session 99 - 2026-01-27 - Onboarding Flow Unification (#152)
 
