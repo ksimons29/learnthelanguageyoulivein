@@ -19,6 +19,8 @@ import {
   ShieldAlert,
   Sparkles,
   DollarSign,
+  ExternalLink,
+  Target,
 } from "lucide-react";
 
 interface AdminStats {
@@ -446,6 +448,216 @@ export default function AdminDashboard() {
 
         {stats && (
           <div className="space-y-8">
+            {/* MVP Launch Section - Quick Links & Key Gates */}
+            <section>
+              <SectionHeader title="MVP Launch Status" icon={Target} />
+
+              {/* Quick Links */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <a
+                  href="https://llyili.sentry.io/issues/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 rounded-lg border transition-colors hover:border-[var(--accent-nav)]"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <div
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: "rgba(234, 88, 12, 0.1)" }}
+                  >
+                    <AlertCircle className="h-5 w-5" style={{ color: "var(--state-hard)" }} />
+                  </div>
+                  <div>
+                    <p className="font-medium" style={{ color: "var(--text-primary)" }}>
+                      Sentry Errors
+                    </p>
+                    <p className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                      View issues <ExternalLink className="h-3 w-3" />
+                    </p>
+                  </div>
+                </a>
+
+                <a
+                  href="https://vercel.com/koossimons-projects/llyli"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 rounded-lg border transition-colors hover:border-[var(--accent-nav)]"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <div
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: "rgba(12, 107, 112, 0.1)" }}
+                  >
+                    <Globe className="h-5 w-5" style={{ color: "var(--accent-nav)" }} />
+                  </div>
+                  <div>
+                    <p className="font-medium" style={{ color: "var(--text-primary)" }}>
+                      Vercel
+                    </p>
+                    <p className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                      Deployments <ExternalLink className="h-3 w-3" />
+                    </p>
+                  </div>
+                </a>
+
+                <a
+                  href="https://github.com/ksimons29/learnthelanguageyoulivein/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 rounded-lg border transition-colors hover:border-[var(--accent-nav)]"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <div
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: "rgba(12, 107, 112, 0.1)" }}
+                  >
+                    <CheckCircle2 className="h-5 w-5" style={{ color: "var(--accent-nav)" }} />
+                  </div>
+                  <div>
+                    <p className="font-medium" style={{ color: "var(--text-primary)" }}>
+                      GitHub Issues
+                    </p>
+                    <p className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                      Bug tracking <ExternalLink className="h-3 w-3" />
+                    </p>
+                  </div>
+                </a>
+
+                <a
+                  href="https://platform.openai.com/usage"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 rounded-lg border transition-colors hover:border-[var(--accent-nav)]"
+                  style={{
+                    backgroundColor: "var(--surface-card)",
+                    borderColor: "var(--notebook-line)",
+                  }}
+                >
+                  <div
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: "rgba(34, 197, 94, 0.1)" }}
+                  >
+                    <DollarSign className="h-5 w-5" style={{ color: "var(--state-easy)" }} />
+                  </div>
+                  <div>
+                    <p className="font-medium" style={{ color: "var(--text-primary)" }}>
+                      OpenAI Usage
+                    </p>
+                    <p className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                      API costs <ExternalLink className="h-3 w-3" />
+                    </p>
+                  </div>
+                </a>
+              </div>
+
+              {/* MVP OKR Summary */}
+              <div
+                className="rounded-lg border p-4"
+                style={{
+                  backgroundColor: "var(--surface-card)",
+                  borderColor: "var(--notebook-line)",
+                }}
+              >
+                <h3 className="font-medium mb-3" style={{ color: "var(--text-primary)" }}>
+                  MVP Launch Gates (OKRs)
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      {stats.productKpis.d7Retention >= 35 ? (
+                        <CheckCircle2 className="h-4 w-4" style={{ color: "var(--state-easy)" }} />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" style={{ color: "var(--state-hard)" }} />
+                      )}
+                      <span style={{ color: "var(--text-muted)" }}>D7 Retention</span>
+                    </div>
+                    <div
+                      className="text-lg font-bold"
+                      style={{
+                        color: stats.productKpis.d7Retention >= 35
+                          ? "var(--state-easy)"
+                          : "var(--state-hard)",
+                      }}
+                    >
+                      {stats.productKpis.d7Retention}% / 35%
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      {stats.reviews.accuracyRate >= 80 ? (
+                        <CheckCircle2 className="h-4 w-4" style={{ color: "var(--state-easy)" }} />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" style={{ color: "var(--state-hard)" }} />
+                      )}
+                      <span style={{ color: "var(--text-muted)" }}>Review Accuracy</span>
+                    </div>
+                    <div
+                      className="text-lg font-bold"
+                      style={{
+                        color: stats.reviews.accuracyRate >= 80
+                          ? "var(--state-easy)"
+                          : "var(--state-hard)",
+                      }}
+                    >
+                      {stats.reviews.accuracyRate}% / 80%
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      {stats.audio.successRate >= 95 ? (
+                        <CheckCircle2 className="h-4 w-4" style={{ color: "var(--state-easy)" }} />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" style={{ color: "var(--state-hard)" }} />
+                      )}
+                      <span style={{ color: "var(--text-muted)" }}>Audio Success</span>
+                    </div>
+                    <div
+                      className="text-lg font-bold"
+                      style={{
+                        color: stats.audio.successRate >= 95
+                          ? "var(--state-easy)"
+                          : "var(--state-hard)",
+                      }}
+                    >
+                      {stats.audio.successRate}% / 95%
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      {(stats.apiUsage?.costs.avgPerActiveUser7d || 0) <= 0.10 ? (
+                        <CheckCircle2 className="h-4 w-4" style={{ color: "var(--state-easy)" }} />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" style={{ color: "var(--state-hard)" }} />
+                      )}
+                      <span style={{ color: "var(--text-muted)" }}>Cost/User (7d)</span>
+                    </div>
+                    <div
+                      className="text-lg font-bold"
+                      style={{
+                        color: (stats.apiUsage?.costs.avgPerActiveUser7d || 0) <= 0.10
+                          ? "var(--state-easy)"
+                          : "var(--state-hard)",
+                      }}
+                    >
+                      ${(stats.apiUsage?.costs.avgPerActiveUser7d || 0).toFixed(3)} / $0.10
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Product KPIs Section - Key Business Metrics */}
             <section>
               <SectionHeader title="Product KPIs" icon={TrendingUp} />
