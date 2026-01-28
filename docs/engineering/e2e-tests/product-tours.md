@@ -1,6 +1,6 @@
 # Product Tours E2E Test Results
 
-> Last tested: 2026-01-24
+> Last tested: 2026-01-28
 > Test environment: Production (https://llyli.vercel.app)
 > Test account: test-en-pt@llyli.test
 
@@ -11,7 +11,9 @@ All product tour functionality verified working on production.
 | Test | Status | Notes |
 |------|--------|-------|
 | Tour Replay Widget | ✅ PASS | All 5 tours visible in feedback sheet |
-| Today Tour (5 steps) | ✅ PASS | Completes successfully |
+| Today Tour (8 steps) | ✅ PASS | Includes new Practice button step (#156) |
+| Capture Tour (4 steps) | ✅ PASS | Enhanced memory context description (#156) |
+| Notebook Tour (6 steps) | ✅ PASS | Includes new category card step (#156) |
 | Notebook Tour Auto-start | ✅ PASS | Triggers for first-time visitors |
 | Cross-page Navigation | ✅ PASS | Query param `?startTour=tourId` works |
 | Tour Completion Tracking | ✅ PASS | Console logs confirm start/complete events |
@@ -41,17 +43,20 @@ All product tour functionality verified working on production.
 1. Open feedback widget on Today page
 2. Expand "Replay App Tours"
 3. Click "Today Dashboard"
-4. Navigate through all 5 steps
+4. Navigate through all 8 steps
 
-**Expected:** Tour completes with "Got it!" on step 5
+**Expected:** Tour completes with "Got it!" on step 8
 **Result:** ✅ PASS
 
 **Tour steps verified:**
-1. "Welcome to LLYLI!" (Page 1/5)
-2. "Words to Review" (Page 2/5)
-3. "Daily Goal" (Page 3/5)
-4. "Capture Words Anytime" (Page 4/5)
-5. "Navigate Your Notebook" (Page 5/5)
+1. "Welcome to LLYLI!" (Page 1/8)
+2. "Words to Practice" (Page 2/8)
+3. "Daily Goal" (Page 3/8)
+4. "Daily Bingo" (Page 4/8)
+5. "Learn About LLYLI" (Page 5/8)
+6. "Capture Words Anytime" (Page 6/8)
+7. "Practice with AI Sentences" (Page 7/8) - NEW (#156)
+8. "Navigate Your Notebook" (Page 8/8)
 
 **Console output:**
 ```

@@ -21,7 +21,53 @@ Non goals
 
 ---
 
-## 0. Production-First Testing Philosophy
+## 0. Claude Code Testing Requirements (MANDATORY)
+
+**CRITICAL: Claude Code MUST follow these rules for every code change.**
+
+### Pre-Commit Checklist
+
+Before every commit, Claude Code MUST:
+
+1. **Read this file** (`docs/engineering/TESTING.md`) to understand testing requirements
+2. **Run build and unit tests** (`npm run build && npm run test:run`)
+3. **Perform manual E2E testing** using Playwright MCP on production after deployment
+4. **Verify the specific feature changed** works correctly in production
+
+### Manual Testing Ownership
+
+Claude Code is responsible for manual QA:
+
+- All manual tests in this document should be performed by Claude FIRST
+- Do not claim work is complete until production verification is done
+- Use Playwright MCP to automate browser testing on `https://llyli.vercel.app`
+- Log in with test accounts and verify changed functionality
+- Check console for errors during testing
+
+### Workflow for Every Code Change
+
+```
+1. Make code changes
+2. Run: npm run build && npm run test:run
+3. Commit and push to trigger deployment
+4. Wait for Vercel deployment (~30 seconds)
+5. Test in production using Playwright MCP
+6. Only then mark task as complete
+```
+
+### What "Done" Means
+
+A task is NOT done until:
+
+- [ ] Build passes
+- [ ] Unit tests pass
+- [ ] Code is deployed to production
+- [ ] Changed functionality verified in production via Playwright MCP
+- [ ] No console errors observed during testing
+
+---
+
+## 0.1 Production-First Testing Philosophy
 
 **CRITICAL: Treat Vercel PRODUCTION as the source of truth, not localhost.**
 
