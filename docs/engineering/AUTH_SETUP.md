@@ -254,3 +254,49 @@ Add the Supabase URL to allowed redirects in Vercel:
 2. Rotate secrets if they are ever exposed
 3. Use environment variables for all sensitive values
 4. The Supabase service role key should **never** be used client-side
+
+---
+
+## Manual Password Reset (MVP Workaround)
+
+Since email confirmation is disabled for MVP, password reset emails won't work. Use these methods to reset passwords for beta users.
+
+### Option 1: CLI Script (Recommended)
+
+```bash
+cd web
+npx tsx scripts/reset-user-password.ts <email> <new-password>
+
+# Example:
+npx tsx scripts/reset-user-password.ts john@example.com NewPassword123!
+```
+
+### Option 2: Claude Code Slash Command
+
+```
+/reset-password
+```
+
+Claude will prompt for the email and handle the reset.
+
+### Option 3: Supabase Dashboard
+
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard/project/blympzejwbezjajpevdc)
+2. Navigate to **Authentication** → **Users**
+3. Find the user by email
+4. Click the **three dots** menu → **Update user**
+5. Enter new password and save
+
+### Option 4: Direct API Call
+
+```bash
+# First get user ID from dashboard, then:
+curl -X PUT 'https://blympzejwbezjajpevdc.supabase.co/auth/v1/admin/users/<USER_ID>' \
+  -H 'Authorization: Bearer <SERVICE_ROLE_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{"password": "NewPassword123!"}'
+```
+
+### When to Enable Email-Based Password Reset
+
+Configure Resend SMTP (see GitHub issue #144) before iOS App Store submission. Apple may require working password reset functionality.

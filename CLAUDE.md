@@ -34,7 +34,17 @@ cd web && npm run dev
 cd web && npm run build
 cd web && npm run test:run
 cd web && npm run log:check
+
+# Reset a beta user's password
+cd web && npx tsx scripts/reset-user-password.ts <email> <password>
 ```
+
+## Slash commands
+
+- `/change` - Start a code change with summary
+- `/verify` - Verify changes before completing
+- `/llylibug` - Report and triage bugs
+- `/reset-password` - Reset a beta user's password
 
 ## Critical docs
 
