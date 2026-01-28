@@ -39,6 +39,14 @@ const todayTourSteps = [
     side: "top",
     align: "center",
   }),
+  createScrollingStep({
+    element: "#tour-daily-bingo",
+    title: "Daily Bingo",
+    description:
+      "Complete daily challenges to fill your bingo board. Capture words, review, and hit streaks to earn squares!",
+    side: "top",
+    align: "center",
+  }),
   createStep({
     element: "#tour-info-button",
     title: "Learn About LLYLI",

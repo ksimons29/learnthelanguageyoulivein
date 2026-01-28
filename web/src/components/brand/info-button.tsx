@@ -3,9 +3,10 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical, Info } from "lucide-react";
+import { BookOpen, Sparkles, Brain, Volume2, LogOut, FlaskConical, Info, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/auth-store";
+import { useTour, type TourId } from "@/lib/tours";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +14,7 @@ import {
 
 interface InfoButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
+  tourId?: TourId;
 }
 
 /**
@@ -26,11 +28,12 @@ interface InfoButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
  * - Sheet: Full brand experience with logo, features, footer
  * - Fits the Moleskine aesthetic throughout
  */
-function InfoButton({ className, ...props }: InfoButtonProps) {
+function InfoButton({ className, tourId, ...props }: InfoButtonProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
   const router = useRouter();
   const signOut = useAuthStore((state) => state.signOut);
+  const { startTour } = useTour(tourId ?? "today");
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setIsOpen(true);
@@ -165,6 +168,25 @@ function InfoButton({ className, ...props }: InfoButtonProps) {
             <FlaskConical className="h-4 w-4" />
             <span className="text-sm font-medium">The Science Behind LLYLI</span>
           </button>
+
+          {/* Replay Tour Button */}
+          {tourId && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                // Small delay to let sheet close before starting tour
+                setTimeout(() => startTour(), 300);
+              }}
+              className="w-full py-3 mb-2 rounded-lg flex items-center justify-center gap-2 transition-colors hover:opacity-90"
+              style={{
+                backgroundColor: "var(--surface-page-aged)",
+                color: "var(--accent-nav)",
+              }}
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Replay Page Tour</span>
+            </button>
+          )}
 
           {/* Sign Out Button */}
           <button

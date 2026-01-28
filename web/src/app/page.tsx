@@ -10,7 +10,7 @@ import {
   CapturedTodayList,
   TodaysProgress,
 } from "@/components/home";
-import { InfoButton, ReplayTourButton } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
@@ -360,10 +360,7 @@ export default function HomePage() {
               Your language journey
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <ReplayTourButton tourId="today" />
-            <InfoButton />
-          </div>
+          <InfoButton tourId="today" />
         </div>
 
         {/* Primary Actions - styled as notebook pages */}
@@ -453,7 +450,7 @@ export default function HomePage() {
 
         {/* Daily Bingo */}
         {bingo && (
-          <section className="pb-8">
+          <section id="tour-daily-bingo" className="pb-8">
             <div className="flex items-center gap-3 mb-4">
               <div
                 className="w-1 h-6 rounded-full"

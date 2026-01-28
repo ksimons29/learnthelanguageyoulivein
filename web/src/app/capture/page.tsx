@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { PhraseInput } from "@/components/capture";
-import { InfoButton, ReplayTourButton } from "@/components/brand";
+import { InfoButton } from "@/components/brand";
 import {
   PenLine,
   X,
@@ -171,10 +171,7 @@ export default function CapturePage() {
           >
             <X className="h-5 w-5 text-white" />
           </button>
-          <div className="flex items-center gap-2">
-            <ReplayTourButton tourId="capture" />
-            <InfoButton />
-          </div>
+          <InfoButton tourId="capture" />
         </div>
       </div>
 
