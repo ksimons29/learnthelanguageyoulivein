@@ -145,7 +145,7 @@ export default function CompletePage() {
           style={{ color: "var(--text-muted)" }}
         >
           {starterWords.length > 0
-            ? "We've added 10 starter phrases – essentials like greetings, thanks, and common requests."
+            ? "We've added 10 starter phrases – from everyday situations to local essentials you'll use right away."
             : "Start capturing phrases you hear in your daily life!"}
         </p>
 

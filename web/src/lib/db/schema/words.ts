@@ -64,6 +64,11 @@ export const words = pgTable('words', {
   exampleSentence: text('example_sentence'), // "Obrigado pela ajuda."
   exampleTranslation: text('example_translation'), // "Thank you for the help."
 
+  // AI-generated semantic distractors for multiple choice (in native language)
+  // Generated at capture time, nullable for backwards compatibility with existing words
+  // Example: word="stamps" → distractors=["letters", "envelopes", "postcards"]
+  distractors: text('distractors').array(),
+
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

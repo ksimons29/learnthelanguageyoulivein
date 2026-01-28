@@ -17,6 +17,7 @@ import { getUnusedWordCombinations, generateWordIdsHash } from '@/lib/sentences/
 import { generateSentenceWithRetry } from '@/lib/sentences/generator';
 import { determineExerciseType } from '@/lib/sentences/exercise-type';
 import { generateAndStoreExampleSentence, generateExampleSentence } from '@/lib/sentences/example-sentence';
+import { generateAndStoreDistractors } from '@/lib/distractors/generator';
 import { withRetry } from '@/lib/utils/retry';
 import { withGPTUsageTracking } from '@/lib/api-usage/logger';
 import OpenAI from 'openai';
@@ -380,6 +381,24 @@ export async function POST(request: NextRequest) {
       1000 // 1s base delay with exponential backoff
     ).catch((err) => {
       log.error({ err, wordId: newWord.id }, 'Background example sentence generation failed after retries');
+    });
+
+    // 13. Generate semantic distractors in background for multiple choice exercises
+    // Distractors are words that are semantically related but incorrect alternatives
+    // They're stored in the user's native language (what they see as options)
+    const distractorTargetWord = isInputInTargetLanguage ? text : translation;
+    const distractorNativeWord = isInputInTargetLanguage ? translation : text;
+    withRetry(
+      () => generateAndStoreDistractors(
+        newWord.id,
+        distractorTargetWord,
+        distractorNativeWord,
+        languagePreference.nativeLanguage
+      ),
+      3,  // 3 retries
+      1000 // 1s base delay with exponential backoff
+    ).catch((err) => {
+      log.error({ err, wordId: newWord.id }, 'Background distractor generation failed after retries');
     });
 
     logResponse(200, Date.now() - startTime);

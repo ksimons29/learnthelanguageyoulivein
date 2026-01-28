@@ -184,6 +184,9 @@ export function buildMultipleChoiceOptions(
  * FIX for Issue #121: Now accepts sentenceWordIds to exclude all words
  * from the current sentence from appearing as distractors.
  *
+ * Issue #99: Now uses stored semantic distractors if available,
+ * falling back to category-based distractors for older words.
+ *
  * @param correctWord - The word that is the correct answer
  * @param nativeLanguage - User's native language code (e.g., 'en')
  * @param sentenceWordIds - IDs of all words in the current sentence (to exclude from distractors)
@@ -197,6 +200,31 @@ export async function prepareMultipleChoiceOptions(
   options: MultipleChoiceOption[];
   correctOptionId: string;
 }> {
+  const correctText = getNativeLanguageText(correctWord, nativeLanguage);
+
+  // Issue #99: Check for stored semantic distractors first
+  // These are AI-generated at capture time and are semantically related
+  if (correctWord.distractors && correctWord.distractors.length >= 3) {
+    // Use stored semantic distractors
+    const distractorOptions: MultipleChoiceOption[] = correctWord.distractors
+      .slice(0, 3)
+      .map((text, i) => ({
+        id: `distractor-${i}`, // Fake ID - we only need the correct word's real ID
+        text,
+      }));
+
+    const options = shuffleArray([
+      { id: correctWord.id, text: correctText },
+      ...distractorOptions,
+    ]);
+
+    return {
+      options,
+      correctOptionId: correctWord.id,
+    };
+  }
+
+  // Fallback: Use category-based distractors for older words without stored distractors
   const distractors = await fetchDistractors(correctWord, 3);
   const options = buildMultipleChoiceOptions(correctWord, distractors, nativeLanguage, sentenceWordIds);
 
