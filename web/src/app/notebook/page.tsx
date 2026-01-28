@@ -9,7 +9,7 @@ import {
   JournalHeader,
   AttentionSection,
 } from "@/components/notebook";
-import { InfoButton } from "@/components/brand";
+import { InfoButton, ReplayTourButton } from "@/components/brand";
 import { useWordsStore } from "@/lib/store/words-store";
 import { getCategoryConfig } from "@/lib/config/categories";
 import { BookOpen, Search, Loader2 } from "lucide-react";
@@ -135,8 +135,9 @@ export default function NotebookPage() {
         className="mx-auto max-w-md px-5 pb-6"
         style={{ paddingTop: "max(24px, env(safe-area-inset-top, 24px))" }}
       >
-        {/* Info Button - top right, with additional notch clearance */}
-        <div className="flex justify-end mb-4 pt-1">
+        {/* Info Button & Replay Tour - top right, with additional notch clearance */}
+        <div className="flex justify-end items-center gap-2 mb-4 mt-2">
+          <ReplayTourButton tourId="notebook" />
           <InfoButton />
         </div>
 

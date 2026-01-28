@@ -16,6 +16,38 @@ interface TourProgress {
 }
 
 /**
+ * LocalStorage key for caching tour progress
+ * Prevents race condition where isCompleted returns false while API is fetching
+ */
+const TOUR_CACHE_KEY = "llyli_tour_progress";
+
+/**
+ * Get cached tour progress from localStorage
+ * Returns null if not available or invalid
+ */
+function getCachedProgress(): TourProgress | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem(TOUR_CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cache tour progress to localStorage
+ */
+function cacheProgress(progress: TourProgress): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(TOUR_CACHE_KEY, JSON.stringify(progress));
+  } catch {
+    // Ignore localStorage errors (quota exceeded, private browsing, etc.)
+  }
+}
+
+/**
  * Return type for the useTour hook
  */
 interface UseTourReturn {
@@ -58,7 +90,10 @@ interface UseTourReturn {
  */
 export function useTour(tourId: TourId): UseTourReturn {
   const { user, isLoading: authLoading } = useAuthStore();
-  const [tourProgress, setTourProgress] = useState<TourProgress | null>(null);
+  // Initialize with cached value to prevent race condition
+  const [tourProgress, setTourProgress] = useState<TourProgress | null>(
+    () => getCachedProgress()
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +122,7 @@ export function useTour(tourId: TourId): UseTourReturn {
 
         const { data } = await response.json();
         setTourProgress(data);
+        cacheProgress(data); // Cache for future page loads
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
@@ -107,44 +143,54 @@ export function useTour(tourId: TourId): UseTourReturn {
 
   /**
    * Mark the tour as complete
-   * Persists to database and updates local state
+   * Uses optimistic update with localStorage cache + server persistence with retry
    */
   const markTourComplete = useCallback(async (): Promise<void> => {
-    try {
-      setError(null);
-      const response = await fetch("/api/tours/progress", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tourId }),
-      });
+    // Optimistic update: immediately update cache and state
+    const currentCache = getCachedProgress() || {
+      today: false,
+      capture: false,
+      review: false,
+      notebook: false,
+      progress: false,
+    };
+    const updatedProgress = { ...currentCache, [tourId]: true };
+    cacheProgress(updatedProgress);
+    setTourProgress(updatedProgress);
+    setError(null);
 
-      if (!response.ok) {
-        throw new Error("Failed to mark tour as complete");
+    // Persist to server with retry logic
+    const maxAttempts = 3;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await fetch("/api/tours/progress", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ tourId }),
+        });
+
+        if (response.ok) {
+          return; // Success, exit
+        }
+
+        // Non-retryable error (e.g., 4xx)
+        if (response.status < 500) {
+          console.warn(`[Tour] Failed to persist ${tourId}: ${response.status}`);
+          return;
+        }
+      } catch {
+        // Network error, will retry
       }
 
-      // Update local state to reflect completion
-      setTourProgress((prev) => {
-        if (!prev) {
-          // Create new progress object with this tour completed
-          return {
-            today: tourId === "today",
-            capture: tourId === "capture",
-            review: tourId === "review",
-            notebook: tourId === "notebook",
-            progress: tourId === "progress",
-          };
-        }
-        return {
-          ...prev,
-          [tourId]: true,
-        };
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-      throw err; // Re-throw so caller knows it failed
+      // Wait before retry (exponential backoff: 1s, 2s, 4s)
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
     }
+
+    console.warn(`[Tour] Failed to persist ${tourId} completion after ${maxAttempts} attempts`);
   }, [tourId]);
 
   return {

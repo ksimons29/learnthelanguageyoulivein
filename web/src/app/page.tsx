@@ -10,7 +10,7 @@ import {
   CapturedTodayList,
   TodaysProgress,
 } from "@/components/home";
-import { InfoButton } from "@/components/brand";
+import { InfoButton, ReplayTourButton } from "@/components/brand";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
@@ -360,7 +360,10 @@ export default function HomePage() {
               Your language journey
             </p>
           </div>
-          <InfoButton />
+          <div className="flex items-center gap-2">
+            <ReplayTourButton tourId="today" />
+            <InfoButton />
+          </div>
         </div>
 
         {/* Primary Actions - styled as notebook pages */}

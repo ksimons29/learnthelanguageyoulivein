@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { CompactProgressCard, ForecastChart } from "@/components/progress";
-import { InfoButton } from "@/components/brand";
+import { InfoButton, ReplayTourButton } from "@/components/brand";
 import type { Word } from "@/lib/db/schema";
 import { useTour } from "@/lib/tours/hooks/use-tour";
 import { registerProgressTour } from "@/lib/tours/tours/progress-tour";
@@ -148,7 +148,7 @@ export default function ProgressPage() {
 
       <div className="mx-auto max-w-md px-4 py-5 pb-24">
         {/* Header */}
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 mt-2 flex items-center justify-between">
           <div>
             <h1
               className="text-3xl heading-serif"
@@ -163,7 +163,10 @@ export default function ProgressPage() {
               Your learning journey
             </p>
           </div>
-          <InfoButton />
+          <div className="flex items-center gap-2">
+            <ReplayTourButton tourId="progress" />
+            <InfoButton />
+          </div>
         </div>
 
         {/* Compact Progress Card - contains stats and streak */}
