@@ -211,9 +211,10 @@ npx tsx scripts/create-test-users.ts   # Reset test accounts
 - [/.claude/CLAUDE.md](../../.claude/CLAUDE.md) - AI assistant instructions
 - [/docs/design/](../design/) - Design system
 - [/docs/product/](../product/) - Product documentation
+- [/docs/testing/](../testing/) - Test results & performance baselines
 - [/findings.md](../../findings.md) - Active bug tracking
 - [/MVP_AUDIT.md](../../MVP_AUDIT.md) - Feature verification
 
 ---
 
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-28*

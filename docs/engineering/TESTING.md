@@ -2115,3 +2115,58 @@ Run on 375px viewport:
 - [ ] Notebook category grid scrolls properly
 - [ ] Sheets/modals don't overflow
 - [ ] All buttons have 44x44px minimum touch target
+
+---
+
+## 14. Test Results & Baselines
+
+Test results and performance baselines are tracked in `docs/testing/` to:
+- Document verification of launch readiness
+- Provide baselines for regression comparison
+- Track device-specific test coverage
+
+### 14.1 Current Test Documentation
+
+| Document | Purpose | Last Updated |
+|----------|---------|--------------|
+| [IPHONE16_TEST_RESULTS.md](../testing/IPHONE16_TEST_RESULTS.md) | iPhone 16 Chrome viewport verification | 2026-01-28 |
+| [PERFORMANCE_BASELINE.md](../testing/PERFORMANCE_BASELINE.md) | API and page load latency baselines | 2026-01-28 |
+| [MVP_LAUNCH_TEST_PLAN.md](../testing/MVP_LAUNCH_TEST_PLAN.md) | MVP launch verification checklist | 2026-01-22 |
+
+### 14.2 When to Update Baselines
+
+**Update PERFORMANCE_BASELINE.md when:**
+- Major infrastructure changes (new APIs, caching changes)
+- Before/after optimization work
+- Quarterly review (or before major releases)
+
+**Update device test results when:**
+- Testing on a new device type
+- Major UI/UX changes that affect mobile
+- Before iOS App Store submission
+
+### 14.3 How to Run Baseline Tests
+
+```bash
+# Performance baseline via Playwright
+# 1. Open Playwright MCP in Claude Code
+# 2. Navigate to each route and measure via Performance API
+# 3. Document results in PERFORMANCE_BASELINE.md
+
+# Mobile viewport testing
+# 1. Resize browser to target viewport (e.g., 402x874 for iPhone 16)
+# 2. Run through all core flows
+# 3. Take screenshots and document in device test results file
+```
+
+### 14.4 Test Results Directory Structure
+
+```
+docs/testing/
+├── IPHONE16_TEST_RESULTS.md      # Device-specific test results
+├── PERFORMANCE_BASELINE.md        # Latency/performance baselines
+├── MVP_LAUNCH_TEST_PLAN.md        # Launch readiness checklist
+├── MVP_LAUNCH_TASK_PLAN.md        # Launch task tracking
+├── GAMIFICATION_USER_TEST_PLAN.md # Gamification feature tests
+└── GAMIFICATION_SIMULATION_*.md   # Simulation test instructions
+```
