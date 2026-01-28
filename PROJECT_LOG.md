@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Admin Dashboard Enhancements (Session 105)** - Added metric explanations and user feedback list to admin dashboard for daily CEO/PM review. Each of 6 metrics now has "What's this?" toggle showing what it measures, how to interpret it, and when to take action. Added scrollable user feedback section with color-coded categories (Bug/Feature/Feedback/Word Issue), page context, and timestamps. Updated README with admin dashboard documentation.
 - [x] **Onboarding Routing Fix (Session 104)** - Fixed redirect logic to correctly route new users through the unified onboarding flow: Languages (flags) → Reason (multi-select) → Capture → Complete (starter words). Ensures users aren't incorrectly routed to deprecated flows.
 - [x] **Unit Test Coverage Expansion (Session 103)** - Added 79 new unit tests (380 → 459 total). New test files: generator-validation.test.ts (30 tests for sentence validation, Unicode/diacritics), tts-validation.test.ts (16 tests), word-matcher.test.ts (19 tests), rate-limit-check.test.ts (14 tests). Coverage: lib/fsrs 100%, lib/review 82%, lib/security 57%, exercise-type.ts 100%. Updated TESTING.md with coverage tables and "What's NOT Tested" documentation explaining why API routes and React components aren't unit tested (E2E coverage instead). GitHub issues #142, #80, #140 updated.
 - [x] **Enhanced Tour Coverage (#156)** - Implemented 3 new tour enhancements: (1) Today tour: added Practice button step (#nav-practice), now 8 steps; (2) Capture tour: enhanced memory context description with actionable "Tap to expand" text; (3) Notebook tour: added first category card step (#first-category-card), now 6 steps. Added `id` prop to CategoryCard component. E2E verified all tours in production via Playwright MCP. Updated TESTING.md with mandatory Claude Code testing requirements (must read TESTING.md before every commit, must verify in production). (Session 102)
@@ -89,6 +90,7 @@ npm run build             # Production build
 | `web/src/app/api/words/[id]/sentences/route.ts` | API for fetching sentences containing a word |
 | `docs/product/features/MEMORY_CONTEXT.md` | Memory Context feature documentation |
 | `web/src/lib/db/schema/user-feedback.ts` | User feedback schema for bug reports and feature requests |
+| `web/src/app/admin/page.tsx` | Admin dashboard with metrics, explanations, and feedback list |
 | `web/src/lib/db/schema/words.ts` | Words table with sourceLang, targetLang columns |
 | `web/src/lib/data/starter-vocabulary.ts` | Curated starter words for 7 target languages (pt-PT, sv, es, fr, de, nl, en) |
 | `web/src/app/api/onboarding/starter-words/route.ts` | API to inject starter words during onboarding |

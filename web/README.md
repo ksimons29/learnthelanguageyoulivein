@@ -42,7 +42,23 @@ NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_ORG=
 SENTRY_PROJECT=
 SENTRY_AUTH_TOKEN=
+
+# Admin Dashboard
+ADMIN_SECRET=           # Required for /admin access
 ```
+
+## Admin Dashboard
+
+Access at `/admin` with your `ADMIN_SECRET`. Features:
+
+- **Health Status Banner** - Green/yellow/red status with automatic issue detection
+- **Key Metrics** - 6 executive KPIs: DAU, D7 Retention, Sessions, Cost, Words, Streaks
+- **Metric Explanations** - "What's this?" toggle on each metric showing:
+  - What it measures
+  - How to interpret it (thresholds)
+  - When to take action
+- **User Feedback Stream** - Scrollable list of recent bug reports, feature requests, and feedback with color-coded categories
+- **Quick Links** - Direct access to Sentry errors and GitHub issues
 
 ## Project Structure
 

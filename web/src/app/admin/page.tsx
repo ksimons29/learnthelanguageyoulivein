@@ -15,7 +15,47 @@ import {
   Flame,
   BookOpen,
   Brain,
+  Info,
+  MessageSquare,
+  Bug,
+  Lightbulb,
+  HelpCircle,
+  FileText,
 } from "lucide-react";
+
+// Metric explanations for non-technical users
+const METRIC_EXPLANATIONS = {
+  dau: {
+    what: "Users who opened the app today",
+    interpret: "More = more engaged users. Compare to previous weeks.",
+    action: "Worry if <50% of signups become active. Check onboarding.",
+  },
+  d7Retention: {
+    what: "% of users still active 7 days after signup",
+    interpret: "35%+ is excellent, 20-35% is okay, <20% is poor.",
+    action: "Below 20%: Review onboarding, early wins, and notifications.",
+  },
+  sessions: {
+    what: "Total review sessions completed this week",
+    interpret: "Healthy users review 3-5x per week. More sessions = habit forming.",
+    action: "Low sessions + high DAU = users aren't reviewing. Check reminders.",
+  },
+  cost: {
+    what: "OpenAI API spend for translations and audio",
+    interpret: "$0.05-0.10/user is healthy. Spikes mean heavy usage or waste.",
+    action: "Above $0.15/user: Check for retry loops or sentence regeneration bugs.",
+  },
+  words: {
+    what: "New words captured this week across all users",
+    interpret: "5-10 words/active user/week is healthy engagement.",
+    action: "Very low: Users aren't capturing. Check capture UX or prompts.",
+  },
+  streaks: {
+    what: "Users with consecutive daily activity",
+    interpret: "Streaks = habit formation. More streaks = stickier product.",
+    action: "Low streaks + high DAU = users are sporadic. Add streak incentives.",
+  },
+};
 
 interface AdminStats {
   generatedAt: string;
@@ -64,7 +104,45 @@ interface AdminStats {
   feedback: {
     bugReports: number;
     last7Days: number;
+    recent: Array<{
+      id: string;
+      type: string;
+      message: string;
+      pageContext: string | null;
+      createdAt: string;
+    }>;
   };
+}
+
+// Metric explanation component
+function MetricInfo({ metric }: { metric: keyof typeof METRIC_EXPLANATIONS }) {
+  const [expanded, setExpanded] = useState(false);
+  const info = METRIC_EXPLANATIONS[metric];
+
+  return (
+    <div className="mt-2 pt-2 border-t border-gray-100">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+      >
+        <Info className="h-3 w-3" />
+        <span>{expanded ? "Hide info" : "What's this?"}</span>
+      </button>
+      {expanded && (
+        <div className="mt-2 space-y-1.5 text-xs">
+          <p className="text-[var(--text-secondary)]">
+            <span className="font-medium">What:</span> {info.what}
+          </p>
+          <p className="text-[var(--text-secondary)]">
+            <span className="font-medium">Read:</span> {info.interpret}
+          </p>
+          <p className="text-amber-700 bg-amber-50 rounded px-1.5 py-1">
+            <span className="font-medium">⚠️ Act:</span> {info.action}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Health status calculation
@@ -258,6 +336,7 @@ export default function AdminDashboard() {
                 <p className="text-xs text-[var(--text-muted)]">
                   {stats.users.newLast7Days} new this week
                 </p>
+                <MetricInfo metric="dau" />
               </div>
 
               {/* Retention */}
@@ -278,6 +357,7 @@ export default function AdminDashboard() {
                   {stats.productKpis.d7Retention}%
                 </p>
                 <p className="text-xs text-[var(--text-muted)]">Target: 35%</p>
+                <MetricInfo metric="d7Retention" />
               </div>
 
               {/* Sessions */}
@@ -292,6 +372,7 @@ export default function AdminDashboard() {
                 <p className="text-xs text-[var(--text-muted)]">
                   {stats.reviews.accuracyRate}% accuracy
                 </p>
+                <MetricInfo metric="sessions" />
               </div>
 
               {/* Cost */}
@@ -306,6 +387,7 @@ export default function AdminDashboard() {
                 <p className="text-xs text-[var(--text-muted)]">
                   ${(stats.apiUsage?.costs.avgPerActiveUser7d || 0).toFixed(3)}/user
                 </p>
+                <MetricInfo metric="cost" />
               </div>
 
               {/* Words */}
@@ -320,6 +402,7 @@ export default function AdminDashboard() {
                 <p className="text-xs text-[var(--text-muted)]">
                   {stats.words.total.toLocaleString()} total
                 </p>
+                <MetricInfo metric="words" />
               </div>
 
               {/* Streaks */}
@@ -334,7 +417,93 @@ export default function AdminDashboard() {
                 <p className="text-xs text-[var(--text-muted)]">
                   Avg {stats.gamification.avgStreak} days
                 </p>
+                <MetricInfo metric="streaks" />
               </div>
+            </div>
+
+            {/* User Feedback List */}
+            <div className="p-4 rounded-xl border bg-white">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-[var(--accent-nav)]" />
+                  <h3 className="font-medium text-[var(--text-primary)]">User Feedback</h3>
+                </div>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {stats.feedback.last7Days} this week
+                </span>
+              </div>
+              {stats.feedback.recent && stats.feedback.recent.length > 0 ? (
+                <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+                  {stats.feedback.recent.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-lg bg-gray-50 border border-gray-100"
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="mt-0.5">
+                          {item.type === "bug_report" && (
+                            <Bug className="h-4 w-4 text-red-500" />
+                          )}
+                          {item.type === "feature_request" && (
+                            <Lightbulb className="h-4 w-4 text-amber-500" />
+                          )}
+                          {item.type === "general_feedback" && (
+                            <MessageSquare className="h-4 w-4 text-blue-500" />
+                          )}
+                          {item.type === "word_issue" && (
+                            <FileText className="h-4 w-4 text-purple-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                item.type === "bug_report"
+                                  ? "bg-red-100 text-red-700"
+                                  : item.type === "feature_request"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : item.type === "word_issue"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {item.type === "bug_report"
+                                ? "Bug"
+                                : item.type === "feature_request"
+                                ? "Feature"
+                                : item.type === "word_issue"
+                                ? "Word Issue"
+                                : "Feedback"}
+                            </span>
+                            {item.pageContext && (
+                              <span className="text-xs text-[var(--text-muted)]">
+                                on {item.pageContext}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-[var(--text-primary)] break-words">
+                            {item.message}
+                          </p>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                            {new Date(item.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-[var(--text-muted)]">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No feedback yet</p>
+                  <p className="text-xs">Users can submit feedback via the feedback button</p>
+                </div>
+              )}
             </div>
 
             {/* Expand for Details */}
