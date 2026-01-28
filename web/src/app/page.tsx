@@ -245,6 +245,7 @@ export default function HomePage() {
       phrase: word.originalText,
       translation: word.translation,
       audioUrl: word.audioUrl,
+      audioVerificationFailed: word.audioVerificationFailed ?? false,
     }));
   }, [stats.capturedToday]);
 

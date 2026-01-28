@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bug, Lightbulb, MessageCircle, Send, Check, BookOpen, HelpCircle, ChevronRight, Home, PenLine, Target, BookMarked, TrendingUp } from "lucide-react";
+import { Bug, Lightbulb, MessageCircle, Send, Check, BookOpen, HelpCircle, ChevronRight, Home, PenLine, Target, BookMarked, TrendingUp, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { FEEDBACK_TYPES, type FeedbackType } from "@/lib/db/schema";
@@ -22,6 +22,7 @@ const typeIcons = {
   feature_request: Lightbulb,
   general_feedback: MessageCircle,
   word_issue: BookOpen,
+  audio_issue: Volume2,
 } as const;
 
 /**
@@ -250,6 +251,8 @@ function FeedbackSheet({ open, onOpenChange }: FeedbackSheetProps) {
                     ? "What feature would make LLYLI better for you?"
                     : selectedType === "word_issue"
                     ? "Which word has an issue? What's wrong with it?"
+                    : selectedType === "audio_issue"
+                    ? "Which word has audio problems? Is it cut off, wrong, or garbled?"
                     : "Share your thoughts with us..."
                 }
                 className={cn(

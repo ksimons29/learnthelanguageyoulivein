@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
+import { words } from './words';
 
 /**
  * User Feedback Schema
@@ -13,7 +14,7 @@ export const userFeedback = pgTable('user_feedback', {
 
   // Feedback type
   type: text('type', {
-    enum: ['bug_report', 'feature_request', 'general_feedback', 'word_issue'],
+    enum: ['bug_report', 'feature_request', 'general_feedback', 'word_issue', 'audio_issue'],
   }).notNull(),
 
   // Content
@@ -21,6 +22,9 @@ export const userFeedback = pgTable('user_feedback', {
 
   // Context: which page they were on when submitting
   pageContext: text('page_context'),
+
+  // Optional link to specific word (for audio_issue and word_issue types)
+  wordId: uuid('word_id').references(() => words.id),
 
   // Metadata
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -49,6 +53,11 @@ export const FEEDBACK_TYPES = [
     id: 'word_issue',
     label: 'Word Issue',
     description: 'Problem with a word or translation',
+  },
+  {
+    id: 'audio_issue',
+    label: 'Audio Issue',
+    description: 'Problem with pronunciation audio',
   },
 ] as const;
 

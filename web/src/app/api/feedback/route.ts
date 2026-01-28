@@ -24,10 +24,11 @@ export async function POST(request: NextRequest) {
 
     // 2. Validate request body
     const body = await request.json();
-    const { type, message, pageContext } = body as {
+    const { type, message, pageContext, wordId } = body as {
       type: string;
       message: string;
       pageContext?: string;
+      wordId?: string;
     };
 
     // Validate type
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
         type: type as FeedbackType,
         message: message.trim(),
         pageContext: pageContext || null,
+        wordId: wordId || null,
       })
       .returning();
 

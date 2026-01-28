@@ -23,6 +23,14 @@ const MAX_TTS_TEXT_LENGTH = 500;
 // Timeout for TTS API calls (30 seconds)
 const TTS_TIMEOUT_MS = 30000;
 
+// Audio duration validation constants
+// MP3 at 128kbps averages ~16KB per second of audio
+const MP3_BYTES_PER_SECOND = 16000;
+// Minimum acceptable audio duration in seconds
+const MIN_AUDIO_DURATION_SECONDS = 0.3;
+// Estimated seconds per character of spoken text (conservative estimate)
+const SECONDS_PER_CHARACTER = 0.05;
+
 function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error(
@@ -147,6 +155,32 @@ export function estimateTTSCost(text: string): number {
   const characterCount = text.length;
   const costPer1MCharacters = 15.0;
   return (characterCount / 1_000_000) * costPer1MCharacters;
+}
+
+/**
+ * Validate audio buffer duration based on file size and expected text length.
+ *
+ * This catches truncated audio that might pass Whisper verification
+ * (if Whisper transcribes the truncated portion correctly).
+ *
+ * @param buffer - Audio buffer to validate
+ * @param text - The text that was spoken
+ * @throws Error if audio is suspiciously short
+ */
+function validateAudioDuration(buffer: Buffer, text: string): void {
+  const estimatedDuration = buffer.length / MP3_BYTES_PER_SECOND;
+  const minExpectedDuration = Math.max(
+    MIN_AUDIO_DURATION_SECONDS,
+    text.length * SECONDS_PER_CHARACTER
+  );
+
+  if (estimatedDuration < minExpectedDuration * 0.5) {
+    // Allow 50% margin to account for fast speech
+    throw new Error(
+      `Audio too short: ~${estimatedDuration.toFixed(2)}s for "${text}" ` +
+      `(expected at least ${(minExpectedDuration * 0.5).toFixed(2)}s)`
+    );
+  }
 }
 
 // ============================================================================
@@ -297,6 +331,9 @@ export async function generateVerifiedAudio(
         text: modifiedText,
         speed: config.speed,
       });
+
+      // Validate duration before expensive Whisper call
+      validateAudioDuration(buffer, text);
 
       lastBuffer = buffer;
 

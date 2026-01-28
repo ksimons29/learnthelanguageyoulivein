@@ -8,6 +8,8 @@ interface CapturedPhrase {
   phrase: string;
   translation: string;
   audioUrl?: string | null;
+  /** Issue #134: Audio verification failed - show warning and report option */
+  audioVerificationFailed?: boolean;
 }
 
 interface CapturedTodayListProps {
@@ -60,6 +62,8 @@ export function CapturedTodayList({ phrases, onEdit }: CapturedTodayListProps) {
           isRetryingAudio={isAudioGenerating(item.id)}
           onRetryAudio={() => retryAudioGeneration(item.id)}
           onEdit={onEdit ? () => onEdit(item.id) : undefined}
+          audioVerificationFailed={item.audioVerificationFailed}
+          wordId={item.id}
         />
       ))}
     </div>

@@ -2,7 +2,7 @@
 
 import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AudioPlayButton, AudioRetryButton } from "@/components/audio";
+import { AudioPlayButton, AudioRetryButton, AudioReportButton } from "@/components/audio";
 import { useAudioPlayer } from "@/lib/hooks";
 
 interface PhraseCardProps {
@@ -21,6 +21,8 @@ interface PhraseCardProps {
   audioWarning?: boolean;
   /** Issue #135: Show early retry option (>20s) */
   showEarlyRetry?: boolean;
+  /** Word ID for audio issue reporting (optional, only needed when verification failed) */
+  wordId?: string;
 }
 
 export function PhraseCard({
@@ -36,6 +38,7 @@ export function PhraseCard({
   audioVerificationFailed = false,
   audioWarning = false,
   showEarlyRetry = false,
+  wordId,
 }: PhraseCardProps) {
   const { play, isPlaying, isLoading, currentUrl } = useAudioPlayer();
 
@@ -116,6 +119,15 @@ export function PhraseCard({
               verificationFailed={audioVerificationFailed}
               showWarning={audioWarning}
             />
+            {/* Show report button when verification failed and we have a word ID */}
+            {audioVerificationFailed && wordId && (
+              <AudioReportButton
+                wordId={wordId}
+                originalText={phrase}
+                translation={translation}
+                size="sm"
+              />
+            )}
             {/* Issue #135: Show early retry button alongside play button after 20s */}
             {showEarlyRetry && audioGenerating && onRetryAudio && (
               <AudioRetryButton

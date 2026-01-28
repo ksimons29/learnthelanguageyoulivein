@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { AudioPlayButton } from "@/components/audio";
+import { AudioPlayButton, AudioReportButton } from "@/components/audio";
 import { StatusBadge } from "./mastery-badge";
 import { useAudioPlayer } from "@/lib/hooks";
 import {
@@ -149,7 +149,7 @@ export function WordCard({
       {/* Main content row */}
       <div className="flex items-center gap-3 p-4">
         {/* Audio button */}
-        <div className="shrink-0 relative z-10" onClick={handleAudioButtonClick}>
+        <div className="shrink-0 relative z-10 flex items-center gap-1" onClick={handleAudioButtonClick}>
           <AudioPlayButton
             isPlaying={isThisPlaying}
             isLoading={isLoading && currentUrl === word.audioUrl}
@@ -158,6 +158,14 @@ export function WordCard({
             size="md"
             verificationFailed={word.audioVerificationFailed ?? false}
           />
+          {word.audioVerificationFailed && (
+            <AudioReportButton
+              wordId={word.id}
+              originalText={word.originalText}
+              translation={word.translation}
+              size="sm"
+            />
+          )}
         </div>
 
         {/* Content */}

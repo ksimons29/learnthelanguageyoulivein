@@ -21,6 +21,7 @@ import {
   Lightbulb,
   HelpCircle,
   FileText,
+  Volume2,
 } from "lucide-react";
 
 // Metric explanations for non-technical users
@@ -453,6 +454,9 @@ export default function AdminDashboard() {
                           {item.type === "word_issue" && (
                             <FileText className="h-4 w-4 text-purple-500" />
                           )}
+                          {item.type === "audio_issue" && (
+                            <Volume2 className="h-4 w-4 text-orange-500" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -464,6 +468,8 @@ export default function AdminDashboard() {
                                   ? "bg-amber-100 text-amber-700"
                                   : item.type === "word_issue"
                                   ? "bg-purple-100 text-purple-700"
+                                  : item.type === "audio_issue"
+                                  ? "bg-orange-100 text-orange-700"
                                   : "bg-blue-100 text-blue-700"
                               }`}
                             >
@@ -473,6 +479,8 @@ export default function AdminDashboard() {
                                 ? "Feature"
                                 : item.type === "word_issue"
                                 ? "Word Issue"
+                                : item.type === "audio_issue"
+                                ? "Audio Issue"
                                 : "Feedback"}
                             </span>
                             {item.pageContext && (
