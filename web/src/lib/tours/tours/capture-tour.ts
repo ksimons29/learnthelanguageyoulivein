@@ -24,9 +24,9 @@ const captureTourSteps = [
   }),
   createStep({
     element: "#memory-context-section",
-    title: "Add Context (Optional)",
+    title: "Add Memory Context",
     description:
-      "WHERE did you learn this? Location, situation, and notes strengthen recall through encoding specificity.",
+      "Tap to expand. Add WHERE you learned this word—a café name, a sign, a conversation. Encoding specificity means richer context = stronger memory.",
     side: "top",
     align: "center",
   }),

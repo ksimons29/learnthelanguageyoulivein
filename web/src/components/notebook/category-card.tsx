@@ -9,6 +9,7 @@ interface CategoryCardProps {
   totalPhrases: number;
   dueCount: number;
   href: string;
+  id?: string;
 }
 
 export function CategoryCard({
@@ -17,10 +18,12 @@ export function CategoryCard({
   totalPhrases,
   dueCount,
   href,
+  id,
 }: CategoryCardProps) {
   return (
     <Link href={href}>
       <div
+        id={id}
         className="group flex items-center gap-4 p-4 ml-5 relative rounded-r-xl rounded-l-none transition-all duration-200 hover:-translate-y-1 dark:border dark:border-[rgba(200,195,184,0.08)]"
         style={{
           backgroundColor: "var(--surface-page)",

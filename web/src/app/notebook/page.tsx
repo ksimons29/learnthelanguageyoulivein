@@ -363,11 +363,12 @@ export default function NotebookPage() {
 
                 {/* Category list */}
                 <div className="space-y-3">
-                  {filteredCategories.map((cat) => {
+                  {filteredCategories.map((cat, index) => {
                     const config = getCategoryConfig(cat.category);
                     return (
                       <CategoryCard
                         key={cat.category}
+                        id={index === 0 ? "first-category-card" : undefined}
                         icon={config.icon}
                         name={config.label}
                         totalPhrases={cat.totalWords}

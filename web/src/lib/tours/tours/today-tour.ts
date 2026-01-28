@@ -2,7 +2,7 @@
  * Today Dashboard Tour
  *
  * Introduces new users to the main dashboard after onboarding.
- * 5 steps covering the core features: review, capture, daily goal, and navigation.
+ * 8 steps covering the core features: review, capture, daily goal, practice, and navigation.
  *
  * Duration: ~45 seconds
  */
@@ -61,6 +61,14 @@ const todayTourSteps = [
     title: "Capture Words Anytime",
     description:
       "Tap Capture to save words you hear or see. 2 seconds to capture, auto-translation included.",
+    side: "top",
+    align: "center",
+  }),
+  createStep({
+    element: "#nav-practice",
+    title: "Practice with AI Sentences",
+    description:
+      "Review due words here. Each word appears in a unique AI-generated sentence—never the same twice.",
     side: "top",
     align: "center",
   }),

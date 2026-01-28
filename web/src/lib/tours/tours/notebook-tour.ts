@@ -2,7 +2,7 @@
  * Notebook Browser Tour
  *
  * Introduces users to the notebook where all captured words are organized.
- * 4 steps covering categories, inbox, search, and mastery tracking.
+ * 6 steps covering categories, inbox, search, category cards, and mastery tracking.
  *
  * Duration: ~30 seconds
  */
@@ -45,6 +45,14 @@ const notebookTourSteps = [
     title: "Check Your Inbox",
     description:
       "New words land here first. After your first review, they get properly categorized.",
+    side: "bottom",
+    align: "center",
+  }),
+  createScrollingStep({
+    element: "#first-category-card",
+    title: "Explore a Category",
+    description:
+      "Tap any category to see all your words. Each card expands to show the sentence, audio, and your memory context.",
     side: "bottom",
     align: "center",
   }),
