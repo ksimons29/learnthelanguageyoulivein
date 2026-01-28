@@ -102,11 +102,12 @@ export const DEFAULT_LANGUAGE_PREFERENCE: UserLanguagePreference = {
 export const SUPPORTED_DIRECTIONS = [
   // Portuguese learners
   { source: 'en', target: 'pt-PT', label: 'English → Portuguese (Portugal)' },
-  { source: 'nl', target: 'pt-PT', label: 'Dutch → Portuguese (Portugal)' },
   // English learners
   { source: 'nl', target: 'en', label: 'Dutch → English' },
   // Swedish learners
   { source: 'en', target: 'sv', label: 'English → Swedish' },
+  // Dutch learners
+  { source: 'en', target: 'nl', label: 'English → Dutch' },
 ] as const;
 
 export type SupportedDirection = (typeof SUPPORTED_DIRECTIONS)[number];

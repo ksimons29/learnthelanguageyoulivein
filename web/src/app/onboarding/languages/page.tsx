@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, ChevronLeft } from "lucide-react";
-import { SUPPORTED_LANGUAGES } from "@/lib/config/languages";
+import { Loader2, ChevronLeft } from "lucide-react";
+import {
+  SUPPORTED_LANGUAGES,
+  SUPPORTED_DIRECTIONS,
+  getValidSourcesForTarget,
+} from "@/lib/config/languages";
 import { FlagStamp, type FlagCode } from "@/components/ui/flag-stamp";
 
-// Target languages (what users can learn)
-const TARGET_LANGUAGES: FlagCode[] = ["en", "pt-PT", "sv", "es", "fr", "de", "nl"];
-
-// Native languages (what users might speak)
-const NATIVE_LANGUAGES: FlagCode[] = ["en", "nl", "pt-PT", "de", "fr", "sv", "es"];
+// Derive available target languages from SUPPORTED_DIRECTIONS
+// This ensures only languages with actual learning paths are shown
+const TARGET_LANGUAGES: FlagCode[] = [
+  ...new Set(SUPPORTED_DIRECTIONS.map((d) => d.target)),
+] as FlagCode[];
 
 /**
  * Language Selection Page
@@ -69,7 +73,14 @@ export default function LanguagesPage() {
     }
   };
 
-  const currentLanguages = step === "target" ? TARGET_LANGUAGES : NATIVE_LANGUAGES;
+  // Derive native languages based on selected target
+  // Only show source languages that have a valid direction to the chosen target
+  const nativeLanguages = useMemo<FlagCode[]>(() => {
+    if (!targetLanguage) return [];
+    return getValidSourcesForTarget(targetLanguage) as FlagCode[];
+  }, [targetLanguage]);
+
+  const currentLanguages = step === "target" ? TARGET_LANGUAGES : nativeLanguages;
 
   return (
     <div
@@ -243,17 +254,6 @@ export default function LanguagesPage() {
         )}
       </div>
 
-      {/* Skip option - subtle, like a notebook margin note */}
-      <button
-        onClick={() => router.push("/onboarding/complete")}
-        className="mt-4 sm:mt-6 mb-4 text-xs sm:text-sm flex items-center gap-1 transition-colors hover:opacity-70"
-        style={{
-          color: "var(--text-muted)",
-          fontStyle: "italic",
-        }}
-      >
-        Skip for now <ArrowRight className="h-3 w-3" />
-      </button>
     </div>
   );
 }

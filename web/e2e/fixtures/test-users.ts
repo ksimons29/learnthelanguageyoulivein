@@ -40,6 +40,13 @@ export const testUsers: Record<string, TestUser> = {
     targetLanguage: 'en',
     description: 'Dutch speaker learning English',
   },
+  enNl: {
+    email: 'test-en-nl@llyli.test',
+    password: TEST_PASSWORD,
+    nativeLanguage: 'en',
+    targetLanguage: 'nl',
+    description: 'English speaker learning Dutch',
+  },
 };
 
 /**
