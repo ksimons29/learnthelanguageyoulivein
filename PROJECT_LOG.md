@@ -13,6 +13,7 @@ npm run build             # Production build
 ## Current Status
 
 ### Recently Completed
+- [x] **Unit Test Coverage Expansion (Session 103)** - Added 79 new unit tests (380 → 459 total). New test files: generator-validation.test.ts (30 tests for sentence validation, Unicode/diacritics), tts-validation.test.ts (16 tests), word-matcher.test.ts (19 tests), rate-limit-check.test.ts (14 tests). Coverage: lib/fsrs 100%, lib/review 82%, lib/security 57%, exercise-type.ts 100%. Updated TESTING.md with coverage tables and "What's NOT Tested" documentation explaining why API routes and React components aren't unit tested (E2E coverage instead). GitHub issues #142, #80, #140 updated.
 - [x] **Enhanced Tour Coverage (#156)** - Implemented 3 new tour enhancements: (1) Today tour: added Practice button step (#nav-practice), now 8 steps; (2) Capture tour: enhanced memory context description with actionable "Tap to expand" text; (3) Notebook tour: added first category card step (#first-category-card), now 6 steps. Added `id` prop to CategoryCard component. E2E verified all tours in production via Playwright MCP. Updated TESTING.md with mandatory Claude Code testing requirements (must read TESTING.md before every commit, must verify in production). (Session 102)
 - [x] **Tour UI Improvements (#153, #154)** - Fixed tour persistence race condition with localStorage cache (tours no longer reappear after completion). Moved "Replay Tour" button inside LLYLI info sheet (cleaner UX). Added Daily Bingo tour step to Today dashboard (7 steps total). Created #156 for enhanced tour coverage (Practice, Capture memory context, Notebook card details). (Session 101)
 - [x] **Rate Limit Fix for Page Loads + Test Account Reset** - Fixed middleware applying 10 req/min limit to ALL API routes, causing 429 errors on normal page loads (5-6 concurrent GET requests). Fix: Only rate-limit mutating requests (POST/PUT/DELETE/PATCH). Reset all 4 test accounts to fresh state. Updated GitHub Issue #122 with comprehensive testing personas and per-persona testing guide. (Session 100)
@@ -112,7 +113,7 @@ npm run build             # Production build
 ### Priority: Next Session
 | Issue | Description | Priority | Notes |
 |-------|-------------|----------|-------|
-| - | - | - | **No open bugs!** All bugs resolved as of Session 82 |
+| #146 | Responsive tour - element and popover visible together on mobile | P1-high | May still have edge cases on small screens |
 
 ### Under Investigation
 | Issue | Description | Status | Notes |
@@ -123,7 +124,6 @@ npm run build             # Production build
 | Issue | Description | Fixed In |
 |-------|-------------|----------|
 | #147 | Review tour targeting non-existent elements (answer-section, rating-buttons) | Session 96 |
-| #146 | Responsive tour - element and popover not visible together on mobile | Session 94 |
 | #130 | Review page sluggish (Zustand full subscriptions) | Session 91 |
 | #131 | Distractor loading delay (100-500ms spinner) | Session 91 |
 | #128 | Race condition in duplicate word detection | Session 89 |
@@ -151,11 +151,47 @@ npm run build             # Production build
 | #44 | Progress API 500 error | Session 20 (verified) |
 
 ### Open Enhancements (Not Bugs)
-| Issue | Priority | Notes |
-|-------|----------|-------|
-| #99 | P1-high | Distractor quality (post-MVP) |
-| #23 | P1-high | iOS App Store submission |
-| #20 | P2 | Default categories |
+
+**P0-Critical (MVP Blocking):**
+| Issue | Title | Notes |
+|-------|-------|-------|
+| #138 | 📱 Complete Mobile Device Testing | iPhone 16 Chrome is primary target |
+| #142 | 🗺️ MVP Launch Master Roadmap | Tracking issue |
+
+**P1-High (Pre-Launch):**
+| Issue | Title | Notes |
+|-------|-------|-------|
+| #122 | 📋 Manual Testing Checklist | Post bug-fix verification |
+| #137 | 📊 Add Error Telemetry (Sentry) | Post-launch monitoring |
+| #141 | 🍎 iOS Pre-Submission Checklist | Week 3+ |
+| #99 | Distractor quality | Semantic relevance (post-MVP) |
+| #23 | iOS App Store Submission | Epic |
+
+**P2-Normal:**
+| Issue | Title |
+|-------|-------|
+| #139 | Structured Logging (Pino/Winston) |
+| #140 | Playwright E2E Test Suite |
+| #158 | PWA Offline Behavior Audit |
+| #92 | Memory context quick capture UX |
+| #42 | German → Portuguese support |
+| #20 | Default Categories |
+
+**P3-Low / Post-MVP:**
+| Issue | Title |
+|-------|-------|
+| #155 | Reposition info icon |
+| #154 | Tour replay button |
+| #151 | Configurable sentence length |
+| #144 | Resend SMTP for beta |
+| #143 | Backend scaling options |
+| #118 | Hybrid TTS for iOS |
+| #98 | Notifications/nudges |
+| #73 | Memory Context Improvements |
+| #54 | Apple Sign-In |
+| #53 | Google Sign-In |
+| #48, #47, #46 | Social features, widget, yearly goals |
+| #41, #35-37 | More languages, gamification expansions |
 
 ### Closed This Session (Session 60)
 - ~~#66~~ **P1-High** - Fixed: Notebook Inbox was passing 'inbox' as category filter but inbox isn't a DB category. Added special handling in /api/words to filter by reviewCount=0 + createdAt >= 24h ago
