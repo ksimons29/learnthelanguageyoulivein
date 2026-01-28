@@ -77,7 +77,8 @@ describe('Starter Vocabulary', () => {
   });
 
   describe('Category distribution', () => {
-    const expectedCategories = ['social', 'food_dining', 'transport', 'shopping', 'work'];
+    // Updated to include daily_life which is used in upgraded vocabulary
+    const expectedCategories = ['social', 'food_dining', 'transport', 'shopping', 'work', 'daily_life'];
 
     it.each(supportedLanguages)('%s covers essential categories', (lang) => {
       const words = getStarterWords(lang)!;
@@ -111,19 +112,20 @@ describe('Starter Vocabulary', () => {
 
     it('getTranslation returns English fallback for unknown language', () => {
       const words = getStarterWords('pt-PT')!;
-      const bomDia = words.find((w) => w.text === 'Bom dia')!;
+      // Use the first word that has translations
+      const firstWord = words[0];
 
-      const translation = getTranslation(bomDia, 'xx'); // Unknown language
-      expect(translation).toBe('Good morning'); // English fallback
+      const translation = getTranslation(firstWord, 'xx'); // Unknown language
+      expect(translation).toBe(firstWord.translations.en); // English fallback
     });
 
     it('getTranslation returns correct translation for known language', () => {
       const words = getStarterWords('pt-PT')!;
-      const obrigado = words.find((w) => w.text === 'Obrigado')!;
+      const prazo = words.find((w) => w.text === 'Prazo')!;
 
-      expect(getTranslation(obrigado, 'en')).toBe('Thank you');
-      expect(getTranslation(obrigado, 'nl')).toBe('Dank je');
-      expect(getTranslation(obrigado, 'de')).toBe('Danke');
+      expect(getTranslation(prazo, 'en')).toBe('Deadline');
+      expect(getTranslation(prazo, 'nl')).toBe('Deadline');
+      expect(getTranslation(prazo, 'de')).toBe('Frist');
     });
   });
 
@@ -141,24 +143,31 @@ describe('Starter Vocabulary', () => {
       const words = getStarterWords('pt-PT')!;
       const workWords = words.filter((w) => w.category === 'work');
 
-      const meeting = workWords.find((w) => w.text.toLowerCase().includes('reunião'));
-      expect(meeting).toBeDefined();
-      expect(meeting!.translations.en.toLowerCase()).toContain('meeting');
+      // Upgraded vocabulary focuses on professional terms
+      const prazo = workWords.find((w) => w.text.toLowerCase().includes('prazo'));
+      expect(prazo).toBeDefined();
+      expect(prazo!.translations.en.toLowerCase()).toContain('deadline');
 
-      const deadline = workWords.find((w) => w.text.toLowerCase().includes('prazo'));
-      expect(deadline).toBeDefined();
-      expect(deadline!.translations.en.toLowerCase()).toContain('deadline');
+      // Should have "Disponível" or "Fico à espera" in work category
+      const availableOrWaiting = workWords.find((w) =>
+        w.text.toLowerCase().includes('disponível') || w.text.toLowerCase().includes('espera')
+      );
+      expect(availableOrWaiting).toBeDefined();
     });
 
     it('Swedish work words have correct translations', () => {
       const words = getStarterWords('sv')!;
       const workWords = words.filter((w) => w.category === 'work');
 
-      const meeting = workWords.find((w) => w.text.toLowerCase().includes('möte'));
-      expect(meeting).toBeDefined();
-
+      // Upgraded vocabulary uses common Swedish work terms
       const deadline = workWords.find((w) => w.text.toLowerCase() === 'deadline');
       expect(deadline).toBeDefined();
+
+      // Should have "Tillgänglig" or "Återkommer" in work category
+      const availableOrReturning = workWords.find((w) =>
+        w.text.toLowerCase().includes('tillgänglig') || w.text.toLowerCase().includes('återkommer')
+      );
+      expect(availableOrReturning).toBeDefined();
     });
   });
 

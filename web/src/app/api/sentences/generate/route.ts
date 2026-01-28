@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       languagePreference.targetLanguage,
       {
         minWordsPerSentence: 2,
-        maxWordsPerSentence: 4,
+        maxWordsPerSentence: 5, // Increased for more challenging sentences
         dueDateWindowDays: lookaheadDays,
         retrievabilityThreshold: 0.9,
       },

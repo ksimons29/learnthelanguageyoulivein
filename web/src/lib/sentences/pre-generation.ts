@@ -58,7 +58,7 @@ export async function triggerSentencePreGeneration(
       languagePreference.targetLanguage,
       {
         minWordsPerSentence: mergedConfig.minWordsPerSentence,
-        maxWordsPerSentence: 4,
+        maxWordsPerSentence: 5, // Increased for more challenging sentences
         dueDateWindowDays: 7,
         retrievabilityThreshold: 0.9,
       },

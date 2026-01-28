@@ -72,7 +72,14 @@ export async function generateSentence(
 
   const targetLangName = getTranslationName(request.targetLanguage);
   const nativeLangName = getTranslationName(request.nativeLanguage);
-  const wordList = request.words.map((w) => w.originalText).join(', ');
+
+  // FIX #162: Use the text that's in the target language being learned
+  // If user typed in target language, use originalText
+  // If user typed in native language, use translation (which is in target language)
+  const wordList = request.words.map((w) => {
+    const isOriginalInTarget = w.sourceLang.split('-')[0] === request.targetLanguage.split('-')[0];
+    return isOriginalInTarget ? w.originalText : w.translation;
+  }).join(', ');
 
   // Build language-specific instructions with LOCAL grounding
   // Each language gets context that anyone living there would recognize

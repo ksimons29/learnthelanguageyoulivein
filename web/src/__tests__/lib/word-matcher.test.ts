@@ -162,7 +162,7 @@ describe('sliding window generation (concept)', () => {
 describe('DEFAULT_WORD_MATCHING_CONFIG', () => {
   it('has correct default values', () => {
     expect(DEFAULT_WORD_MATCHING_CONFIG.minWordsPerSentence).toBe(2);
-    expect(DEFAULT_WORD_MATCHING_CONFIG.maxWordsPerSentence).toBe(4);
+    expect(DEFAULT_WORD_MATCHING_CONFIG.maxWordsPerSentence).toBe(5); // Increased for more challenging sentences
     expect(DEFAULT_WORD_MATCHING_CONFIG.dueDateWindowDays).toBe(7);
     expect(DEFAULT_WORD_MATCHING_CONFIG.retrievabilityThreshold).toBe(0.9);
   });

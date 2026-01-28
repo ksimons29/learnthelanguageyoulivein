@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { generatedSentences, words } from '@/lib/db/schema';
-import { eq, and, isNull, inArray, or } from 'drizzle-orm';
+import { eq, and, isNull, inArray, or, sql } from 'drizzle-orm';
 
 /**
  * GET /api/sentences/next
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     // 4. Find unused sentences (get a few in case some have missing words)
     const now = new Date();
 
+    // FIX #163: Add random ordering to prevent deterministic selection
     const unusedSentences = await db
       .select()
       .from(generatedSentences)
@@ -57,6 +58,7 @@ export async function GET(request: NextRequest) {
           isNull(generatedSentences.usedAt)
         )
       )
+      .orderBy(sql`RANDOM()`)
       .limit(5);
 
     // Early exit if no sentences

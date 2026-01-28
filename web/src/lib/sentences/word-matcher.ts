@@ -24,7 +24,7 @@ export interface WordMatchingConfig {
 
 export const DEFAULT_WORD_MATCHING_CONFIG: WordMatchingConfig = {
   minWordsPerSentence: 2,
-  maxWordsPerSentence: 4,
+  maxWordsPerSentence: 5, // Increased from 4 for more challenging sentences
   dueDateWindowDays: 7,
   retrievabilityThreshold: 0.9,
 };
@@ -302,10 +302,13 @@ export async function getUnusedWordCombinations(
     }
   }
 
-  // 3. Filter out already-used combinations
-  const unusedCombinations = await filterUsedCombinations(userId, allCombinations);
+  // 3. Deduplicate combinations (FIX #163: wire up the dead code!)
+  const dedupedCombinations = deduplicateCombinations(allCombinations);
 
-  // 4. Prioritize by earliest due date and limit
+  // 4. Filter out already-used combinations
+  const unusedCombinations = await filterUsedCombinations(userId, dedupedCombinations);
+
+  // 5. Prioritize by earliest due date and limit
   const prioritized = unusedCombinations
     .sort((a, b) => {
       const aEarliest = Math.min(...a.map((w) => w.nextReviewDate?.getTime() || 0));

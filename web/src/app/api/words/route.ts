@@ -873,7 +873,7 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
       languagePreference.targetLanguage,
       {
         minWordsPerSentence: 2,
-        maxWordsPerSentence: 4,
+        maxWordsPerSentence: 5, // Increased for more challenging sentences
         dueDateWindowDays: 7,
         retrievabilityThreshold: 0.9,
       },
