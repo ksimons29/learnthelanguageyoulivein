@@ -27,17 +27,46 @@ For any code change:
 2. Implement with smallest safe diff.
 3. Run /verify before saying done.
 
+**MANDATORY: After implementing, automatically run the appropriate tests:**
+```bash
+# Always run unit tests
+cd web && npm run test:run
+
+# If changes touch capture, review, notebook, today, stores, fsrs, auth, or sentences:
+cd web && npm run test:e2e
+```
+
+Do NOT ask the user whether to run tests. Run them automatically based on the files changed.
+
 ## Quick commands
 
 ```bash
 cd web && npm run dev
 cd web && npm run build
 cd web && npm run test:run
+cd web && npm run test:e2e          # Automated Playwright E2E tests
 cd web && npm run log:check
 
 # Reset a beta user's password
 cd web && npx tsx scripts/reset-user-password.ts <email> <password>
 ```
+
+## E2E test triggers (AUTOMATIC)
+
+**Claude Code MUST automatically run `cd web && npm run test:e2e` after implementing changes to ANY of these:**
+
+| Trigger Pattern | Files/Folders |
+|-----------------|---------------|
+| Capture | `src/app/capture`, `src/app/api/words` |
+| Review | `src/app/review`, `src/app/api/reviews` |
+| Notebook | `src/app/notebook`, `src/components/notebook` |
+| Today | `src/app/today`, `src/components/today` |
+| Auth | `src/app/auth`, `src/middleware.ts`, `src/lib/supabase` |
+| Stores | `src/lib/store/*` |
+| FSRS | `src/lib/fsrs`, scheduling logic |
+| Sentences | `src/lib/sentences`, `src/app/api/sentences` |
+
+**Do not skip E2E tests. Do not ask permission. Just run them.**
 
 ## Slash commands
 

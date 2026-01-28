@@ -13,7 +13,7 @@ import { Volume2, Loader2 as AudioLoader } from "lucide-react";
 import { MasteryBadge } from "./mastery-badge";
 import { useAudioPlayer } from "@/lib/hooks";
 import { useWordsStore } from "@/lib/store/words-store";
-import { getCategoryConfig } from "@/lib/config/categories";
+import { getCategoryConfig, CATEGORY_CONFIG, type CategoryConfig } from "@/lib/config/categories";
 import {
   hasMemoryContext,
   getSituationTag,
@@ -35,6 +35,8 @@ import {
   TreePine,
   Frown,
   Trophy,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 
 // Map icon names to components for situation tags
@@ -74,9 +76,11 @@ export function WordDetailSheet({
   onDeleted,
 }: WordDetailSheetProps) {
   const { play, isPlaying, isLoading: audioLoading, currentUrl } = useAudioPlayer();
-  const { deleteWord } = useWordsStore();
+  const { deleteWord, updateWordCategory } = useWordsStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
 
   if (!word) return null;
 
@@ -104,6 +108,22 @@ export function WordDetailSheet({
     }
   };
 
+  const handleCategoryChange = async (newCategory: string) => {
+    if (newCategory === word.category) {
+      setShowCategoryPicker(false);
+      return;
+    }
+    setIsUpdatingCategory(true);
+    try {
+      await updateWordCategory(word.id, newCategory);
+      setShowCategoryPicker(false);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to update category");
+    } finally {
+      setIsUpdatingCategory(false);
+    }
+  };
+
   // Format dates for display
   const createdDate = new Date(word.createdAt).toLocaleDateString(undefined, {
     month: "short",
@@ -128,20 +148,58 @@ export function WordDetailSheet({
         }}
       >
         <SheetHeader className="text-left pb-4">
-          {/* Category badge */}
+          {/* Category badge - clickable to change category */}
           <div className="flex items-center gap-2 mb-2">
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium"
+            <button
+              onClick={() => setShowCategoryPicker(!showCategoryPicker)}
+              disabled={isUpdatingCategory}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium transition-all hover:ring-2 hover:ring-offset-1"
               style={{
                 backgroundColor: "var(--accent-nav-light)",
                 color: "var(--accent-nav)",
+                // @ts-expect-error CSS variable for ring color
+                "--tw-ring-color": "var(--accent-nav)",
               }}
             >
-              <CategoryIcon className="h-3.5 w-3.5" />
+              {isUpdatingCategory ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CategoryIcon className="h-3.5 w-3.5" />
+              )}
               {categoryConfig.label}
-            </div>
+              <ChevronDown className={`h-3 w-3 transition-transform ${showCategoryPicker ? "rotate-180" : ""}`} />
+            </button>
             <MasteryBadge status={word.masteryStatus} size="sm" />
           </div>
+
+          {/* Category picker dropdown */}
+          {showCategoryPicker && (
+            <div
+              className="grid grid-cols-2 gap-2 p-3 rounded-xl mb-2"
+              style={{ backgroundColor: "var(--surface-page)" }}
+            >
+              {Object.values(CATEGORY_CONFIG).map((cat: CategoryConfig) => {
+                const CatIcon = cat.icon;
+                const isSelected = cat.key === word.category;
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => handleCategoryChange(cat.key)}
+                    disabled={isUpdatingCategory}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor: isSelected ? "var(--accent-nav)" : "transparent",
+                      color: isSelected ? "white" : "var(--text-body)",
+                    }}
+                  >
+                    <CatIcon className="h-4 w-4" />
+                    <span className="flex-1 text-left">{cat.label}</span>
+                    {isSelected && <Check className="h-4 w-4" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {/* Word and translation */}
           <SheetTitle

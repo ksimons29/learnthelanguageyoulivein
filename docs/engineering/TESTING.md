@@ -519,7 +519,78 @@ Expected
 * words non zero for active test accounts
 * no sudden drop to zero unless you intentionally reset test users
 
-### 4.5 Feature-Specific E2E Tests
+### 4.5 Automated Playwright E2E Tests
+
+The project includes an automated Playwright E2E test suite that runs in CI and can be run locally.
+
+#### Running E2E Tests Locally
+
+```bash
+cd web
+
+# Install Playwright browsers (first time only)
+npx playwright install
+
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI for debugging
+npm run test:e2e:ui
+
+# Run specific test file
+npm run test:e2e -- e2e/auth.spec.ts
+
+# Run against local dev server
+E2E_BASE_URL=http://localhost:3000 npm run test:e2e
+```
+
+#### E2E Test Files
+
+| File | Priority | What It Tests |
+|------|----------|---------------|
+| `e2e/auth.spec.ts` | P0 | Sign-in, sign-out, session persistence, auth redirects |
+| `e2e/capture.spec.ts` | P0 | Word capture, translation display, duplicate prevention |
+| `e2e/review.spec.ts` | P0 | Start review, correct/incorrect answers, progress |
+| `e2e/notebook.spec.ts` | P1 | Categories, search, inbox, word detail, category change |
+
+#### CI Configuration
+
+E2E tests run automatically on:
+- Every push to `main`
+- Every pull request targeting `main`
+
+**Workflow:** `.github/workflows/e2e.yml`
+
+**Required secrets:**
+- `E2E_BASE_URL` (defaults to `https://llyli.vercel.app`)
+- `E2E_TEST_PASSWORD` (test account password)
+
+#### When to Run E2E Tests
+
+**Always run before claiming a task is complete if changes touch:**
+- Authentication (`/auth/*`, middleware, Supabase client)
+- Capture flow (`/capture`, `/api/words` POST)
+- Review flow (`/review`, `/api/reviews/*`)
+- Notebook (`/notebook/*`, words-store, categories)
+- FSRS scheduling (next review date, mastery progression)
+- Stores (words-store, gamification-store)
+
+```bash
+# Quick E2E verification after code change
+npm run test:e2e -- --project=chromium
+```
+
+#### Test Accounts
+
+E2E tests use dedicated test accounts (credentials in `CLAUDE.local.md`):
+
+| Account | Language Direction |
+|---------|-------------------|
+| `test-en-pt@llyli.test` | English → Portuguese (default) |
+| `test-en-sv@llyli.test` | English → Swedish |
+| `test-nl-en@llyli.test` | Dutch → English |
+
+### 4.6 Feature-Specific E2E Tests
 
 Detailed E2E test documentation for specific features:
 

@@ -160,6 +160,7 @@ interface WordsState {
   showEarlyRetry: (wordId: string) => boolean;
   retryAudioGeneration: (wordId: string) => Promise<void>;
   clearAudioFailed: (wordId: string) => void;
+  updateWordCategory: (wordId: string, category: string) => Promise<void>;
 }
 
 export const useWordsStore = create<WordsState>((set, get) => ({
@@ -566,6 +567,40 @@ export const useWordsStore = create<WordsState>((set, get) => ({
         failedSet.add(wordId);
         return { audioFailedIds: failedSet };
       });
+    }
+  },
+
+  updateWordCategory: async (wordId: string, category: string) => {
+    try {
+      const response = await fetch(`/api/words/${wordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category }),
+      });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        throw new Error('Session expired. Please sign in again.');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update category');
+      }
+
+      const { data } = await response.json();
+
+      // Update local state with the returned word
+      set((state) => ({
+        words: state.words.map((w) =>
+          w.id === wordId ? { ...w, category: data.word.category } : w
+        ),
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update category',
+      });
+      throw error;
     }
   },
 }));

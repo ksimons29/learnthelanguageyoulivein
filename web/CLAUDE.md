@@ -26,7 +26,21 @@ No UI should invent language direction logic. Read it from the user profile or c
 - Target language is what user is learning.
 - Never mix native and target strings in the same UI element.
 
-## When to run E2E
+## E2E tests (AUTOMATIC - DO NOT SKIP)
 
-If changes touch capture, review, notebook, today dashboards, stores, fsrs, sentence generation.
-Use production URL and incognito discipline from root CLAUDE.md.
+**After ANY change to the files below, Claude Code MUST automatically run:**
+
+```bash
+npm run test:run && npm run test:e2e
+```
+
+**Trigger files:**
+- `src/app/capture/*`, `src/app/review/*`, `src/app/notebook/*`, `src/app/today/*`
+- `src/app/auth/*`, `src/middleware.ts`
+- `src/lib/store/*`, `src/lib/fsrs/*`, `src/lib/sentences/*`
+- `src/app/api/words/*`, `src/app/api/reviews/*`, `src/app/api/sentences/*`
+- `src/components/notebook/*`, `src/components/review/*`
+
+**Do not ask. Do not skip. Run automatically after implementation.**
+
+For production verification after deploy, also use Playwright MCP with incognito discipline.
