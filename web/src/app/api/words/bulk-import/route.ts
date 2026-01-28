@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/words/bulk-import
@@ -145,7 +146,11 @@ function calculateConsecutiveCorrectSessions(
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
@@ -277,6 +282,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         ...stats,
@@ -284,7 +290,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Bulk import error:', error);
+    logError(error, { endpoint: '/api/words/bulk-import' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to import words',

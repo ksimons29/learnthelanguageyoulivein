@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { dailyProgress, streakState, bingoState, DEFAULT_BINGO_SQUARES, BingoSquareId } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * Gamification Event Types
@@ -50,7 +51,11 @@ type GamificationEvent = {
  * Body: { event: GamificationEvent }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
@@ -84,7 +89,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unknown event type' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Gamification event error:', error);
+    logError(error, { endpoint: '/api/gamification/event' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to process event' },
       { status: 500 }

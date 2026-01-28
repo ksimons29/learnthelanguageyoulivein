@@ -3,6 +3,7 @@ import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, sql, and, or, lte, gte } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 /**
  * Daily new card limit for spaced repetition
@@ -119,7 +120,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Stats retrieval error:', error);
+    logger.error({ error }, 'Stats retrieval error');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to retrieve stats',

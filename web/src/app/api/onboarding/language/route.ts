@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { userProfiles } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { SUPPORTED_LANGUAGES } from '@/lib/config/languages';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/onboarding/language
@@ -17,7 +18,11 @@ import { SUPPORTED_LANGUAGES } from '@/lib/config/languages';
  * }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -75,11 +80,13 @@ export async function POST(request: NextRequest) {
         .returning();
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { profile },
     });
   } catch (error) {
-    console.error('Language preferences error:', error);
+    logError(error, { endpoint: '/api/onboarding/language' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: 'Failed to save language preferences' },
       { status: 500 }

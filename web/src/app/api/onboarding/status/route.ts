@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { userProfiles } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/onboarding/status
@@ -43,7 +44,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Onboarding status error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/onboarding/status' }, 'Onboarding status error');
     return NextResponse.json(
       { error: 'Failed to get onboarding status' },
       { status: 500 }

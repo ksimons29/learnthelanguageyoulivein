@@ -42,11 +42,34 @@ import {
 import { useTour } from "@/lib/tours/hooks/use-tour";
 import { registerCaptureTour } from "@/lib/tours/tours/capture-tour";
 
+// LocalStorage key for context accordion preference
+const CONTEXT_EXPANDED_KEY = "llyli_capture_context_expanded";
+
+function getContextExpandedPreference(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(CONTEXT_EXPANDED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function setContextExpandedPreference(expanded: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CONTEXT_EXPANDED_KEY, String(expanded));
+  } catch {
+    // Ignore localStorage errors (private browsing)
+  }
+}
+
 export default function CapturePage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
   const [phrase, setPhrase] = useState("");
-  const [showContextFields, setShowContextFields] = useState(false);
+  const [showContextFields, setShowContextFields] = useState(() =>
+    getContextExpandedPreference()
+  );
   const [locationHint, setLocationHint] = useState("");
   const [selectedTags, setSelectedTags] = useState<SituationTagId[]>([]);
   const [personalNote, setPersonalNote] = useState("");
@@ -133,7 +156,7 @@ export default function CapturePage() {
       setLocationHint("");
       setSelectedTags([]);
       setPersonalNote("");
-      setShowContextFields(false);
+      // Note: We keep showContextFields as-is to respect user preference
       router.push("/");
     } catch (error) {
       showToast(
@@ -255,7 +278,11 @@ export default function CapturePage() {
           <div id="memory-context-section" className="mb-6">
             <button
               type="button"
-              onClick={() => setShowContextFields(!showContextFields)}
+              onClick={() => {
+                const newState = !showContextFields;
+                setShowContextFields(newState);
+                setContextExpandedPreference(newState);
+              }}
               className="flex items-center gap-2 w-full py-2 text-sm font-medium transition-colors"
               style={{ color: "var(--accent-nav)" }}
             >

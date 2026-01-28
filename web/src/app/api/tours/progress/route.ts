@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { userProfiles } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { type TourId } from '@/lib/tours';
+import { getRequestContext } from '@/lib/logger/api-logger';
+import { logger } from '@/lib/logger';
 
 /**
  * Valid tour IDs that can be tracked
@@ -79,7 +81,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Tour progress GET error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/tours/progress GET' }, 'Tour progress GET error');
     return NextResponse.json(
       { error: 'Failed to get tour progress' },
       { status: 500 }
@@ -102,7 +104,11 @@ export async function GET() {
  * }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -145,6 +151,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         tourId: validTourId,
@@ -152,7 +159,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Tour progress POST error:', error);
+    logError(error, { endpoint: '/api/tours/progress POST' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: 'Failed to update tour progress' },
       { status: 500 }

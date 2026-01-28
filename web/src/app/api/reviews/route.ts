@@ -6,6 +6,7 @@ import { isDue, processReview, getNextReviewText } from '@/lib/fsrs';
 import { eq, and, desc, lte, or, isNull, sql } from 'drizzle-orm';
 import { shuffleWithinPriorityBands } from '@/lib/review/shuffle';
 import { checkApiRateLimit } from '@/lib/security/rate-limit-check';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * Session boundary: 2 hours
@@ -40,10 +41,16 @@ const MAX_SESSION_WORDS = 25;
  * Reference: /docs/engineering/FSRS_IMPLEMENTATION.md
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -109,6 +116,7 @@ export async function GET(request: NextRequest) {
     // 7. Limit results
     const limitedWords = shuffledWords.slice(0, limit);
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         sessionId,
@@ -120,7 +128,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Get due words error:', error);
+    logError(error, { endpoint: 'GET /api/reviews' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:
@@ -150,10 +159,16 @@ export async function GET(request: NextRequest) {
  * Reference: /docs/engineering/FSRS_IMPLEMENTATION.md
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -241,6 +256,7 @@ export async function POST(request: NextRequest) {
       ? getNextReviewText(updatedWord.nextReviewDate)
       : 'Soon';
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         word: updatedWord,
@@ -249,7 +265,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Submit review error:', error);
+    logError(error, { endpoint: 'POST /api/reviews' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:

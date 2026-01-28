@@ -3,6 +3,7 @@ import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server
 import { db } from '@/lib/db';
 import { words, reviewSessions, streakState } from '@/lib/db/schema';
 import { eq, sql, and, gte, lte, desc, or } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 /**
  * Daily new card limit for spaced repetition
@@ -391,7 +392,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Progress retrieval error:', error);
+    logger.error({ error }, 'Progress retrieval error');
     // Include detailed error info for debugging
     const errorDetails = error instanceof Error
       ? { message: error.message, stack: error.stack?.split('\n').slice(0, 5) }

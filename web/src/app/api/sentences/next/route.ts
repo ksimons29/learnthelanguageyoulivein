@@ -3,6 +3,7 @@ import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server
 import { db } from '@/lib/db';
 import { generatedSentences, words } from '@/lib/db/schema';
 import { eq, and, isNull, inArray, or, sql } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * GET /api/sentences/next
@@ -31,10 +32,16 @@ import { eq, and, isNull, inArray, or, sql } from 'drizzle-orm';
  * Reference: /docs/engineering/implementation_plan.md (Epic 2)
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -81,9 +88,6 @@ export async function GET(request: NextRequest) {
     // Collect all word IDs and filter out sentences with empty wordIds
     for (const sentence of unusedSentences) {
       if (!sentence.wordIds || sentence.wordIds.length === 0) {
-        console.warn(
-          `[GUARDRAIL] Sentence ${sentence.id} has empty wordIds. Marking for deletion.`
-        );
         orphanedSentenceIds.push(sentence.id);
       } else {
         validSentences.push(sentence);
@@ -91,6 +95,11 @@ export async function GET(request: NextRequest) {
           allWordIds.add(wordId);
         }
       }
+    }
+
+    // Log empty wordIds sentences being cleaned
+    if (orphanedSentenceIds.length > 0) {
+      log.warn({ count: orphanedSentenceIds.length }, 'Found sentences with empty wordIds, marking for deletion');
     }
 
     // Fetch ALL words for all sentences in a single query
@@ -132,8 +141,9 @@ export async function GET(request: NextRequest) {
       // Verify we found all words (data integrity check)
       // GUARDRAIL: Auto-delete orphaned sentences (words were deleted)
       if (sentenceWords.length !== sentence.wordIds.length) {
-        console.warn(
-          `[GUARDRAIL] Sentence ${sentence.id} has missing words. Expected ${sentence.wordIds.length}, found ${sentenceWords.length}. Marking for deletion.`
+        log.warn(
+          { sentenceId: sentence.id, expected: sentence.wordIds.length, found: sentenceWords.length },
+          'Sentence has missing words, marking for deletion'
         );
         orphanedSentenceIds.push(sentence.id);
         continue;
@@ -162,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     // 7. GUARDRAIL: Clean up any orphaned sentences we found
     if (orphanedSentenceIds.length > 0) {
-      console.log(`[GUARDRAIL] Auto-deleting ${orphanedSentenceIds.length} orphaned sentences`);
+      log.info({ count: orphanedSentenceIds.length }, 'Auto-deleting orphaned sentences');
       await db
         .delete(generatedSentences)
         .where(inArray(generatedSentences.id, orphanedSentenceIds));
@@ -178,7 +188,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Get next sentence error:', error);
+    logError(error, { endpoint: 'GET /api/sentences/next' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to get next sentence',

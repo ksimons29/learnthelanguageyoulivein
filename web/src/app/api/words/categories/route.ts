@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { eq, sql, and, or } from 'drizzle-orm';
 import { VALID_CATEGORIES } from '@/lib/config/categories';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/words/categories
@@ -138,7 +139,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Categories retrieval error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/words/categories' }, 'Categories retrieval error');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to retrieve categories',

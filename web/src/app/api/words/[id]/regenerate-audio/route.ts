@@ -7,6 +7,7 @@ import { generateVerifiedAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { getLanguageConfig } from '@/lib/config/languages';
 import { withRetry } from '@/lib/utils/retry';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/words/[id]/regenerate-audio
@@ -18,7 +19,11 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
@@ -99,11 +104,13 @@ export async function POST(
       .where(eq(words.id, wordId))
       .returning();
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { word: updatedWord },
     });
   } catch (error) {
-    console.error('Audio regeneration error:', error);
+    logError(error, { endpoint: '/api/words/[id]/regenerate-audio' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:

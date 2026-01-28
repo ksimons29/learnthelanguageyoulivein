@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { words, reviewSessions } from '@/lib/db/schema';
 import { processReview, getNextReviewText } from '@/lib/fsrs';
 import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/reviews/batch
@@ -32,10 +33,16 @@ import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
  * Reference: /docs/engineering/FSRS_IMPLEMENTATION.md
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -144,11 +151,13 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: result,
     });
   } catch (error) {
-    console.error('Batch review error:', error);
+    logError(error, { endpoint: 'POST /api/reviews/batch' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to submit batch review',

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { dailyProgress, streakState, bingoState, DEFAULT_BINGO_SQUARES } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/gamification/state
@@ -140,7 +141,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Gamification state error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/gamification/state' }, 'Gamification state error');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to get gamification state' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { userProfiles } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/onboarding/complete
@@ -15,7 +16,11 @@ import { eq } from 'drizzle-orm';
  * }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -52,6 +57,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         profile,
@@ -59,7 +65,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Onboarding complete error:', error);
+    logError(error, { endpoint: '/api/onboarding/complete' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: 'Failed to complete onboarding' },
       { status: 500 }

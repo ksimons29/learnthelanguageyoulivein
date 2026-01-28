@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
+import { getRequestContext } from '@/lib/logger/api-logger';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/dev/import-anki
@@ -89,8 +91,12 @@ function calculateConsecutiveCorrectSessions(
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   // Block in production
   if (!IS_DEV) {
+    logResponse(403, Date.now() - startTime);
     return NextResponse.json(
       { error: 'This endpoint is only available in development' },
       { status: 403 }
@@ -98,6 +104,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    logRequest();
     const body = await request.json();
     const { email, displayName, entries } = body as {
       email: string;
@@ -147,9 +154,9 @@ export async function POST(request: NextRequest) {
       }
 
       user = newUser.user;
-      console.log(`Created user: ${email} (${user.id})`);
+      log.info({ email, userId: user.id }, 'Created user');
     } else {
-      console.log(`Found existing user: ${email} (${user.id})`);
+      log.info({ email, userId: user.id }, 'Found existing user');
     }
 
     // Import entries
@@ -206,16 +213,17 @@ export async function POST(request: NextRequest) {
           await db.insert(words).values(valuesToInsert);
           stats.imported += valuesToInsert.length;
         } catch (dbError) {
-          console.error('Batch insert error:', dbError);
+          log.error({ error: dbError instanceof Error ? dbError.message : String(dbError), batchSize: valuesToInsert.length }, 'Batch insert error');
           stats.errors += valuesToInsert.length;
         }
       }
 
       // Log progress
       const progress = Math.round(((i + batch.length) / entries.length) * 100);
-      console.log(`Import progress: ${progress}% (${i + batch.length}/${entries.length})`);
+      log.info({ progress, processed: i + batch.length, total: entries.length }, 'Import progress');
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         user: { id: user.id, email: user.email },
@@ -223,7 +231,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Dev import error:', error);
+    logError(error, { endpoint: '/api/dev/import-anki' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Import failed' },
       { status: 500 }

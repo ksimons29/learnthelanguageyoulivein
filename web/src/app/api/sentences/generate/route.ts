@@ -7,6 +7,7 @@ import { generateSentenceWithRetry } from '@/lib/sentences/generator';
 import { determineExerciseType } from '@/lib/sentences/exercise-type';
 import { generateAudio } from '@/lib/audio/tts';
 import { uploadSentenceAudio } from '@/lib/audio/storage';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/sentences/generate
@@ -21,10 +22,16 @@ import { uploadSentenceAudio } from '@/lib/audio/storage';
  * Reference: /docs/engineering/implementation_plan.md (Epic 2)
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -92,7 +99,7 @@ export async function POST(request: NextRequest) {
         });
         audioUrl = await uploadSentenceAudio(user.id, audioBuffer);
       } catch (audioError) {
-        console.error('Sentence audio generation failed (non-fatal):', audioError);
+        log.warn({ err: audioError }, 'Sentence audio generation failed (non-fatal)');
         // Continue without audio - sentence is still usable
       }
 
@@ -130,11 +137,12 @@ export async function POST(request: NextRequest) {
         } else if (result.status === 'rejected') {
           const errorMsg = result.reason instanceof Error ? result.reason.message : 'Unknown error';
           errors.push(`Error processing word group: ${errorMsg}`);
-          console.error('Sentence generation error:', result.reason);
+          log.error({ err: result.reason }, 'Sentence generation error');
         }
       }
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         sentencesGenerated,
@@ -143,7 +151,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Sentence generation endpoint error:', error);
+    logError(error, { endpoint: 'POST /api/sentences/generate' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to generate sentences',

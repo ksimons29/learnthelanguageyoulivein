@@ -8,6 +8,7 @@ import { generateAudio } from '@/lib/audio/tts';
 import { uploadSentenceAudio } from '@/lib/audio/storage';
 import { DEFAULT_LANGUAGE_PREFERENCE } from '@/lib/config/languages';
 import { eq, sql } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/dev/test-sentences
@@ -19,7 +20,11 @@ import { eq, sql } from 'drizzle-orm';
 const IS_DEV = process.env.NODE_ENV === 'development';
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   if (!IS_DEV) {
+    logResponse(403, Date.now() - startTime);
     return NextResponse.json(
       { error: 'This endpoint is only available in development' },
       { status: 403 }
@@ -27,6 +32,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    logRequest();
     const body = await request.json();
     const {
       userId,
@@ -47,7 +53,7 @@ export async function POST(request: NextRequest) {
       .from(words)
       .where(eq(words.userId, userId));
 
-    console.log(`Total words for user: ${wordCount[0]?.count}`);
+    log.info({ wordCount: wordCount[0]?.count }, 'Total words for user');
 
     // Get words by category
     const categoryStats = await db
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
       .where(eq(words.userId, userId))
       .groupBy(words.category);
 
-    console.log('Words by category:', categoryStats);
+    log.info({ categoryStats }, 'Words by category');
 
     // Get unused word combinations (filtered by language pair)
     const unusedCombinations = await getUnusedWordCombinations(
@@ -75,7 +81,7 @@ export async function POST(request: NextRequest) {
       maxSentences
     );
 
-    console.log(`Found ${unusedCombinations.length} unused combinations`);
+    log.info({ count: unusedCombinations.length }, 'Found unused combinations');
 
     if (unusedCombinations.length === 0) {
       return NextResponse.json({
@@ -99,7 +105,7 @@ export async function POST(request: NextRequest) {
     }> = [];
 
     for (const wordGroup of unusedCombinations) {
-      console.log(`Generating sentence for: ${wordGroup.map(w => w.originalText).join(', ')}`);
+      log.info({ words: wordGroup.map(w => w.originalText) }, 'Generating sentence');
 
       const result = await generateSentenceWithRetry({
         words: wordGroup,
@@ -108,11 +114,11 @@ export async function POST(request: NextRequest) {
       });
 
       if (!result) {
-        console.log('Failed to generate sentence');
+        log.warn({ words: wordGroup.map(w => w.originalText) }, 'Failed to generate sentence');
         continue;
       }
 
-      console.log(`Generated: "${result.text}"`);
+      log.info({ sentence: result.text }, 'Sentence generated');
 
       // Generate audio (optional)
       let audioUrl: string | null = null;
@@ -124,7 +130,7 @@ export async function POST(request: NextRequest) {
           });
           audioUrl = await uploadSentenceAudio(userId, audioBuffer);
         } catch (audioError) {
-          console.error('Audio generation failed:', audioError);
+          log.error({ error: audioError instanceof Error ? audioError.message : String(audioError) }, 'Audio generation failed');
         }
       }
 
@@ -151,6 +157,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         userId,
@@ -162,7 +169,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Test sentences error:', error);
+    logError(error, { endpoint: '/api/dev/test-sentences' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate sentences' },
       { status: 500 }
@@ -177,7 +185,11 @@ export async function POST(request: NextRequest) {
  * Use this to clean up sentences generated with bad language filtering.
  */
 export async function DELETE(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   if (!IS_DEV) {
+    logResponse(403, Date.now() - startTime);
     return NextResponse.json(
       { error: 'This endpoint is only available in development' },
       { status: 403 }
@@ -185,6 +197,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    logRequest();
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -198,6 +211,7 @@ export async function DELETE(request: NextRequest) {
       .where(eq(generatedSentences.userId, userId))
       .returning({ id: generatedSentences.id });
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         deletedCount: deleted.length,
@@ -205,7 +219,8 @@ export async function DELETE(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Delete sentences error:', error);
+    logError(error, { endpoint: '/api/dev/test-sentences DELETE' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to delete sentences' },
       { status: 500 }

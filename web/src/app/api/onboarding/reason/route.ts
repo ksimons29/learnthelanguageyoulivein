@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { userProfiles } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { LEARNING_REASONS } from '@/lib/db/schema/user-profiles';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/onboarding/reason
@@ -16,7 +17,11 @@ import { LEARNING_REASONS } from '@/lib/db/schema/user-profiles';
  * }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,11 +71,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { profile },
     });
   } catch (error) {
-    console.error('Learning reason save error:', error);
+    logError(error, { endpoint: '/api/onboarding/reason' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: 'Failed to save learning reasons' },
       { status: 500 }

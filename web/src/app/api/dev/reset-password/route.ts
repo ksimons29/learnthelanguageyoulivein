@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 /**
  * DEV ONLY: Reset user password
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
       message: `Password updated and email confirmed for ${email}`,
     });
   } catch (error) {
-    console.error('Password reset error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/dev/reset-password' }, 'Password reset error');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

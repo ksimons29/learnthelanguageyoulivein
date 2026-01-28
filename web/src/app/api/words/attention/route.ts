@@ -3,6 +3,7 @@ import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server
 import { db } from '@/lib/db';
 import { words, generatedSentences } from '@/lib/db/schema';
 import { eq, and, or, gte, desc, inArray } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/words/attention
@@ -87,7 +88,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Attention words retrieval error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/words/attention' }, 'Attention words retrieval error');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to retrieve attention words',

@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, dailyProgress, bossRoundHistory } from '@/lib/db/schema';
 import { eq, and, desc, asc, sql } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/gamification/boss-round
@@ -87,7 +89,7 @@ export async function GET() {
         .limit(5);
     } catch (historyError) {
       // Table may not exist yet - Boss Round still works, just without history
-      console.warn('Boss round history unavailable:', historyError);
+      logger.warn({ error: historyError instanceof Error ? historyError.message : String(historyError) }, 'Boss round history unavailable');
     }
 
     return NextResponse.json({
@@ -109,7 +111,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Boss round start error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/gamification/boss-round GET' }, 'Boss round start error');
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to start boss round' },
       { status: 500 }
@@ -125,7 +127,11 @@ export async function GET() {
  * Body: { score: number, totalWords: number, timeUsed: number }
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
@@ -180,9 +186,10 @@ export async function POST(request: NextRequest) {
       isNewBest = savedResult && stats && score === stats.bestScore && stats.totalAttempts > 1;
     } catch (historyError) {
       // Table may not exist yet - Boss Round results still shown, just not persisted
-      console.warn('Boss round history save failed:', historyError);
+      logger.warn({ error: historyError instanceof Error ? historyError.message : String(historyError) }, 'Boss round history save failed');
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         score,
@@ -206,7 +213,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Boss round complete error:', error);
+    logError(error, { endpoint: '/api/gamification/boss-round POST' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to complete boss round' },
       { status: 500 }

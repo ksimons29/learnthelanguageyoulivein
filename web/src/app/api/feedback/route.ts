@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { userFeedback, FEEDBACK_TYPES, type FeedbackType } from '@/lib/db/schema';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/feedback
@@ -10,7 +11,11 @@ import { userFeedback, FEEDBACK_TYPES, type FeedbackType } from '@/lib/db/schema
  * Requires authentication.
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
@@ -60,11 +65,13 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { feedback },
     });
   } catch (error) {
-    console.error('Feedback submission error:', error);
+    logError(error, { endpoint: '/api/feedback' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to submit feedback',

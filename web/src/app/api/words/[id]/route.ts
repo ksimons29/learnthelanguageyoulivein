@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
 import { deleteAudio } from '@/lib/audio/storage';
 import { eq, and } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 interface RouteParams {
   params: Promise<{
@@ -17,10 +18,16 @@ interface RouteParams {
  * Get a specific word by ID
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -37,11 +44,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Word not found' }, { status: 404 });
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { word },
     });
   } catch (error) {
-    console.error('Word retrieval error:', error);
+    logError(error, { endpoint: 'GET /api/words/[id]' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:
@@ -58,10 +67,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  * Update a word (e.g., change category, add tags)
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -100,11 +115,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Word not found' }, { status: 404 });
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { word: updatedWord },
     });
   } catch (error) {
-    console.error('Word update error:', error);
+    logError(error, { endpoint: 'PUT /api/words/[id]' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to update word',
@@ -120,10 +137,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  * Delete a word and its associated audio
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -145,7 +168,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       try {
         await deleteAudio(user.id, id);
       } catch (audioError) {
-        console.error('Failed to delete audio (non-fatal):', audioError);
+        log.warn({ err: audioError, wordId: id }, 'Failed to delete audio (non-fatal)');
         // Continue with word deletion even if audio deletion fails
       }
     }
@@ -153,11 +176,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // 5. Delete word from database
     await db.delete(words).where(eq(words.id, id));
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: { success: true },
     });
   } catch (error) {
-    console.error('Word deletion error:', error);
+    logError(error, { endpoint: 'DELETE /api/words/[id]' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to delete word',

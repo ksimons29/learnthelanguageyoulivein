@@ -8,6 +8,7 @@ import { generateVerifiedAudio } from '@/lib/audio/tts';
 import { uploadAudio } from '@/lib/audio/storage';
 import { triggerSentencePreGeneration } from '@/lib/sentences';
 import { withRetry, sleep } from '@/lib/utils/retry';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/onboarding/starter-words
@@ -117,13 +118,13 @@ export async function POST() {
     // Generate TTS audio in the background (fire-and-forget)
     // Don't await - let it happen async to avoid blocking response
     generateTTSForWords(user.id, insertedWords, targetLanguage).catch((err) => {
-      console.error('Background TTS generation failed:', err);
+      logger.error({ error: err instanceof Error ? err.message : String(err), userId: user.id }, 'Background TTS generation failed');
     });
 
     // Pre-generate sentences using the new starter words (fire-and-forget)
     // This ensures users can immediately do sentence-based reviews
     triggerSentencePreGeneration(user.id, { maxSentences: 5 }).catch((err) => {
-      console.error('Background sentence generation failed:', err);
+      logger.error({ error: err instanceof Error ? err.message : String(err), userId: user.id }, 'Background sentence generation failed');
     });
 
     return NextResponse.json({
@@ -133,7 +134,7 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error('Starter words error:', error);
+    logger.error({ error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), endpoint: '/api/onboarding/starter-words' }, 'Starter words error');
     return NextResponse.json(
       { error: 'Failed to add starter words' },
       { status: 500 }
@@ -190,7 +191,7 @@ async function generateTTSForWords(
 
       return { wordId: word.id, success: true };
     } catch (error) {
-      console.error(`TTS failed for starter word "${word.originalText}":`, error);
+      logger.error({ error: error instanceof Error ? error.message : String(error), word: word.originalText }, 'TTS failed for starter word');
       // Mark word as failed so client can show retry button
       await db
         .update(words)
@@ -217,7 +218,7 @@ async function generateTTSForWords(
     ).length;
 
     if (failed > 0) {
-      console.warn(`Starter words TTS batch ${Math.floor(i / BATCH_SIZE) + 1}: ${succeeded} succeeded, ${failed} failed`);
+      logger.warn({ batch: Math.floor(i / BATCH_SIZE) + 1, succeeded, failed }, 'Starter words TTS batch partial failure');
     }
 
     // Add delay before next batch (except for last batch)

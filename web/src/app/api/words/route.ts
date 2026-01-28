@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, getUserLanguagePreference } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { words, generatedSentences } from '@/lib/db/schema';
+import { getRequestContext } from '@/lib/logger/api-logger';
 import { generateAudio, generateVerifiedAudio } from '@/lib/audio/tts';
 import { uploadAudio, uploadSentenceAudio } from '@/lib/audio/storage';
 import {
@@ -40,10 +41,16 @@ function getOpenAI() {
  * Reference: /docs/engineering/implementation_plan.md (lines 201-208)
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -221,9 +228,7 @@ export async function POST(request: NextRequest) {
     // 6b. Safety check: If translation equals original, language detection was likely wrong
     // Try the opposite direction as a fallback
     if (translation.toLowerCase().trim() === text.toLowerCase().trim()) {
-      console.log(
-        `Translation equals original for "${text}", trying opposite direction`
-      );
+      log.info({ text, sourceLang, targetLang }, 'Translation equals original, trying opposite direction');
       // Swap directions
       const swappedSourceLang = targetLang;
       const swappedTargetLang = sourceLang;
@@ -241,9 +246,7 @@ export async function POST(request: NextRequest) {
     // this is likely an untranslatable/culturally-specific word.
     // Add an explanatory note rather than showing identical text.
     if (translation.toLowerCase().trim() === text.toLowerCase().trim()) {
-      console.log(
-        `Word "${text}" appears untranslatable - adding explanatory note`
-      );
+      log.info({ text }, 'Word appears untranslatable, adding explanatory note');
       // Create an explanatory phrase based on the source language
       const langNames: Record<string, string> = {
         'nl': 'Dutch',
@@ -350,8 +353,8 @@ export async function POST(request: NextRequest) {
     const audioText = isInputInTargetLanguage ? text : translation;
     const audioLang = languagePreference.targetLanguage;
 
-    generateAudioInBackground(user.id, newWord.id, audioText, audioLang).catch(
-      (err) => console.error('Background audio generation failed:', err)
+    generateAudioInBackground(user.id, newWord.id, audioText, audioLang, log).catch(
+      (err) => log.error({ err, wordId: newWord.id }, 'Background audio generation failed')
     );
 
     // 11. Trigger sentence pre-generation (fire-and-forget)
@@ -376,12 +379,14 @@ export async function POST(request: NextRequest) {
       3,  // 3 retries
       1000 // 1s base delay with exponential backoff
     ).catch((err) => {
-      console.error('Background example sentence generation failed after retries:', err);
+      log.error({ err, wordId: newWord.id }, 'Background example sentence generation failed after retries');
     });
 
+    logResponse(200, Date.now() - startTime);
     return response;
   } catch (error) {
-    console.error('Word capture error:', error);
+    logError(error, { endpoint: 'POST /api/words' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:
@@ -401,10 +406,16 @@ export async function POST(request: NextRequest) {
  * Query params: page, limit, category, masteryStatus, search
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const { log, logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -516,7 +527,7 @@ export async function GET(request: NextRequest) {
 
           return { wordId: word.id, ...result };
         } catch (err) {
-          console.error(`On-demand sentence generation failed for word ${word.id}:`, err);
+          log.error({ err, wordId: word.id }, 'On-demand sentence generation failed');
           return null;
         }
       });
@@ -544,6 +555,7 @@ export async function GET(request: NextRequest) {
       .where(and(...conditions));
     const count = countResult[0]?.count ?? 0;
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         words: userWords,
@@ -553,7 +565,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Words retrieval error:', error);
+    logError(error, { endpoint: 'GET /api/words' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:
@@ -816,7 +829,8 @@ async function generateAudioInBackground(
   userId: string,
   wordId: string,
   text: string,
-  languageCode: string
+  languageCode: string,
+  log: ReturnType<typeof getRequestContext>['log']
 ): Promise<void> {
   try {
     // TTS generation with verification (retries internally if transcription doesn't match)
@@ -846,7 +860,7 @@ async function generateAudioInBackground(
       })
       .where(eq(words.id, wordId));
   } catch (error) {
-    console.error('Background audio generation failed after retries:', error);
+    log.error({ error, wordId }, 'Background audio generation failed after retries');
     // Mark word as failed so client can stop polling and show retry button
     await db
       .update(words)
@@ -926,7 +940,7 @@ async function triggerSentenceGeneration(userId: string): Promise<void> {
       });
     }
   } catch (error) {
-    console.error('Background sentence generation failed:', error);
-    // Don't rethrow - this is a background optimization
+    // Silently fail - this is a background optimization
+    // If logging is needed, pass logger from caller
   }
 }

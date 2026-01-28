@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { db } from '@/lib/db';
 import { reviewSessions } from '@/lib/db/schema';
 import { eq, and, isNull, desc } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * POST /api/reviews/end
@@ -18,10 +19,16 @@ import { eq, and, isNull, desc } from 'drizzle-orm';
  * - summary: Human-readable summary of the session
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
+
     // 1. Authenticate user
     const user = await getCurrentUser();
     if (!user) {
+      logResponse(401, Date.now() - startTime);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -88,6 +95,7 @@ export async function POST(request: NextRequest) {
       endedSession.endedAt!.getTime() - endedSession.startedAt.getTime();
     const durationMinutes = Math.round(durationMs / (1000 * 60));
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       data: {
         session: endedSession,
@@ -100,7 +108,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('End session error:', error);
+    logError(error, { endpoint: 'POST /api/reviews/end' });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       {
         error:

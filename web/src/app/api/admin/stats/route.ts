@@ -7,6 +7,7 @@ import { dailyProgress, streakState } from '@/lib/db/schema/gamification';
 import { generatedSentences } from '@/lib/db/schema/sentences';
 import { apiUsageLog } from '@/lib/db/schema/api-usage';
 import { sql, count, avg, sum, eq, gte, and, isNotNull, isNull } from 'drizzle-orm';
+import { getRequestContext } from '@/lib/logger/api-logger';
 
 /**
  * GET /api/admin/stats
@@ -23,11 +24,15 @@ import { sql, count, avg, sum, eq, gte, and, isNotNull, isNull } from 'drizzle-o
  * - User feedback summary
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   // Simple secret-based auth for admin access
   const adminSecret = request.headers.get('x-admin-secret');
   const expectedSecret = process.env.ADMIN_SECRET;
 
   if (!expectedSecret || adminSecret !== expectedSecret) {
+    logResponse(401, Date.now() - startTime);
     return NextResponse.json(
       { error: 'Unauthorized. Set ADMIN_SECRET env var and pass x-admin-secret header.' },
       { status: 401 }
@@ -35,6 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    logRequest();
     const now = new Date();
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -458,6 +464,7 @@ export async function GET(request: NextRequest) {
     type RawRow = Record<string, unknown>;
     const getRow = (result: unknown[], index = 0): RawRow => (result[index] || {}) as RawRow;
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       generatedAt: now.toISOString(),
       users: {
@@ -696,7 +703,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Admin stats error:', error);
+    logError(error, { endpoint: '/api/admin/stats' });
+    logResponse(500, Date.now() - startTime);
     const err = error as Error & { code?: string; cause?: unknown };
     return NextResponse.json(
       {

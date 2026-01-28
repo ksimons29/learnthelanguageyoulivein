@@ -5,6 +5,7 @@ import { getCurrentUser, getUserLanguagePreference } from "@/lib/supabase/server
 import { sql, desc, isNotNull, and, eq } from "drizzle-orm";
 import { generateSentenceWithRetry } from "@/lib/sentences/generator";
 import { generateWordIdsHash } from "@/lib/sentences/word-matcher";
+import { getRequestContext } from "@/lib/logger/api-logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,7 +23,11 @@ interface RouteParams {
  * which also returns the newly generated sentence.
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const startTime = Date.now();
+  const { logRequest, logResponse, logError } = getRequestContext(request);
+
   try {
+    logRequest();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -112,6 +117,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ sentences: [] });
     }
 
+    logResponse(200, Date.now() - startTime);
     return NextResponse.json({
       sentences: sentences.map((s) => ({
         id: s.id,
@@ -121,7 +127,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       })),
     });
   } catch (error) {
-    console.error("Error fetching sentences for word:", error);
+    logError(error, { endpoint: "/api/words/[id]/sentences" });
+    logResponse(500, Date.now() - startTime);
     return NextResponse.json(
       { error: "Failed to fetch sentences" },
       { status: 500 }
