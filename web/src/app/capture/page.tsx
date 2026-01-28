@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { PhraseInput } from "@/components/capture";
 import { InfoButton } from "@/components/brand";
@@ -41,6 +41,7 @@ import {
 } from "@/lib/config/memory-context";
 import { useTour } from "@/lib/tours/hooks/use-tour";
 import { registerCaptureTour } from "@/lib/tours/tours/capture-tour";
+import { tourManager } from "@/lib/tours/tour-manager";
 
 // LocalStorage key for context accordion preference
 const CONTEXT_EXPANDED_KEY = "llyli_capture_context_expanded";
@@ -63,8 +64,9 @@ function setContextExpandedPreference(expanded: boolean): void {
   }
 }
 
-export default function CapturePage() {
+function CapturePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuthStore();
   const [phrase, setPhrase] = useState("");
   const [showContextFields, setShowContextFields] = useState(() =>
@@ -102,6 +104,19 @@ export default function CapturePage() {
       return () => clearTimeout(timer);
     }
   }, [tourLoading, tourCompleted, user, startTour]);
+
+  // Handle tour replay via query param (from feedback sheet)
+  useEffect(() => {
+    const startTourParam = searchParams.get("startTour");
+    if (startTourParam === "capture" && user && !tourManager.isActive()) {
+      // Register tour and start after small delay for DOM to render
+      registerCaptureTour(markTourComplete);
+      const timer = setTimeout(() => {
+        tourManager.startTour("capture");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, user, markTourComplete]);
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -201,7 +216,7 @@ export default function CapturePage() {
       {/* Bottom sheet modal - styled like a notebook page */}
       <div
         id="capture-sheet"
-        className="rounded-t-3xl relative"
+        className="rounded-t-3xl relative max-h-[80vh] overflow-y-auto"
         style={{
           backgroundColor: "var(--surface-page)",
           boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.15), 0 -2px 8px rgba(0, 0, 0, 0.1)",
@@ -450,5 +465,17 @@ export default function CapturePage() {
         <div className="h-safe-area-inset-bottom" />
       </div>
     </div>
+  );
+}
+
+/**
+ * CapturePage with Suspense boundary for useSearchParams
+ * Required by Next.js 16+ for client-side rendering bailout
+ */
+export default function CapturePage() {
+  return (
+    <Suspense fallback={null}>
+      <CapturePageContent />
+    </Suspense>
   );
 }

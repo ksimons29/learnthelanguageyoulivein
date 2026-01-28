@@ -2,9 +2,9 @@
  * Today Dashboard Tour
  *
  * Introduces new users to the main dashboard after onboarding.
- * 8 steps covering the core features: review, capture, daily goal, practice, and navigation.
+ * 10 steps covering the core features: review, capture, daily goal, feedback, practice, progress, and navigation.
  *
- * Duration: ~45 seconds
+ * Duration: ~60 seconds
  */
 
 import { createStep, createScrollingStep } from "../driver-config";
@@ -55,20 +55,37 @@ const todayTourSteps = [
     side: "bottom",
     align: "end",
   }),
-  // Nav items are fixed, position popover above them
   createStep({
-    element: "#nav-capture",
-    title: "Capture Words Anytime",
+    element: "#feedback-button",
+    title: "Share Your Feedback",
     description:
-      "Tap Capture to save words you hear or see. 2 seconds to capture, auto-translation included.",
-    side: "top",
+      "Found a bug or have a suggestion? Tap here to let us know. Your feedback shapes the app.",
+    side: "right",
     align: "center",
   }),
+  // Capture FAB - the prominent red + button
+  createStep({
+    element: "#tour-capture-fab",
+    title: "Capture Words Anytime",
+    description:
+      "Tap the red + button to save words you hear or see. 2 seconds to capture, auto-translation included.",
+    side: "bottom",
+    align: "center",
+  }),
+  // Nav items are fixed, position popover above them
   createStep({
     element: "#nav-practice",
     title: "Practice with AI Sentences",
     description:
       "Review due words here. Each word appears in a unique AI-generated sentence—never the same twice.",
+    side: "top",
+    align: "center",
+  }),
+  createStep({
+    element: "#nav-progress",
+    title: "Track Your Progress",
+    description:
+      "See your learning stats, streaks, and mastery levels. Watch your vocabulary grow over time.",
     side: "top",
     align: "center",
   }),

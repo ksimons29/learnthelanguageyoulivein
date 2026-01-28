@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   SearchBar,
   InboxCard,
@@ -15,6 +16,7 @@ import { getCategoryConfig } from "@/lib/config/categories";
 import { BookOpen, Search, Loader2 } from "lucide-react";
 import { useTour } from "@/lib/tours/hooks/use-tour";
 import { registerNotebookTour } from "@/lib/tours/tours/notebook-tour";
+import { tourManager } from "@/lib/tours/tour-manager";
 
 // Type for word search results
 interface SearchResultWord {
@@ -34,7 +36,8 @@ interface SearchResultWord {
  *
  * Design: Moleskine aesthetic with ribbon bookmark and elastic band.
  */
-export default function NotebookPage() {
+function NotebookPageContent() {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResultWord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -76,6 +79,19 @@ export default function NotebookPage() {
       return () => clearTimeout(timer);
     }
   }, [tourLoading, tourCompleted, categoriesLoading, categories.length, startTour]);
+
+  // Handle tour replay via query param (from feedback sheet)
+  useEffect(() => {
+    const startTourParam = searchParams.get("startTour");
+    if (startTourParam === "notebook" && !tourManager.isActive()) {
+      // Register tour and start after small delay for DOM to render
+      registerNotebookTour(markTourComplete);
+      const timer = setTimeout(() => {
+        tourManager.startTour("notebook");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, markTourComplete]);
 
   // Debounced word search
   useEffect(() => {
@@ -384,5 +400,17 @@ export default function NotebookPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * NotebookPage with Suspense boundary for useSearchParams
+ * Required by Next.js 16+ for client-side rendering bailout
+ */
+export default function NotebookPage() {
+  return (
+    <Suspense fallback={<NotebookSkeleton />}>
+      <NotebookPageContent />
+    </Suspense>
   );
 }

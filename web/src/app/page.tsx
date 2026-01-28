@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Loader2, PartyPopper, X } from "lucide-react";
 import {
@@ -15,7 +15,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 import { useWordsStore } from "@/lib/store/words-store";
 import { useGamificationStore } from "@/lib/store/gamification-store";
 import { useOnboardingStatus } from "@/lib/hooks";
-import { useTour, registerTodayTour } from "@/lib/tours";
+import { useTour, registerTodayTour, tourManager } from "@/lib/tours";
 import type { Word } from "@/lib/db/schema";
 
 // Dynamic imports for gamification components (code splitting)
@@ -45,8 +45,9 @@ const BossRoundResults = dynamic(
   { ssr: false }
 );
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuthStore();
   const { words, isLoading: wordsLoading, fetchWords } = useWordsStore();
   const { needsOnboarding, isLoading: onboardingLoading } = useOnboardingStatus();
@@ -108,6 +109,19 @@ export default function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [tourLoading, tourCompleted, needsOnboarding, onboardingLoading, user, startTour]);
+
+  // Handle tour replay via query param (from feedback sheet)
+  useEffect(() => {
+    const startTourParam = searchParams.get("startTour");
+    if (startTourParam === "today" && user && !tourManager.isActive()) {
+      // Register tour and start after small delay for DOM to render
+      registerTodayTour(markTourComplete);
+      const timer = setTimeout(() => {
+        tourManager.startTour("today");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, user, markTourComplete]);
 
   // Boss round state
   const [bossRoundState, setBossRoundState] = useState<'hidden' | 'prompt' | 'playing' | 'results'>('hidden');
@@ -590,5 +604,34 @@ export default function HomePage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Loading fallback for Suspense boundary
+ */
+function HomePageFallback() {
+  return (
+    <div className="min-h-screen notebook-bg flex items-center justify-center">
+      <div className="text-center">
+        <Loader2
+          className="h-8 w-8 animate-spin mx-auto mb-3"
+          style={{ color: "var(--accent-nav)" }}
+        />
+        <p style={{ color: "var(--text-muted)" }}>Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * HomePage with Suspense boundary for useSearchParams
+ * Required by Next.js 16+ for client-side rendering bailout
+ */
+export default function HomePage() {
+  return (
+    <Suspense fallback={<HomePageFallback />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

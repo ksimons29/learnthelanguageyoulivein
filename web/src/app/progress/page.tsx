@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { CompactProgressCard, ForecastChart } from "@/components/progress";
 import { InfoButton } from "@/components/brand";
 import type { Word } from "@/lib/db/schema";
 import { useTour } from "@/lib/tours/hooks/use-tour";
 import { registerProgressTour } from "@/lib/tours/tours/progress-tour";
+import { tourManager } from "@/lib/tours/tour-manager";
 
 /**
  * Progress Data from /api/progress
@@ -30,7 +32,8 @@ interface ProgressData {
  * iPhone-friendly single-screen dashboard.
  * Uses Moleskine design tokens throughout.
  */
-export default function ProgressPage() {
+function ProgressPageContent() {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<ProgressData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +88,19 @@ export default function ProgressPage() {
       return () => clearTimeout(timer);
     }
   }, [tourLoading, tourCompleted, isLoading, data, startTour]);
+
+  // Handle tour replay via query param (from feedback sheet)
+  useEffect(() => {
+    const startTourParam = searchParams.get("startTour");
+    if (startTourParam === "progress" && !tourManager.isActive()) {
+      // Register tour and start after small delay for DOM to render
+      registerProgressTour(markTourComplete);
+      const timer = setTimeout(() => {
+        tourManager.startTour("progress");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, markTourComplete]);
 
   // Loading state
   if (isLoading) {
@@ -187,5 +203,34 @@ export default function ProgressPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+/**
+ * Loading fallback for Suspense boundary
+ */
+function ProgressPageFallback() {
+  return (
+    <div className="min-h-screen notebook-bg flex items-center justify-center">
+      <div className="text-center">
+        <Loader2
+          className="h-8 w-8 animate-spin mx-auto mb-2"
+          style={{ color: "var(--accent-nav)" }}
+        />
+        <p style={{ color: "var(--text-muted)" }}>Loading progress...</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ProgressPage with Suspense boundary for useSearchParams
+ * Required by Next.js 16+ for client-side rendering bailout
+ */
+export default function ProgressPage() {
+  return (
+    <Suspense fallback={<ProgressPageFallback />}>
+      <ProgressPageContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, HelpCircle, Lightbulb, Loader2 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import Link from "next/link";
@@ -39,11 +39,13 @@ import {
 import { MapPin } from "lucide-react";
 import { useTour } from "@/lib/tours/hooks/use-tour";
 import { registerReviewTour } from "@/lib/tours/tours/review-tour";
+import { tourManager } from "@/lib/tours/tour-manager";
 
 type Rating = "hard" | "good" | "easy";
 
-export default function ReviewPage() {
+function ReviewPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuthStore();
   const { emitItemAnswered } = useGamificationStore();
 
@@ -163,6 +165,19 @@ export default function ReviewPage() {
       return () => clearTimeout(timer);
     }
   }, [tourLoading, tourCompleted, user, sessionId, dueWords.length, reviewState, startTour]);
+
+  // Handle tour replay via query param (from feedback sheet)
+  useEffect(() => {
+    const startTourParam = searchParams.get("startTour");
+    if (startTourParam === "review" && user && sessionId && !tourManager.isActive()) {
+      // Register tour and start after small delay for DOM to render
+      registerReviewTour(markTourComplete);
+      const timer = setTimeout(() => {
+        tourManager.startTour("review");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, user, sessionId, markTourComplete]);
 
   // Determine exercise type and focus word for sentence mode
   // IMPORTANT: focusWord is the single word being tested in this exercise
@@ -910,5 +925,34 @@ export default function ReviewPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Loading fallback for Suspense boundary
+ */
+function ReviewPageFallback() {
+  return (
+    <div className="min-h-screen notebook-bg flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2
+          className="h-8 w-8 animate-spin"
+          style={{ color: "var(--accent-nav)" }}
+        />
+        <p style={{ color: "var(--text-muted)" }}>Loading practice...</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ReviewPage with Suspense boundary for useSearchParams
+ * Required by Next.js 16+ for client-side rendering bailout
+ */
+export default function ReviewPage() {
+  return (
+    <Suspense fallback={<ReviewPageFallback />}>
+      <ReviewPageContent />
+    </Suspense>
   );
 }
