@@ -357,27 +357,81 @@ Expected
 
 * All tests pass
 
-### 4.2.1 Unit Test Coverage (357 tests)
+### 4.2.1 Unit Test Coverage (459 tests)
 
 The test suite covers core business logic. Tests run automatically via GitHub Actions CI on every push to `main` and on pull requests.
 
 | Test File | Tests | What It Covers |
 |-----------|-------|----------------|
-| `gamification.test.ts` | 44 | Bingo board logic (rows, columns, diagonals), streak calculations, daily progress, consecutive correct tracking, Boss Round word selection, user persona scenarios (Sofia, Ralf, Maria), exercise type normalization |
-| `starter-vocabulary.test.ts` | 79 | Language coverage (pt-PT, sv, es, fr, de, nl), work/social category availability for bingo, Boss Round candidates (lapse counts), category distribution, translation coverage, word uniqueness |
+| `starter-vocabulary.test.ts` | 94 | Language coverage (pt-PT, sv, es, fr, de, nl), work/social category availability for bingo, Boss Round candidates (lapse counts), category distribution, translation coverage, word uniqueness |
 | `fsrs.test.ts` | 53 | FSRS-4.5 algorithm implementation, spaced repetition scheduling, mastery progression (3 correct sessions rule), interval calculations, stability/difficulty updates |
+| `gamification.test.ts` | 44 | Bingo board logic (rows, columns, diagonals), streak calculations, daily progress, consecutive correct tracking, Boss Round word selection, user persona scenarios (Sofia, Ralf, Maria), exercise type normalization |
+| `generator-validation.test.ts` | 30 | Sentence validation, Unicode/diacritics handling (Portuguese ã/é/ç, Swedish ä/ö/å), word boundary detection, stem matching for conjugations |
+| `distractors.test.ts` | 29 | Multiple choice option generation, shuffle algorithm, bidirectional capture handling, focus word selection, null safety for text helpers |
 | `categories.test.ts` | 26 | Category assignment logic, category validation, category mapping |
-| `distractors.test.ts` | 25 | Multiple choice option generation, shuffle algorithm, bidirectional capture handling, focus word selection, null safety for text helpers |
-| `answer-evaluation.test.ts` | 24 | Answer correctness evaluation, typo detection, near-match handling |
+| `answer-evaluation.test.ts` | 24 | Answer correctness evaluation, Levenshtein distance, typo detection, near-match handling |
+| `security/rate-limiter.test.ts` | 23 | Rate limit tiers (unauthenticated/expensive/write/read), fail-open behavior, response format |
+| `word-matcher.test.ts` | 19 | kCombinations algorithm, word ID hashing, config validation, sliding window approach |
 | `shuffle.test.ts` | 19 | Fisher-Yates shuffle, priority band shuffling (overdue > due > new), review queue deduplication |
 | `categories-cognitive.test.ts` | 17 | Cognitive load balancing, category mixing in review sessions |
-| `exercise-type.test.ts` | 13 | Exercise type determination based on mastery level |
+| `tts-validation.test.ts` | 16 | TTS cost estimation, voice selection per language, transcription matching concepts |
+| `security/rate-limit-check.test.ts` | 14 | IP extraction from headers, API rate limit responses, header management |
+| `exercise-type.test.ts` | 13 | Exercise type determination based on mastery level (multiple_choice → fill_blank → type_translation) |
 | `audio-polling-config.test.ts` | 12 | Audio polling timeout (30s per Issue #129), backoff intervals, polling sequence validation |
 | `sentence-card.test.tsx` | 9 | Sentence card component rendering, fill-in-blank display, answer validation |
 | `retry.test.ts` | 9 | Retry logic with exponential backoff, max retries, base delay configuration |
 | `due-count.test.ts` | 8 | Due word calculation, new card limits, review scheduling |
 
-**Total: 357 tests**
+**Total: 459 tests**
+
+### 4.2.2 Coverage by Module
+
+| Module | Coverage | Status |
+|--------|----------|--------|
+| `lib/fsrs` | 100% | ✅ Core algorithm fully tested |
+| `lib/review` | 82% | ✅ Distractors, shuffle, answer evaluation |
+| `lib/security` | 57% | ✅ Rate limiting logic |
+| `lib/sentences` | 28% | ⚠️ Validation tested, API calls not tested |
+| `lib/audio` | 8% | ⚠️ Cost estimation only |
+| API routes | 0% | ❌ Requires mocking (see below) |
+| React components | <5% | ❌ Requires test infrastructure |
+
+### 4.2.3 What's NOT Tested (and Why)
+
+**API Routes (0% coverage)**
+
+The 30+ API routes in `/api/` are not unit tested because they require:
+- Mocking Supabase client and database queries
+- Mocking OpenAI API calls (translation, TTS, sentence generation)
+- Mocking authentication middleware
+- Setting up test database fixtures
+
+**Recommendation:** API routes are tested via E2E flows (Section 6) on production. If API route bugs occur frequently, consider adding integration tests with a test database.
+
+**React Components (<5% coverage)**
+
+Most React components are not unit tested because they require:
+- React Testing Library setup with providers
+- Mocking Zustand stores
+- Mocking Next.js router
+- Complex DOM assertions
+
+**Recommendation:** Critical component logic is extracted into `lib/` and tested there. Component behavior is verified via E2E testing.
+
+**OpenAI API Calls**
+
+Functions like `generateSentence()`, `generateAudio()`, `translatePhrase()` call OpenAI APIs directly. These are not unit tested because:
+- Tests would require API mocking that may not match real behavior
+- Cost of running real API calls in tests
+- Flakiness from rate limits and network issues
+
+**What IS tested for OpenAI-dependent code:**
+- Input validation before API calls
+- Response parsing and validation (e.g., `validateSentenceContainsWords`)
+- Error handling paths (timeout, rate limit detection)
+- Cost estimation functions
+
+**Recommendation:** Use E2E testing to verify OpenAI integration works. Monitor with Sentry for production errors.
 
 #### Key Test Categories
 
@@ -408,7 +462,7 @@ CI runs automatically on:
 **Pipeline steps:**
 1. **Lint** - ESLint checks (warnings allowed, errors block)
 2. **Build** - Next.js production build
-3. **Test** - Vitest unit tests (293 tests)
+3. **Test** - Vitest unit tests (459 tests)
 
 **Configuration:** `.github/workflows/ci.yml`
 
