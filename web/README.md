@@ -21,14 +21,27 @@ npm run db:studio    # Open Drizzle Studio
 
 ## Environment
 
-Copy `.env.local.example` to `.env.local`:
+Required environment variables:
 
 ```bash
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=
+
+# OpenAI
 OPENAI_API_KEY=
+
+# Rate Limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Error Monitoring (Sentry) - Optional in dev, required in prod
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_ORG=
+SENTRY_PROJECT=
+SENTRY_AUTH_TOKEN=
 ```
 
 ## Project Structure
